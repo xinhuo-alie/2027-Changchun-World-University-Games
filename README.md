@@ -17,7 +17,10 @@ node server/index.js
 ```dotenv
 IMAGE_PROVIDER=doubao
 ARK_API_KEY=在火山方舟获取的API密钥
+ARK_MODEL=doubao-seedream-5-0-flash-260915,doubao-seedream-5-0-pro-260628
 ```
+
+此配置先使用 Seedream Flash；只有 Flash 不可用时才尝试 Pro。若只想使用 Flash，可删掉逗号和后面的 Pro 模型。请确认所选模型已在火山方舟账号开通。
 
 保存后运行 `node server/index.js`。打开 `http://localhost:5173/`；在同一台服务器上打开 `http://localhost:5173/display` 可展示大屏。若 `.env` 已存在，保留并编辑现有文件，无需再次复制。服务端配置变更后需要重启 Node 进程。
 
