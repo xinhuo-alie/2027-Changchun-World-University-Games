@@ -1,0 +1,229 @@
+/* 长春冬日漫游手册：封面、双页和到达后的地点手记。 */
+:root { --book-ink:#214758; --book-green:#236374; --book-cream:#f9f4e8; --book-edge:#d9cbb0; }
+body { background:#e9e0cf; }
+body[data-book="cover"] { overflow:hidden; }
+body[data-book="cover"] > .top, body[data-book="cover"] > .book-chapter-bar, body[data-book="cover"] > .split { visibility:hidden; }
+
+.book-cover { position:fixed; inset:0; z-index:45; overflow:auto; background:#dfd4bf; }
+.book-cover[hidden] { display:none; }
+.cover-desk {
+  position:relative; display:grid; grid-template-columns:minmax(0,1.1fr) minmax(250px,.64fr); perspective:1500px;
+  align-items:center; gap:clamp(30px,5vw,90px); min-height:100dvh;
+  padding:clamp(38px,5vw,70px) max(5vw,calc((100vw - 1420px)/2));
+  background-color:#e7ddca;
+  background-image:repeating-linear-gradient(95deg,transparent 0 34px,#aa93710b 35px 36px),radial-gradient(circle at 13% 19%,#fff6e8a9,transparent 46%);
+}
+.cover-desk::before { content:''; position:absolute; right:7%; top:11%; width:120px; height:120px; border:1px solid #9f8e7359; border-radius:50%; box-shadow:inset 0 0 0 14px #e7ddca,inset 0 0 0 15px #9f8e7359; opacity:.65; }
+.desk-note { position:absolute; color:#846f54; font-size:10px; font-weight:750; letter-spacing:.18em; }
+.desk-note-top { top:27px; left:5vw; }.desk-note-bottom { right:5vw; bottom:27px; }
+.cover-volume { position:relative; width:min(100%,690px); aspect-ratio:1.03; transform:rotate(-4deg); transform-style:preserve-3d; filter:drop-shadow(20px 28px 15px #6c634e4f); }
+.cover-volume::before { content:''; position:absolute; inset:5px -11px -9px 11px; background:#eee5d3; border-radius:7px 14px 14px 7px; box-shadow:inset -6px 0 0 #c4b69d; }
+.cover-page { position:absolute; inset:0; display:flex; flex-direction:column; overflow:hidden; padding:9% 7% 7% 49%; border:1px solid #cbbd9f; border-radius:5px 13px 13px 5px; color:#255362; background:#f9f2e4; box-shadow:inset 14px 0 18px #a6977a40; }
+.cover-page span,.cover-page small { position:relative; z-index:1; font-size:clamp(10px,1.1vw,14px); font-weight:800; letter-spacing:.14em; }
+.cover-page strong { position:relative; z-index:1; margin-top:9%; font-size:clamp(23px,2.6vw,38px); line-height:1.35; letter-spacing:-.055em; }
+.cover-page i { flex:1; min-height:100px; background:url('/assets/winter-city-panorama.svg') center bottom / contain no-repeat; }
+.cover-leaf { position:absolute; z-index:3; inset:0; transform-origin:left center; transform-style:preserve-3d; will-change:transform; }
+.cover-spine { position:absolute; z-index:2; left:-18px; top:1%; bottom:0; width:25px; border-radius:8px 1px 1px 8px; background:linear-gradient(90deg,#102f3b,#276276 45%,#164252); box-shadow:inset -3px 0 5px #0c2d3a8c; }
+.cover-front {
+  position:absolute; inset:0; z-index:3; display:flex; flex-direction:column; height:100%; overflow:hidden;
+  backface-visibility:hidden;
+  padding:clamp(24px,4vw,50px); border:2px solid #183f4d; border-radius:6px 13px 13px 6px;
+  background:#1b4b5d; color:#f8edcf;
+  background-image:radial-gradient(#eacda70e 1px,transparent 1px); background-size:9px 9px;
+  box-shadow:inset 0 0 0 7px #1b4b5d,inset 0 0 0 8px #88aaa273;
+}
+.cover-inside { position:absolute; inset:0; display:flex; flex-direction:column; padding:8%; transform:rotateY(180deg); backface-visibility:hidden; border:1px solid #c9b89b; border-radius:12px 4px 4px 12px; color:#315b63; background:#f9f2e4; box-shadow:inset -19px 0 25px #aa987c38; }
+.cover-inside > span,.cover-inside > small { position:relative; z-index:1; font-size:clamp(10px,1.2vw,14px); font-weight:800; letter-spacing:.12em; }
+.cover-inside > span { padding-bottom:14px; border-bottom:1px solid #c8b99e; }
+.cover-inside-art { position:absolute; inset:17% 3% 12% 10%; background:url('/assets/winter-city-panorama.svg') center bottom / contain no-repeat; opacity:.35; }
+.cover-inside strong { position:relative; z-index:1; margin:auto 0; font-size:clamp(27px,3.7vw,56px); line-height:1.32; letter-spacing:-.06em; }
+.cover-inside strong em { color:#ad7451; font-style:normal; }
+.cover-inside > small { padding-top:14px; border-top:1px solid #c8b99e; }
+.cover-edition,.cover-bottom { display:flex; justify-content:space-between; gap:14px; font-size:11px; font-weight:750; letter-spacing:.07em; }
+.cover-edition { padding-bottom:12px; border-bottom:1px solid #e3cfaa7d; }
+.cover-heading { position:relative; z-index:2; padding-top:clamp(20px,3vw,43px); }
+.cover-heading small { color:#afd2cb; font-size:clamp(10px,1.15vw,14px); font-weight:800; letter-spacing:.25em; }
+.cover-heading h1 { margin:12px 0 8px; font-family:'Microsoft YaHei','PingFang SC',sans-serif; font-size:clamp(49px,6vw,88px); line-height:1.07; letter-spacing:-.08em; font-weight:900; text-shadow:2px 3px 0 #123744; }
+.cover-heading h1 em { font-style:normal; color:#e8bd82; }
+.cover-heading p { margin:0; color:#d9e9dc; font-size:clamp(12px,1.2vw,16px); }
+.cover-panorama { position:absolute; inset:auto -5% 43px 12%; height:41%; background:url('/assets/winter-city-panorama.svg') center bottom / contain no-repeat; opacity:.76; mix-blend-mode:screen; pointer-events:none; }
+.cover-bottom { position:relative; z-index:2; align-items:end; margin-top:auto; padding-top:12px; border-top:1px solid #e3cfaa7d; text-shadow:0 2px 3px #1b4b5d; }
+.cover-stamp { display:inline-block; padding:8px 11px; border:1px dashed #e9cf9d; transform:rotate(-6deg); }
+.cover-intro { position:relative; z-index:2; align-self:center; padding-bottom:20px; }
+.cover-intro p { color:#6a665a; font-size:clamp(17px,2vw,26px); font-weight:800; letter-spacing:-.02em; }
+.cover-intro button { display:flex; align-items:center; justify-content:space-between; width:min(100%,360px); min-height:70px; margin:22px 0; padding:0 23px; border:0; border-radius:17px 5px 17px 5px; color:#fff9e9; background:#225c68; box-shadow:0 6px 0 #153e48,0 15px 24px #153e4833; font-size:19px; font-weight:850; cursor:pointer; transition:transform .24s,box-shadow .24s,background .24s; }
+.cover-intro button:hover { transform:translateY(-3px); background:#2b7480; box-shadow:0 9px 0 #153e48,0 19px 27px #153e4833; }
+.cover-intro button:active { transform:translateY(4px); box-shadow:0 2px 0 #153e48; }
+.cover-intro button span { font-size:27px; font-weight:400; }
+.cover-intro small { display:block; color:#80735e; font-size:12px; letter-spacing:.05em; line-height:1.8; }
+.cover-event-ticket { position:absolute; z-index:1; top:6%; right:max(6%,calc((100vw - 1360px)/2)); width:256px; padding:16px 19px 14px; transform:rotate(6deg); color:#255362; background:#fbf3df; border:1px solid #bdad90; border-radius:6px; box-shadow:4px 8px 0 #ad9b7b4d,0 17px 28px #6d5f4b35; background-image:radial-gradient(#2853660a 1px,transparent 1px); background-size:8px 8px; }
+.cover-event-ticket::before,.cover-event-ticket::after { content:''; position:absolute; top:66%; width:17px; height:17px; border-radius:50%; background:#e7ddca; border:1px solid #bdad90; }
+.cover-event-ticket::before { left:-10px; border-left:0; }.cover-event-ticket::after { right:-10px; border-right:0; }
+.ticket-top { display:flex; align-items:baseline; justify-content:space-between; gap:8px; padding-bottom:11px; border-bottom:1px solid #bcae94; }
+.ticket-top span { font-family:Georgia,serif; font-size:10px; letter-spacing:.07em; }.ticket-top b { font-size:10px; color:#ad7351; }
+.cover-event-ticket > strong { display:block; margin:13px 0; font-size:27px; line-height:1.26; letter-spacing:-.06em; }
+.ticket-sports { display:flex; gap:5px; padding-bottom:16px; border-bottom:1px dashed #bcae94; }
+.ticket-sports span { padding:5px 6px; border:1px solid #9eb2ac; border-radius:2px; color:#4f7878; font-size:9px; font-weight:800; white-space:nowrap; }
+.ticket-foot { display:flex; align-items:center; gap:9px; padding-top:12px; }.ticket-foot b { color:#af7650; font-family:Georgia,serif; font-size:42px; line-height:1; }.ticket-foot span { color:#6c766d; font-size:10px; font-weight:700; line-height:1.45; }.ticket-foot i { margin-left:auto; color:#78a2a1; font-size:26px; font-style:normal; }
+
+body:not([data-book="cover"]) .top { min-height:0; padding-bottom:0; overflow:visible; }
+body:not([data-book="cover"]) .top::before,body:not([data-book="cover"]) .top::after,body:not([data-book="cover"]) .hero,body:not([data-book="cover"]) .hero-stamps { display:none; }
+.topbar { max-width:1460px; }
+.book-chapter-bar { display:flex; align-items:center; gap:clamp(10px,2vw,25px); width:min(1460px,calc(100% - 32px)); min-height:75px; margin:16px auto 0; padding:0 clamp(15px,2.5vw,35px); background:#f8f1e3; border:1px solid #cfc1a7; border-bottom:none; border-radius:9px 9px 0 0; box-shadow:9px 9px 0 #9e927817; color:#685f4d; }
+.book-back-cover,.book-map-side button,.detail-back { border:0; background:none; color:#296571; font-weight:800; cursor:pointer; text-decoration:underline; text-underline-offset:5px; }
+.book-back-cover { white-space:nowrap; font-size:12px; }
+.chapter-line { width:1px; height:30px; background:#cfc1a7; }
+.chapter-item { white-space:nowrap; font-size:12px; font-weight:750; opacity:.47; transition:opacity .25s,color .25s; }
+.chapter-item b { display:inline-grid; place-items:center; width:28px; height:28px; margin-right:5px; border-radius:9px 3px 9px 3px; color:#fff9e9; background:#4d7f83; font-family:Georgia,serif; font-size:15px; }
+body[data-book="creator"] .chapter-item[data-chapter="creator"],body[data-book="map"] .chapter-item[data-chapter="map"],body[data-book="detail"] .chapter-item[data-chapter="detail"] { opacity:1; color:#214758; }
+body[data-book="creator"] .chapter-item[data-chapter="creator"] b,body[data-book="map"] .chapter-item[data-chapter="map"] b,body[data-book="detail"] .chapter-item[data-chapter="detail"] b { background:#b77953; }
+.page-flip-toggle { display:inline-flex; align-items:center; gap:7px; flex:none; margin-left:auto; padding:7px 9px; border:1px solid #cfbea3; border-radius:15px; color:#866c50; background:#fff9ed; font-size:11px; font-weight:800; cursor:pointer; white-space:nowrap; }
+.page-flip-toggle i { position:relative; width:26px; height:15px; border-radius:10px; background:#cbbba1; transition:background .2s; }
+.page-flip-toggle i::after { content:''; position:absolute; top:2px; left:2px; width:11px; height:11px; border-radius:50%; background:#fffdf7; box-shadow:0 1px 3px #4e463b55; transition:transform .2s; }
+.page-flip-toggle[aria-pressed="true"] { color:#256674; border-color:#8eb6b2; }
+.page-flip-toggle[aria-pressed="true"] i { background:#3d8589; }
+.page-flip-toggle[aria-pressed="true"] i::after { transform:translateX(11px); }
+.page-flip-toggle:focus-visible { outline:3px solid #b8784f; outline-offset:3px; }
+.chapter-aside { color:#93795f; font-size:11px; white-space:nowrap; }
+
+.split { position:relative; --book-gutter:42%; width:min(1460px,calc(100% - 32px)); margin:0 auto 55px; padding:0; gap:0; grid-template-columns:minmax(340px,.74fr) minmax(0,1fr); align-items:stretch; background:#fffaf0; box-shadow:0 22px 42px #5d554530,9px 9px 0 #9e92782c; }
+.split::before { content:''; position:absolute; z-index:3; top:0; bottom:0; left:var(--book-gutter); width:22px; transform:translateX(-50%); background:linear-gradient(90deg,#ab9b8240,transparent 35%,#8b796325 70%,transparent); pointer-events:none; }
+.split > .panel { min-width:0; min-height:800px; padding:clamp(17px,2.3vw,32px); border:1px solid #cfc5b2; border-radius:0; background-color:#fffbf2; background-image:linear-gradient(90deg,#d8cdb01c 1px,transparent 1px),radial-gradient(#3e5f6209 .8px,transparent .8px); background-size:100% 100%,10px 10px; box-shadow:none; }
+.split > #workshopPanel { border-right:0; }
+.split > #mapPanel { position:relative; border-left:0; }
+.panel-head { position:relative; z-index:1; }
+.panel-head h2 { text-wrap:balance; }
+.book-map-side { display:none; padding:24px 4px; }
+.book-map-side .book-side-kicker { color:#a26e4e; font-size:11px; font-weight:850; letter-spacing:.16em; }
+.book-map-side h3 { color:#214758; font-size:clamp(30px,3.4vw,46px); line-height:1.19; margin:12px 0; letter-spacing:-.045em; }
+.book-map-side > p:not(.book-side-kicker) { color:#667f79; max-width:31ch; font-size:13px; line-height:1.9; }
+.book-map-side button { margin-top:12px; padding:8px 0; }
+body[data-book="map"] .split { --book-gutter:31%; grid-template-columns:minmax(245px,.42fr) minmax(0,1fr); }
+body[data-book="map"] #workshopPanel .creator-controls-column,body[data-book="map"] #workshopPanel .enter-tour,body[data-book="map"] #workshopPanel .departure-note { display:none; }
+body[data-book="map"] #workshopPanel .stage { min-height:300px; }
+body[data-book="map"] #workshopPanel .stage-hint { display:none; }
+body[data-book="map"] #workshopPanel .name-field { font-size:11px; }
+body[data-book="map"] .book-map-side { display:block; }
+body[data-book="map"] .map-wrap { height:clamp(630px,69vh,900px); }
+
+.book-map-preview { position:absolute; z-index:5; top:148px; left:clamp(17px,2.3vw,32px); right:clamp(17px,2.3vw,32px); height:clamp(510px,68vh,730px); display:flex; flex-direction:column; align-items:flex-start; justify-content:center; padding:clamp(27px,4vw,60px); color:#f8edce; background:#1f5363 url('/assets/winter-city-panorama.svg') center bottom / 120% auto no-repeat; border:3px solid #dfd3b8; box-shadow:inset 0 0 0 8px #1f5363,inset 0 0 0 9px #ffffff5b; pointer-events:none; }
+.book-map-preview::after { content:''; position:absolute; inset:0; background:linear-gradient(0deg,transparent 20%,#173f50c9 75%); pointer-events:none; }
+.book-map-preview > * { position:relative; z-index:1; }
+.book-map-preview > span { font-size:11px; font-weight:800; letter-spacing:.15em; color:#e6be86; }
+.book-map-preview h3 { margin:15px 0; font-size:clamp(29px,3.4vw,52px); line-height:1.18; letter-spacing:-.05em; }
+.book-map-preview p { max-width:31ch; margin:0; color:#dce5d8; font-size:13px; line-height:1.9; }
+.book-map-preview small { margin-top:20px; color:#e6c99a; font-size:11px; font-weight:800; }
+.preview-route { display:flex; align-items:center; gap:8px; margin-top:22px; }
+.preview-route i { width:12px; height:12px; border:2px solid #f0d6a5; border-radius:50%; }
+.preview-route i:not(:last-child)::after { content:''; display:block; width:17px; margin:3px 0 0 10px; border-top:1px dashed #f0d6a5; }
+body[data-book="creator"] #mapPanel .map-wrap { visibility:hidden; pointer-events:none; }
+body[data-book="creator"] #mapPanel .explore-tools { opacity:.16; pointer-events:none; }
+body[data-book="creator"] #mapPanel .live-summary,body[data-book="creator"] #mapPanel .stats-caption,body[data-book="creator"] #mapPanel .chips { display:none; }
+body[data-book="map"] .book-map-preview { display:none; }
+.book-contents { display:none; padding:30px 4px 18px; }
+body[data-book="creator"] .book-contents { display:block; }
+.contents-heading { display:flex; justify-content:space-between; align-items:baseline; gap:10px; padding-bottom:13px; border-bottom:2px solid #b39a79; }
+.contents-heading span { color:#214758; font-size:22px; font-weight:850; letter-spacing:-.03em; }
+.contents-heading small { color:#97795c; font-size:11px; }
+.contents-list { display:grid; grid-template-columns:1fr; padding-top:9px; }
+.contents-row { display:grid; grid-template-columns:28px 1fr auto; align-items:baseline; gap:6px; padding:11px 0; border-bottom:1px dashed #cbbca4; }
+.contents-row span { color:#b47c56; font-family:Georgia,serif; font-size:14px; font-weight:800; }
+.contents-row b { color:#365d66; font-size:12px; line-height:1.35; }
+.contents-row small { color:#9a9686; font-size:9px; white-space:nowrap; }
+
+.book-flip { position:fixed; inset:0; z-index:38; display:grid; place-items:center; pointer-events:none; perspective:1900px; }
+.book-flip[hidden] { display:none; }
+.book-flip-shade { position:absolute; inset:0; background:#183845a8; opacity:0; }
+.book-flip-volume { position:relative; display:grid; grid-template-columns:1fr 1fr; width:min(810px,calc(100vw - 34px)); height:min(530px,72dvh); min-height:300px; transform-style:preserve-3d; box-shadow:0 27px 72px #0b2d3d6b,11px 12px 0 #d9cbb1; will-change:transform,opacity; }
+.book-flip-volume::after { content:''; position:absolute; z-index:3; inset:0 auto 0 50%; width:18px; transform:translateX(-50%); background:linear-gradient(90deg,#79684f50,transparent 45%,#79684f38); pointer-events:none; }
+.book-flip-page,.book-flip-face { position:relative; display:flex; flex-direction:column; overflow:hidden; padding:clamp(19px,3vw,38px); border:1px solid #d5c9b3; background:#fff8e9; }
+.book-flip-page small,.book-flip-face small { position:relative; z-index:1; color:#aa7958; font-size:10px; font-weight:850; letter-spacing:.18em; }
+.book-flip-page strong,.book-flip-face strong { position:relative; z-index:1; display:block; margin-top:24px; color:#244e5a; font-size:clamp(23px,3vw,39px); line-height:1.24; letter-spacing:-.06em; }
+.book-flip-page span,.book-flip-face span { position:relative; z-index:1; margin-top:auto; padding-top:12px; border-top:1px solid #d3c6ab; color:#9c8264; font-size:10px; font-weight:750; letter-spacing:.08em; }
+.book-flip-left { background:#f8f0df; box-shadow:inset -16px 0 22px #a8947428; }
+.book-flip-right { background:#fffaf0; box-shadow:inset 17px 0 22px #a8947425; }
+.book-flip-right p { position:relative; z-index:1; max-width:20ch; color:#73877e; font-size:13px; line-height:1.8; }
+.book-flip-landscape { flex:1; min-height:70px; background:url('/assets/winter-city-panorama.svg') center bottom / contain no-repeat; opacity:.62; }
+.book-flip-leaf { position:absolute; z-index:2; top:0; bottom:0; left:50%; width:50%; transform-origin:left center; transform-style:preserve-3d; will-change:transform; }
+.book-flip-face { position:absolute; inset:0; backface-visibility:hidden; box-shadow:15px 15px 32px #16384645,inset 16px 0 22px #b8a78c30; }
+.book-flip-face i { flex:1; min-height:70px; background:url('/assets/winter-city-panorama.svg') center bottom / contain no-repeat; opacity:.45; }
+.book-flip-front { border-radius:0 10px 10px 0; }
+.book-flip-back { transform:rotateY(180deg); border-radius:10px 0 0 10px; background:#f7eedc; box-shadow:-15px 15px 32px #16384645,inset -16px 0 22px #b8a78c30; }
+.book-flip[data-direction="back"] .book-flip-leaf { left:0; transform-origin:right center; }
+.book-flip[data-direction="back"] .book-flip-front { border-radius:10px 0 0 10px; }
+.book-flip[data-direction="back"] .book-flip-back { border-radius:0 10px 10px 0; }
+
+.book-detail { position:fixed; inset:0; z-index:35; display:grid; place-items:center; padding:24px; }
+.book-detail[hidden] { display:none; }
+.book-detail-backdrop { position:absolute; inset:0; background:#123543d9; backdrop-filter:blur(7px); }
+.book-detail-spread { position:relative; display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); width:min(1300px,100%); height:min(850px,calc(100dvh - 48px)); min-height:560px; background:#fffaf0; box-shadow:0 28px 72px #071c2890,11px 12px 0 #d7c6a4; transform-origin:center; }
+.book-detail-spread::after { content:''; position:absolute; z-index:2; top:0; bottom:0; left:50%; width:25px; transform:translateX(-50%); background:linear-gradient(90deg,#a9a0892b,transparent 48%,#a9a0892b); pointer-events:none; }
+.book-detail-art { position:relative; overflow:hidden; padding:27px; background:#dcebe6; background-image:radial-gradient(#315b680e 1px,transparent 1px); background-size:9px 9px; border:1px solid #d7cfbd; }
+.detail-topline { position:relative; z-index:2; display:flex; justify-content:space-between; gap:10px; padding-bottom:12px; border-bottom:1px solid #9dbcb1; color:#436e70; font-size:10px; font-weight:800; letter-spacing:.1em; }
+#detailArt { display:block; width:100%; height:65%; margin-top:2%; object-fit:contain; border:8px solid #fff8e8; box-shadow:0 9px 24px #3e6c6e24; background:#e1f0ec; }
+.detail-art-caption { padding:18px 5px 0; }
+.detail-art-caption span { color:#a06d4c; font-size:11px; font-weight:850; letter-spacing:.14em; }
+.detail-art-caption h2 { margin:5px 0; color:#214758; font-size:clamp(25px,2.7vw,42px); letter-spacing:-.04em; line-height:1.25; }
+.detail-art-caption p { margin:0; color:#52757a; font-size:12px; }
+.book-detail-content { overflow:auto; padding:24px clamp(20px,3vw,48px) 32px; background:#fffbf2; scrollbar-color:#b9c5b9 transparent; }
+.detail-back { display:block; margin:0 0 17px auto; padding:7px 0; font-size:12px; }
+.book-detail .venue-card { position:relative; inset:auto; width:100%; max-height:none; overflow:visible; padding:0; border:0; border-radius:0; background:transparent; box-shadow:none; }
+.book-detail .venue-close { display:none; }
+.book-detail .venue-head { align-items:center; }
+.book-detail .venue-icon { width:114px; height:94px; }
+.book-detail .venue-head h3 { font-size:clamp(23px,2.2vw,34px); }
+.book-detail .venue-desc { font-size:14px; }
+.book-detail .venue-actions { position:static; background:transparent; }
+.book-detail .place-section { margin-top:22px; }
+
+@media(max-width:900px) {
+  .cover-desk { grid-template-columns:1fr; justify-items:center; gap:26px; padding:55px 25px 70px; }
+  .cover-volume { width:min(74vw,500px); }
+  .cover-intro { text-align:center; padding:0; }
+  .cover-intro button { margin:14px auto; }
+  .cover-event-ticket { position:relative; top:auto; right:auto; width:min(100%,300px); margin:-4px auto 0; transform:rotate(2deg); }
+  .cover-event-ticket > strong { font-size:23px; }
+  .chapter-aside { display:none; }
+  .book-map-preview { bottom:140px; }
+}
+@media(max-width:700px) {
+  .cover-desk { gap:22px; }
+  .cover-volume { width:min(80vw,390px); aspect-ratio:.86; }
+  .cover-front { padding:20px; }
+  .cover-heading h1 { font-size:clamp(42px,12vw,61px); }
+  .cover-panorama { inset:auto -20% 35px 0; height:36%; }
+  .cover-intro p { margin:0; font-size:18px; }
+  .cover-intro button { min-height:56px; width:270px; font-size:16px; }
+  .desk-note-top { top:18px; left:22px; }.desk-note-bottom { right:22px; bottom:17px; }
+  .book-chapter-bar { width:calc(100% - 20px); min-height:62px; margin-top:10px; padding:0 10px; gap:8px; overflow:auto; }
+  .book-back-cover { font-size:10px; }.chapter-item { font-size:10px; }.chapter-item b { width:23px; height:23px; margin-right:2px; font-size:12px; }
+  .page-flip-toggle { font-size:10px; padding:6px; }
+  .split,body[data-book="map"] .split { display:block; width:calc(100% - 20px); margin-bottom:30px; }
+  .split::before { display:none; }
+  .split > .panel { min-height:0; border:1px solid #cfc5b2; }
+  body[data-book="creator"] #mapPanel { min-height:410px; }
+  body[data-book="creator"] #mapPanel .explore-tools,body[data-book="creator"] #mapPanel .map-wrap,body[data-book="creator"] #mapPanel .live-summary,body[data-book="creator"] #mapPanel .stats-caption,body[data-book="creator"] #mapPanel .chips { display:none; }
+  .book-map-preview { position:relative; inset:auto; height:auto; min-height:320px; margin-top:16px; padding:26px; background-size:auto 78%; }
+  .book-contents { padding-top:25px; }
+  .contents-list { grid-template-columns:1fr; }
+  body[data-book="map"] #workshopPanel .stage { min-height:230px; }
+  body[data-book="map"] #workshopPanel .creator-layout { max-width:290px; }
+  body[data-book="map"] #workshopPanel .book-map-side { padding:6px 0 0; }
+  body[data-book="map"] #workshopPanel .book-map-side h3 { font-size:25px; }
+  body[data-book="map"] #workshopPanel .book-map-side p:not(.book-side-kicker) { display:none; }
+  body[data-book="map"] #mapPanel { border-top:0; }
+  .book-detail { padding:10px; }
+  .book-detail-spread { display:block; height:calc(100dvh - 20px); min-height:0; overflow:auto; }
+  .book-detail-spread::after { display:none; }
+  .book-detail-art { padding:16px; height:340px; }
+  #detailArt { height:230px; margin-top:10px; }
+  .detail-art-caption { padding-top:9px; }.detail-art-caption h2 { font-size:22px; }
+  .book-detail-content { overflow:visible; padding:18px 22px 35px; }
+  .book-flip-volume { height:min(390px,58dvh); min-height:270px; }
+  .book-flip-page,.book-flip-face { padding:17px; }
+  .book-flip-page strong,.book-flip-face strong { font-size:clamp(18px,4vw,26px); }
+  .book-flip-page p { font-size:11px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .cover-intro button,.chapter-item { transition:none; }
+}

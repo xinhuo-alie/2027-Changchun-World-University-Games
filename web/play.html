@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no"
+    />
+    <meta name="theme-color" content="#18324a" />
+    <meta name="description" content="翻开长春大运会冰雪漫游手册，制作卡通角色，走进冰雪场馆，再顺路探索长春景点。" />
+    <title>长春大运会冰雪漫游手册 · 角色与赛事地图</title>
+    <link rel="icon" type="image/svg+xml" href="/assets/winter-mark.svg" />
+    <link rel="stylesheet" href="/play-v2.css" />
+    <link rel="stylesheet" href="/explore.css" />
+    <link rel="stylesheet" href="/refine.css" />
+    <link rel="stylesheet" href="/book.css" />
+  </head>
+  <body data-book="cover">
+    <div class="book-cover" id="bookCover" role="dialog" aria-modal="true" aria-label="长春大运会冰雪漫游手册封面">
+      <div class="cover-desk">
+        <span class="desk-note desk-note-top">写给每一位来到冬天的人</span>
+        <div class="cover-volume" id="coverVolume">
+          <span class="cover-spine" aria-hidden="true"></span>
+          <div class="cover-page" aria-hidden="true"><span>01 / CHARACTER</span><strong>先从你开始，<br />奔向冰雪赛场。</strong><i></i><small>翻过封面，做一个属于自己的大运会同行角色。</small></div>
+          <div class="cover-leaf">
+          <div class="cover-front">
+            <div class="cover-edition"><span>长春 · 吉林市</span><span>冬日特辑 / 2027</span></div>
+            <div class="cover-heading"><small>WINTER GAMES FIELD GUIDE</small><h1>长春大运会<br />冰雪漫游<br /><em>手册</em></h1><p>先画一个自己，再走进冰雪赛场。</p></div>
+            <div class="cover-panorama" aria-hidden="true"></div>
+            <div class="cover-bottom"><span>10 座场馆 · 6 处城市景点</span><span class="cover-stamp">从赛场出发 ↗</span></div>
+          </div>
+          <div class="cover-inside" aria-hidden="true"><span>长春大运会冰雪漫游 · 扉页</span><div class="cover-inside-art"></div><strong>每场精彩，<br />都值得<br /><em>亲自出发。</em></strong><small>01 画出角色　 →　 02 走进赛场</small></div>
+          </div>
+        </div>
+        <div class="cover-intro"><p>从大运会赛场出发的旅行手册</p><button id="openBook" type="button">翻开第一页 <span>→</span></button><small>01 制作角色　·　02 冰雪赛场　·　03 城市延伸</small></div>
+        <div class="cover-event-ticket" aria-hidden="true"><div class="ticket-top"><span>2027 · CHANGCHUN</span><b>冬季大运会</b></div><strong>冰雪赛场<br />观赛路线</strong><div class="ticket-sports"><span>冰上竞技</span><span>雪上竞速</span><span>城市漫游</span></div><div class="ticket-foot"><b>10</b><span>个场馆优先探索<br />再认识长春的另一面</span><i>✳</i></div></div>
+        <span class="desk-note desk-note-bottom">CHANGCHUN · A WINTER TO EXPLORE</span>
+      </div>
+    </div>
+    <header class="top">
+      <nav class="topbar" aria-label="页面导航">
+        <a class="brand" href="#top" aria-label="长春冬日漫游首页">
+          <span class="brand-mark" aria-hidden="true">长春</span>
+          <span><b>冬日漫游</b><small>CHANGCHUN · 2027</small></span>
+        </a>
+        <div class="top-actions">
+          <a class="display-link" href="/display" target="_blank" rel="noopener">数据大屏 ↗</a>
+          <button class="sound-toggle" id="musicBtn" type="button" aria-pressed="false"><span>♫</span> 开启音乐</button>
+          <button class="ghost" id="helpBtn" type="button">玩法指南</button>
+          <button class="passport-button" id="passportBtn" type="button">我的纪念卡</button>
+        </div>
+      </nav>
+      <div class="hero" id="top">
+        <div class="hero-copy">
+          <p class="kicker"><span class="kicker-line" aria-hidden="true"></span> 长春 2027 · 冬季城市导览</p>
+          <h1>带上你的角色，<br /><em>去逛一座冬天的城。</em></h1>
+          <p class="hero-lead">用照片生成卡通形象，再从地图选一处想去的地方。角色抵达后，看看场馆与城市背后的故事。</p>
+          <div class="hero-actions">
+            <button class="hero-cta" id="startBtn" type="button">开始制作角色 <span>→</span></button>
+            <a class="event-link" href="https://changchun2027.fisu.net/" target="_blank" rel="noopener noreferrer">赛事官网 ↗</a>
+          </div>
+          <div class="hero-meta"><span><b>10</b> 座竞赛场馆</span><span><b>6</b> 处城市景点</span><span><b>16</b> 个可游览地点</span></div>
+        </div>
+        <div class="hero-art" aria-label="当前冰雪卡通分身预览">
+          <span class="hero-route" aria-hidden="true">长春 <i></i> 吉林市</span>
+          <div class="hero-avatar-card">
+            <div class="hero-avatar-top"><span id="heroAvatarLabel">角色预览</span> <small>01 / CHARACTER</small></div>
+            <img class="hero-style-preview" id="heroStylePreview" src="/assets/ski-figurine-style-preview.png" alt="原创冰雪运动手办风格示意" hidden />
+            <canvas id="heroAvatar" width="420" height="560" aria-label="你的完整冰雪角色"></canvas>
+            <div class="hero-avatar-bottom"><span>从这里出发</span><span>长春 · 吉林市</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="stamps hero-stamps" id="stampBox">
+        <div><span class="stamp-caption">我的冰雪护照</span><span class="stamp-text" id="stampText">已集 0 / 10 枚章</span></div>
+        <div class="stamp-row" id="stampRow"></div>
+      </div>
+    </header>
+
+    <div class="book-chapter-bar" id="bookChapterBar" aria-label="手册章节">
+      <button id="backToCover" type="button" class="book-back-cover">← 手册封面</button>
+      <span class="chapter-line" aria-hidden="true"></span>
+      <span class="chapter-item" data-chapter="creator"><b>01</b> 我的角色</span>
+      <span class="chapter-item" data-chapter="map"><b>02</b> 赛事地图</span>
+      <span class="chapter-item" data-chapter="detail"><b>03</b> 地点手记</span>
+      <button id="pageFlipToggle" class="page-flip-toggle" type="button" aria-pressed="false" title="开启后，每个地点介绍都会完整翻页；关闭时只在出发时翻页"><i aria-hidden="true"></i><span>逐页翻动</span></button>
+      <span class="chapter-aside">从冰雪赛场出发，顺路探索长春</span>
+    </div>
+
+    <main class="split" id="bookSpread">
+      <!-- 左半边：形象工坊 -->
+      <section class="panel" id="workshopPanel">
+        <div class="panel-head">
+          <span class="step">1</span>
+          <div><p class="panel-kicker">角色制作</p><h2>做一个自己的冰雪角色</h2></div>
+          <span class="panel-note" id="faceNote">等待生成角色</span>
+        </div>
+
+        <div class="creator-layout">
+        <div class="creator-preview-column">
+        <div class="stage">
+          <canvas id="stage"></canvas>
+          <div class="stage-hint" id="stageHint">
+            上传或拍摄照片，生成你的全身冰雪角色
+          </div>
+          <label class="name-field">
+            <span>名字</span>
+            <input id="nameInput" type="text" maxlength="8" placeholder="给自己起个名字" />
+          </label>
+        </div>
+
+        <button class="primary enter-tour" id="enterTour" type="button" disabled><span>✦</span> 带我去游览 <span>↗</span></button>
+        <p class="departure-note" id="departureNote" aria-live="polite">生成角色后，点击出发，让分身跃入冰雪赛场地图。</p>
+        </div>
+
+        <div class="creator-controls-column">
+        <nav class="tabs" id="tabs" role="tablist" hidden></nav>
+        <div class="tab-body" id="tabBody"></div>
+        </div>
+        </div>
+        <div class="book-map-side" id="bookMapSide">
+          <p class="book-side-kicker">旅行伙伴 · 已就位</p>
+          <h3>下一站，<br />由你来选。</h3>
+          <p>先选一座冰雪场馆，角色会沿着地图出发；城市景点也在路线上等你发现。</p>
+          <button id="editCharacter" type="button">← 返回角色页</button>
+        </div>
+      </section>
+
+      <!-- 右半边：场馆地图 -->
+      <section class="panel map-panel" id="mapPanel" tabindex="-1">
+        <div class="panel-head">
+          <span class="step">2</span>
+          <div><p class="panel-kicker">大运会 · 冰雪赛场</p><h2>跟着大运会走进冰雪赛场</h2></div>
+          <span class="panel-note" id="mapNote">场馆与城市景点</span>
+        </div>
+
+        <div class="explore-tools">
+          <div class="map-filters" role="group" aria-label="地点分类">
+            <button type="button" data-filter="all" aria-pressed="true">全部地点</button>
+            <button type="button" data-filter="venue" aria-pressed="false">冰雪场馆</button>
+            <button type="button" data-filter="attraction" aria-pressed="false">城市景点</button>
+          </div>
+          <span class="live-state" id="statsStatus" role="status">正在连接统计…</span>
+        </div>
+        <div class="book-map-preview" id="bookMapPreview">
+          <span>下一页 · 大运会赛事地图</span>
+          <h3>把角色带进<br />冰雪赛场。</h3>
+          <p>先看冰上与雪上的精彩场馆，再顺路认识长春的城市地标。角色完成后，赛事地图会在这一页展开。</p>
+          <div class="preview-route"><i></i><i></i><i></i><i></i><i></i></div>
+          <small>10 座场馆 / 6 处景点</small>
+        </div>
+        <div class="map-wrap">
+          <canvas id="map"></canvas>
+          <div class="map-actions">
+            <button class="round" id="zoomIn" type="button" title="放大">＋</button>
+            <button class="round" id="zoomOut" type="button" title="缩小">−</button>
+            <button class="round" id="fitBtn" type="button" title="看全图">⤢</button>
+          </div>
+          <div class="walk-bar" id="walkBar" hidden>
+            <span id="walkText">正在前往…</span>
+            <div class="walk-track"><div class="walk-fill" id="walkFill"></div></div>
+          </div>
+
+          <div class="venue-card" id="venueCard" hidden>
+            <button class="venue-close" id="venueClose" type="button">×</button>
+            <p class="place-eyebrow">到达记录 <span>·</span> 城市手记</p>
+            <div class="venue-head">
+              <canvas class="venue-icon" id="venueIcon" width="128" height="128"></canvas>
+              <div>
+                <h3 id="venueTitle"></h3>
+                <p class="venue-city" id="venueCity"></p>
+                <div class="sport-tags" id="venueSport"></div>
+              </div>
+            </div>
+            <p class="venue-addr" id="venueAddr"></p>
+            <p class="venue-teaser" id="venueTeaser"></p>
+            <p class="place-live"><span id="placeCount">0</span> 次云游到达 <small>· 全部访客累计</small></p>
+            <p class="venue-desc" id="venueDesc"></p>
+            <section class="place-section"><h4>值得发现</h4><ul id="placeHighlights"></ul></section>
+            <section class="place-section architecture"><h4>认一认这座地标</h4><p id="placeArchitecture"></p></section>
+            <section class="place-section"><h4>游览灵感</h4><p id="placeItinerary"></p><small id="placeDuration"></small></section>
+            <a class="place-source" id="placeSource" target="_blank" rel="noopener noreferrer">阅读资料来源 ↗</a>
+            <div class="venue-actions">
+              <button class="primary" id="venuePlay" type="button">玩这里的小游戏</button>
+            </div>
+          </div>
+
+          <div class="map-hint" id="mapHint">点击地标出发 · 到达后展开介绍并计入游览次数</div>
+        </div>
+
+        <section class="book-contents" aria-label="手册地点索引">
+          <div class="contents-heading"><span>场馆与城市索引</span><small>赛场优先 · 城市延伸</small></div>
+          <div id="bookContents" class="contents-list"></div>
+        </section>
+
+        <div class="live-summary" aria-live="polite"><div><small>累计云游到达</small><b id="totalVisits">0</b></div><div><small>今日游览</small><b id="todayVisits">0</b></div><div><small>城市探索节点</small><b id="placeTotal">16</b></div><a href="/display" target="_blank" rel="noopener">查看实时大屏 ↗</a></div>
+        <p class="stats-caption">统计口径：角色完成一次地点到达记 1 次；打开介绍、刷新页面不计数。数据为本项目虚拟游览记录。</p>
+        <div class="chips" id="chips"></div>
+      </section>
+    </main>
+
+    <div class="book-detail" id="bookDetail" hidden role="dialog" aria-modal="true" aria-label="地点手记">
+      <div class="book-detail-backdrop"></div>
+      <div class="book-detail-spread">
+        <div class="book-detail-art">
+          <div class="detail-topline"><span>长春大运会冰雪漫游 · 地点手记</span><span id="detailNumber">03 / 16</span></div>
+          <canvas id="detailArt" width="900" height="620" aria-label="地点建筑插画"></canvas>
+          <div class="detail-art-caption"><span id="detailKind">城市地标</span><h2 id="detailName">下一站</h2><p>走过一段路，读懂一个地方。</p></div>
+        </div>
+        <div class="book-detail-content" id="bookDetailContent">
+          <button type="button" class="detail-back" id="backToMap">← 返回地图，继续游览</button>
+        </div>
+      </div>
+    </div>
+    <div class="book-flip" id="bookFlip" hidden aria-hidden="true">
+      <div class="book-flip-shade"></div>
+      <div class="book-flip-volume">
+        <div class="book-flip-page book-flip-left"><small id="bookFlipFromNumber">01 / CHANGCHUN</small><strong id="bookFlipFrom">当前章节</strong><div class="book-flip-landscape"></div><span>长春大运会冰雪漫游手册</span></div>
+        <div class="book-flip-page book-flip-right"><small id="bookFlipToNumber">02 / CHANGCHUN</small><strong id="bookFlipLabel">下一页</strong><p id="bookFlipCaption">把这一页的故事带到下一站。</p><span>翻开，继续漫游 ↗</span></div>
+        <div class="book-flip-leaf">
+          <div class="book-flip-face book-flip-front"><small id="bookFlipLeafNumber">01 / FIELD GUIDE</small><strong id="bookFlipLeafTitle">当前章节</strong><i></i><span>长春 · 大运会冰雪漫游</span></div>
+          <div class="book-flip-face book-flip-back"><small>CHANGCHUN / 2027</small><strong>下一页，<br />继续出发。</strong><i></i><span>大运会冰雪漫游手册</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 照片取景 / 抠图 -->
+    <div class="sheet" id="photoSheet" hidden>
+      <div class="sheet-panel editor">
+        <h2>抠出你的头像</h2>
+        <p class="sheet-sub">
+          拖动取景框圈住脸，按需擦除背景。取景和抠图在浏览器完成；点击生成后，照片会发送给所选的生图服务。
+        </p>
+        <div class="editor-grid">
+          <div class="editor-canvas-wrap">
+            <canvas id="editor" width="480" height="480"></canvas>
+          </div>
+          <div class="editor-side">
+            <p class="side-title">效果预览</p>
+            <canvas id="editorPreview"></canvas>
+            <p class="side-title" id="editorTip">自动抠图中…</p>
+            <label class="field">
+              <span>抠图容差</span>
+              <input id="tolRange" type="range" min="8" max="120" value="40" />
+            </label>
+            <label class="field">
+              <span>取景大小</span>
+              <input id="radiusRange" type="range" min="26" max="46" value="38" />
+            </label>
+            <div class="brush-row">
+              <button class="chip" id="brushErase" type="button" data-mode="erase">橡皮</button>
+              <button class="chip" id="brushRestore" type="button" data-mode="restore">补回</button>
+              <input id="brushRange" type="range" min="6" max="40" value="16" />
+            </div>
+          </div>
+        </div>
+        <div class="sheet-actions">
+          <button class="ghost" id="editorRetry" type="button">换一张照片</button>
+          <button class="ghost" id="editorReset" type="button">重置取景</button>
+          <button class="ghost" id="editorCancel" type="button">取消</button>
+          <button class="primary" id="editorConfirm" type="button">就用这张</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 摄像头 -->
+    <div class="sheet" id="camSheet" hidden>
+      <div class="sheet-panel cam">
+        <h2>对着镜头，让全身尽量进入画面</h2>
+        <div class="cam-wrap">
+          <video id="camVideo" playsinline muted autoplay></video>
+        </div>
+        <p class="sheet-sub" id="camTip">人物完整入镜、光线清楚，生成的全身角色会更准确。</p>
+        <div class="sheet-actions">
+          <button class="ghost" id="camCancel" type="button">取消</button>
+          <button class="primary" id="camShot" type="button">拍照</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 玩法 -->
+    <div class="sheet" id="helpSheet" hidden>
+      <div class="sheet-panel">
+        <h2>怎么玩</h2>
+        <ul class="help-list">
+          <li><b>第一页</b>：拍照或上传 → 选择画风与运动 → 生成完整冰雪角色</li>
+          <li><b>第二页</b>：点击「带我去游览」，角色会跳入赛事地图</li>
+          <li><b>地点手记</b>：点任意场馆或景点，角色到达后再翻开介绍页</li>
+          <li>在场馆手记里进入小游戏，<b>挑战成功可收集纪念章</b></li>
+          <li>地图可以拖动、滚轮 / 双指缩放，也可以在下面那排名字里点</li>
+          <li>形象和进度只存在你自己的浏览器里，刷新还在</li>
+        </ul>
+        <div class="sheet-actions">
+          <button class="primary" id="helpClose" type="button">知道了</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 小游戏：结构必须和 minigames.js 里查的 id 一致 -->
+    <div class="mg" id="mg" hidden>
+      <div class="mg-panel">
+        <div class="mg-head">
+          <div>
+            <p class="mg-title" id="mgTitle"></p>
+            <p class="mg-sub" id="mgSub"></p>
+          </div>
+          <button class="mg-close" id="mgClose" type="button">×</button>
+        </div>
+        <canvas id="mgCanvas"></canvas>
+        <p class="mg-hint" id="mgHint"></p>
+        <div class="mg-controls" id="mgControls">
+          <button class="mg-btn" data-act="left" type="button">←</button>
+          <button class="mg-btn primary" data-act="primary" type="button">锁定</button>
+          <button class="mg-btn" data-act="right" type="button">→</button>
+        </div>
+        <div class="mg-result" id="mgResult" hidden>
+          <p class="mg-result-text" id="mgResultText"></p>
+          <div class="mg-result-actions">
+            <button class="mg-btn primary" id="mgAgain" type="button">再来一次</button>
+            <button class="mg-btn" id="mgExit" type="button">返回场馆</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="loading" id="loading">
+      <div class="loading-inner">
+        <div class="spinner"></div>
+        <p id="loadingText">正在准备画布…</p>
+      </div>
+    </div>
+
+    <input id="fileInput" type="file" accept="image/*" hidden />
+    <script type="module" src="/play.js"></script>
+  </body>
+</html>

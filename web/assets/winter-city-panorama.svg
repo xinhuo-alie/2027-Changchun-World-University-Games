@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 470" fill="none">
+  <defs>
+    <pattern id="grain" width="12" height="12" patternUnits="userSpaceOnUse"><circle cx="2" cy="4" r=".7" fill="#fff" opacity=".23"/><circle cx="9" cy="10" r=".5" fill="#fff" opacity=".2"/></pattern>
+    <pattern id="windows" width="22" height="25" patternUnits="userSpaceOnUse"><rect x="7" y="8" width="6" height="9" rx="1" fill="#d8e4db" opacity=".78"/></pattern>
+  </defs>
+  <path d="M0 280c76-40 134-48 214-34 99-72 208-76 315-23 77-35 146-23 210 13 67-12 116-1 161 21v213H0Z" fill="#315b6f"/>
+  <path d="M0 313c94-31 150-28 229 4 68-40 151-49 239-15 74-38 167-31 249 8 81-28 129-20 183-5v165H0Z" fill="#497b86"/>
+  <path d="M0 357c95-17 161-9 253 26 115-38 192-36 271 0 100-36 177-31 259-4 47-12 89-14 117-6v97H0Z" fill="#d0dfd9"/>
+  <path d="M0 391c108-11 184 8 270 25 108-26 171-22 271-3 101-27 227-26 359-14v71H0Z" fill="#e8ede2"/>
+  <path d="M0 433c175-37 261-22 413-4 153 19 250-26 487-7v48H0Z" fill="#f2f2e9"/>
+
+  <!-- stadium: broad curved roof and open entry rhythm -->
+  <g stroke="#143b52" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M115 306c20-51 81-83 169-84 91 1 149 31 174 84l-14 14H129Z" fill="#e5ede3" stroke-width="5"/>
+    <path d="M151 299c27-32 74-50 133-50 61 0 111 18 139 50" stroke="#82b1b6" stroke-width="4"/>
+    <path d="M174 301c24-21 65-34 110-34 48 0 90 12 115 34" stroke="#7aa6ae" stroke-width="3"/>
+    <path d="M129 318h315v68H129Z" fill="#214a60" stroke-width="5"/>
+    <path d="M142 319h291v60H142Z" fill="url(#windows)" stroke="none"/>
+    <path d="M129 337h315M129 363h315" stroke="#91b8b7" stroke-width="3"/>
+    <path d="M164 319v62m40-62v62m40-62v62m40-62v62m40-62v62m40-62v62m40-62v62" stroke="#b6d0c8" stroke-width="2"/>
+    <path d="M116 388h343" stroke="#163d51" stroke-width="7"/>
+  </g>
+
+  <!-- landmark hall / museum silhouette -->
+  <g stroke="#143b52" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M564 280h157l17 14H548Z" fill="#dab89a" stroke-width="4"/>
+    <path d="M566 295h154v88H566Z" fill="#f1e3ce" stroke-width="4"/>
+    <path d="M585 319h116v64H585Z" fill="#547986" stroke-width="3"/>
+    <path d="M642 306v77M608 320v63m69-63v63" stroke="#e9d8c2" stroke-width="7"/>
+    <path d="M582 282c11-31 30-44 61-44 31 0 53 15 65 44" fill="#6f9898" stroke-width="4"/>
+    <path d="M618 236c5-19 10-25 25-29 16 3 21 13 26 29" fill="#f0e3cb" stroke-width="4"/>
+    <path d="M643 208v-24" stroke-width="4"/>
+    <path d="M543 387h199" stroke-width="6"/>
+  </g>
+
+  <!-- individual pines and lamp posts make it a place, not a generic skyline -->
+  <g stroke="#183f50" stroke-width="3" stroke-linejoin="round">
+    <path d="M49 394v-73"/><path d="m49 282-27 41h54Zm0 26-36 49h72Zm0 29-44 57h88Z" fill="#4b8079"/>
+    <path d="M88 393v-60"/><path d="m88 303-22 36h44Zm0 27-29 42h58Zm0 29-35 38h70Z" fill="#6e9d91"/>
+    <path d="M486 397v-71"/><path d="m486 292-25 40h50Zm0 31-33 42h66Zm0 30-39 41h78Z" fill="#537f77"/>
+    <path d="M773 394v-67"/><path d="m773 294-24 41h48Zm0 30-32 44h64Zm0 29-37 42h74Z" fill="#4f8379"/>
+    <path d="M824 398v-59"/><path d="m824 316-19 32h38Zm0 24-26 39h52Zm0 26-30 30h60Z" fill="#6a998a"/>
+  </g>
+  <g fill="#e2c69e" stroke="#244b5d" stroke-width="2">
+    <path d="M501 314v83M494 313c0-11 16-11 16 0s-16 11-16 0Z"/>
+    <path d="M747 303v91M739 303c0-11 16-11 16 0s-16 11-16 0Z"/>
+  </g>
+  <path d="M0 414c82-15 161 0 247 15 99 12 193-25 304-16 101 9 196 25 349-2" stroke="#87adb0" stroke-width="4" stroke-linecap="round" stroke-dasharray="18 16" opacity=".65"/>
+  <g fill="#ebf1e9" opacity=".86"><circle cx="131" cy="88" r="3"/><circle cx="371" cy="72" r="2"/><circle cx="546" cy="120" r="3"/><circle cx="804" cy="88" r="2"/><circle cx="750" cy="171" r="3"/><circle cx="320" cy="133" r="2"/><circle cx="43" cy="170" r="2"/></g>
+  <rect width="900" height="470" fill="url(#grain)" opacity=".42"/>
+</svg>

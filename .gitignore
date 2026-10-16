@@ -1,0 +1,34 @@
+node_modules/
+.env
+
+# 运行时产物
+data/results/
+data/uploads/
+
+# 系统
+.DS_Store
+Thumbs.db
+
+# 自检工具产物
+.cdp-profile/
+browser-shot.png
+browser-shot*.png
+data/generated/
+data/characters/
+data/visits.json
+data/visits.json.tmp
+data/server.*.log
+data/preview-explore*.png
+data/figure-*.rgba
+data/figure-*.png
+data/figure-*.jpg
+
+# 本地设计预览截图
+/preview-*.png
+/book-opening-preview.png
+/universiade-cover-preview.png
+
+# 不提交本地/历史用户照片和生成样例
+/docs/samples/
+/web/assets/user-photo.jpg
+/web/assets/avatar.jpg

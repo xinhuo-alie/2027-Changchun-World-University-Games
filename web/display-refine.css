@@ -1,0 +1,80 @@
+:root { background:#18324a; color:#eef3ef; font-family:'Segoe UI','Microsoft YaHei',sans-serif; }
+body { background:#18324a; }
+.screen-header { border-bottom-color:#ffffff2b; }
+.screen-brand { gap:11px; color:#e8f0e9; font-size:inherit; }
+.screen-brand b { display:grid; place-items:center; width:42px; height:42px; border-radius:4px; color:#18324a; background:#c9e1dc; font-size:11px; letter-spacing:.03em; }
+.screen-brand>span { color:#f0f3ed; font-size:17px; }
+.screen-brand small { color:#aabfc4; letter-spacing:.08em; }
+.screen-title p { color:#afc5c8; letter-spacing:.18em; }
+.screen-title h1 { font-size:clamp(23px,2vw,32px); letter-spacing:.015em; }
+.screen-tools button { border-radius:4px; color:#e2ece9; background:#275166; }
+.metric-grid { gap:0; border:1px solid #ffffff2b; border-radius:5px; background:#203c52; }
+.metric-grid>div { border:0; border-right:1px solid #ffffff24; border-radius:0; background:none; padding:17px 23px; }
+.metric-grid>div:last-child { border-right:0; }
+.metric-grid>div:after { content:none; }
+.metric-grid span { color:#bdd0d3; }
+.metric-grid strong, .metric-grid>div:nth-child(2) strong, .metric-grid>div:nth-child(3) strong, .metric-grid>div:nth-child(4) strong { color:#f0f5ed; font-size:clamp(32px,3vw,50px); font-weight:600; }
+.metric-grid small { color:#9fb9bf; letter-spacing:0; }
+.glass { border-color:#ffffff2b; border-radius:5px; background:#203c52; }
+.section-heading h2 { font-weight:650; letter-spacing:0; }
+.section-heading>span, .rank-key { color:#a6bdc4; }
+.section-heading i { background:#a9d8bd; }
+.section-heading button { border-radius:3px; color:#c7dbd9; }
+.rank-row:hover,.rank-row.selected { background:#2e5369; }
+.rank-name { color:#e0e9e6; }
+.rank-values { color:#c6e3dc; }
+.rank-bar { background:#7faaa9; }
+.rank-row[data-kind=attraction] .rank-bar { background:#bc9d76; }
+.display-map-wrap, #placeArt, .map-legend, .display-map-controls button { border-radius:4px; }
+.map-foot, .screen-footer { color:#b0c1c6; }
+.spotlight-copy>span { border-radius:3px; color:#cbe0d8; background:#38606a; }
+.spotlight-copy p { color:#bfd0d0; }
+.spotlight-copy #placeStory { color:#a3bcbf; }
+.spotlight-stat b { color:#e2eee5; }
+.recent-row { color:#d7e4df; }
+.screen-footer a { color:#cae3db; }
+@media(max-width:700px) { .metric-grid { gap:0; }.metric-grid>div:nth-child(2) { border-right:0; }.metric-grid>div:nth-child(-n+2) { border-bottom:1px solid #ffffff24; } }
+
+/* 与互动页共用冬日旅行手册的色彩和切角，保留大屏的数据密度。 */
+:root { background:#173b50; }
+body { background:#173b50; }
+.screen-header { position:relative; isolation:isolate; border-bottom-color:#d8e6d544; }
+.screen-header::before {
+  content:''; position:absolute; right:15%; bottom:-14px; width:35%; height:95px;
+  z-index:-1; opacity:.3; pointer-events:none;
+  background:url('/assets/winter-city-panorama.svg') center bottom / contain no-repeat;
+}
+.screen-brand b { color:#214f5d; background:#f4e2c2; border-radius:12px 4px 12px 4px; transform:rotate(-5deg); box-shadow:2px 3px 0 #0e2d3c; }
+.screen-title p { color:#e7c899; }
+.screen-title h1 { color:#fbf4e6; letter-spacing:.01em; }
+.screen-tools button { border-radius:10px 3px 10px 3px; background:#2b6570; }
+.metric-grid { border-color:#7ba59966; border-radius:15px 4px 15px 4px; background:#204c5d; box-shadow:0 8px 24px #0a2c3b38; }
+.metric-grid>div { position:relative; }
+.metric-grid>div::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:#b3d4bd; }
+.metric-grid>div:nth-child(2)::before { background:#e8c291; }
+.metric-grid>div:nth-child(3)::before { background:#8abec4; }
+.metric-grid>div:nth-child(4)::before { background:#c98d6a; }
+.metric-grid span { color:#d7e7dd; }
+.metric-grid strong,.metric-grid>div:nth-child(2) strong,.metric-grid>div:nth-child(3) strong,.metric-grid>div:nth-child(4) strong { color:#f6dfb5; font-family:Georgia,'Microsoft YaHei',serif; font-weight:700; }
+.metric-grid small { color:#b4d0cb; }
+.glass { background:#1e495a; border-color:#8eb5aa60; border-radius:15px 4px 15px 4px; box-shadow:0 5px 16px #0b293728; }
+.section-heading { border-bottom:1px dashed #96b6aa44; }
+.section-heading h2 { color:#f8efdc; font-size:15px; font-weight:750; }
+.section-heading>span,.rank-key { color:#b5ccc5; }
+.rank-row:hover,.rank-row.selected { background:#346778; }
+.rank-row.selected { box-shadow:inset 3px 0 #e3c38f; }
+.rank-row:nth-child(-n+3) .rank-index { color:#f2cf91; }
+.rank-name { color:#f3f0e5; }
+.rank-values { color:#d6e7d8; }
+.rank-bar { background:#92c3ae; }
+.rank-row[data-kind=attraction] .rank-bar { background:#dbad80; }
+.display-map-wrap { border:4px solid #b9d1c1; border-radius:10px 3px 10px 3px; }
+.map-legend,.display-map-controls button { border-radius:9px 3px 9px 3px; }
+#placeArt { border:3px solid #c1d8c6; border-radius:10px 3px 10px 3px; }
+.spotlight-copy>span { background:#e6c99a; color:#214a57; border-radius:7px 2px 7px 2px; font-weight:700; }
+.spotlight-copy h3 { color:#fff2dc; }
+.spotlight-stat b { color:#f3d49f; font-family:Georgia,'Microsoft YaHei',serif; font-weight:700; }
+.recent-row:before { background:#e3bd8c; }
+.screen-footer,.map-foot { color:#d0ddd2; }
+.screen-footer a { color:#f1d5a8; }
+@media(max-width:700px) { .screen-header::before { display:none; } }
