@@ -8,10 +8,20 @@
 
 ```powershell
 Copy-Item .env.example .env
+notepad .env
 node server/index.js
 ```
 
-打开 `http://localhost:5173/`。在同一台服务器上打开 `http://localhost:5173/display` 可展示大屏。若 `.env` 已存在，保留原有文件；无需再次复制。服务端配置变更后需要重启 Node 进程。
+打开 `.env` 后，选择图像生成渠道并填写对应密钥。例如使用豆包 Seedream：
+
+```dotenv
+IMAGE_PROVIDER=doubao
+ARK_API_KEY=在火山方舟获取的API密钥
+```
+
+保存后运行 `node server/index.js`。打开 `http://localhost:5173/`；在同一台服务器上打开 `http://localhost:5173/display` 可展示大屏。若 `.env` 已存在，保留并编辑现有文件，无需再次复制。服务端配置变更后需要重启 Node 进程。
+
+仓库中的 `.env.example` 只提供空白配置模板，**不包含任何可用 API 密钥**。`.env` 已加入 Git 忽略规则，不会随项目提交；请只在本地 `.env` 中填写密钥，不要将密钥粘贴到源码、README、截图或公开仓库中。无需使用豆包时可保留 `IMAGE_PROVIDER=mock`，该模式不需要密钥。
 
 ## 角色与地图
 
