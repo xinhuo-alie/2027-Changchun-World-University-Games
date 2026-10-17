@@ -9,7 +9,7 @@
  * 按真实比例走过去要几十分钟，云展览体验会崩。所以一切以便于游览为准。
  *
  * building：程序化建模用的建筑类型与参数（不调用任何生成接口）
- * game：该场馆的小游戏配置（三套引擎 + 参数化，见 web/minigames.js）
+ * game：按比赛项目分配的小游戏配置（玩法见 web/minigame-redesign.js）
  */
 
 export const VENUES = [
@@ -29,9 +29,9 @@ export const VENUES = [
     game: {
       engine: 'rhythm',
       title: '短道速滑 500 米',
-      subtitle: '左右交替点击加速，冲过终点',
+      subtitle: '踩准冰面节拍，交替蹬冰追上对手',
       icon: '⛸️',
-      params: { target: 500, rival: 0.62, unit: '米', accent: '#4FA8E8', duration: 10 },
+      params: { target: 500, rival: 0.64, unit: '米', accent: '#4FA8E8', duration: 18 },
     },
   },
   {
@@ -49,9 +49,9 @@ export const VENUES = [
     game: {
       engine: 'rhythm',
       title: '速度滑冰 1000 米',
-      subtitle: '节奏越稳越快，别乱了步频',
+      subtitle: '抓准步频，在长直道上连续踩出完美节拍',
       icon: '⛸️',
-      params: { target: 1000, rival: 0.68, unit: '米', accent: '#5FD3E8', duration: 10 },
+      params: { target: 1000, rival: 0.72, unit: '米', accent: '#5FD3E8', duration: 18, period: 0.58 },
     },
   },
   {
@@ -69,9 +69,9 @@ export const VENUES = [
     game: {
       engine: 'aim',
       title: '冰壶 · 最后一投',
-      subtitle: '控制力度与方向，把壶送进靶心',
+      subtitle: '选好力量和路线，用最后几壶争夺营心',
       icon: '🥌',
-      params: { rings: 4, unit: '分', accent: '#FF9EBE', duration: 10 },
+      params: { mode: 'curling', rounds: 3, goal: 7, unit: '分', accent: '#FF9EBE' },
     },
   },
   {
@@ -89,9 +89,9 @@ export const VENUES = [
     game: {
       engine: 'aim',
       title: '冰球射门',
-      subtitle: '瞄准球门死角，守门员会移动',
+      subtitle: '读守门员的移动方向，连续完成五次点球',
       icon: '🏒',
-      params: { rings: 3, unit: '分', accent: '#7FE0C4', moving: true, duration: 10 },
+      params: { mode: 'hockey', shots: 5, goalieSpeed: 1.1, unit: '球', accent: '#7FE0C4' },
     },
   },
   {
@@ -109,9 +109,9 @@ export const VENUES = [
     game: {
       engine: 'aim',
       title: '冰球点球大战',
-      subtitle: '决赛场馆，三次出手定胜负',
+      subtitle: '决赛点球大战，读守门员移动，在五次射门中争取破门',
       icon: '🥅',
-      params: { rings: 3, unit: '分', accent: '#7FA8F0', moving: true, duration: 10 },
+      params: { mode: 'hockey', shots: 5, goalieSpeed: 1.55, unit: '球', accent: '#7FA8F0' },
     },
   },
   {
@@ -127,11 +127,11 @@ export const VENUES = [
     color: '#6FD6B4',
     building: { type: 'ski', peaks: 3, snowTrails: 4, forest: true, lake: true },
     game: {
-      engine: 'jump',
-      title: '越野滑雪',
-      subtitle: '跳过雪堆和岩石，一路冲到终点',
+      engine: 'endurance',
+      title: '净月雪野耐力赛',
+      subtitle: '管理体力节奏，在上坡与下坡间滑向终点',
       icon: '🎿',
-      params: { speed: 1.0, unit: '分', accent: '#6FD6B4', duration: 10 },
+      params: { target: 1180, unit: '米', accent: '#6FD6B4', duration: 20 },
     },
   },
   {
@@ -149,9 +149,9 @@ export const VENUES = [
     game: {
       engine: 'jump',
       title: '空中技巧',
-      subtitle: '起跳越过障碍，时机决定得分',
+      subtitle: '踩准起跳点、空中控姿势，稳稳完成三次落地',
       icon: '🤸',
-      params: { speed: 1.25, unit: '分', accent: '#A9D6FF', duration: 10 },
+      params: { jumps: 3, goal: 12, unit: '分', accent: '#A9D6FF' },
     },
   },
   {
@@ -167,11 +167,11 @@ export const VENUES = [
     color: '#B79BE8',
     building: { type: 'park', sculptures: 9, radius: 22 },
     game: {
-      engine: 'jump',
-      title: '冬季越野跑',
-      subtitle: '跳过雪堆与冰堆，跑到终点',
+      engine: 'dodge',
+      title: '雕塑雪径旗门赛',
+      subtitle: '沿雕塑园雪径选线穿门，积攒能量完成冲刺',
       icon: '🏃',
-      params: { speed: 0.9, unit: '分', accent: '#B79BE8', duration: 10 },
+      params: { speed: 0.88, gates: 7, goal: 13, unit: '分', accent: '#B79BE8', duration: 17 },
     },
   },
   {
@@ -189,9 +189,9 @@ export const VENUES = [
     game: {
       engine: 'dodge',
       title: '单板平行大回转',
-      subtitle: '贴着旗门过，离杆越近越快',
+      subtitle: '在山道上连续穿旗门，抓住时机发动冲刺',
       icon: '🏂',
-      params: { speed: 1.2, gates: 5, unit: '分', accent: '#FFB1A0', duration: 10 },
+      params: { speed: 1.08, gates: 8, goal: 16, unit: '分', accent: '#FFB1A0', duration: 17 },
     },
   },
   {
@@ -209,9 +209,9 @@ export const VENUES = [
     game: {
       engine: 'dodge',
       title: '高山滑雪大回转',
-      subtitle: '最快的雪道，容错最低',
+      subtitle: '高速大回转：旗门更密，路线判断必须提前',
       icon: '⛷️',
-      params: { speed: 1.4, gates: 5, unit: '分', accent: '#8FD0FF', duration: 10 },
+      params: { speed: 1.26, gates: 8, goal: 17, unit: '分', accent: '#8FD0FF', duration: 17 },
     },
   },
 ];

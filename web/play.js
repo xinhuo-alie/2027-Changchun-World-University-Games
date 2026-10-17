@@ -16,6 +16,13 @@ import { createMapView, drawVenueIcon } from '/venues2d.js';
 import { drawVenueIllustration } from '/venue-art.js';
 import { createMinigameHost } from '/minigames.js';
 import { createSoundscape } from '/soundscape.js';
+import { createProgressStore } from '/progress.js';
+import { createQuiz } from '/quiz.js';
+import { QUIZ_QUESTIONS } from '/quiz-questions.js';
+import {
+  CREATIVE_GROUPS, CREATIVE_PRESETS, DEFAULT_CREATIVE, normalizeCreative,
+  recommendCreativeForSport, applyCreativePreset, randomCreative, clearCreativeDetails,
+} from '/creative-config.js';
 import {
   defaultConfig,
   presetConfig,
@@ -51,7 +58,6 @@ const $ = (id) => document.getElementById(id);
 // 编辑工作区的边长。取 640 而不是 384：全身照里脸只占画面一成多，
 // 工作区分辨率太低，抠出来的脸放大到 256 就糊了。泛洪在 640² 上仍是几十毫秒级。
 const EDITOR_SIZE = 640;
-const PROGRESS_KEY = 'cc2027:progress';
 const CREATIVE_KEY = 'cc2027:creative';
 const ARTWORK_KEY = 'cc2027:last-artwork';
 function loadArtworkUrl() {
@@ -60,36 +66,14 @@ function loadArtworkUrl() {
     return /^\/data\/results\/[a-f0-9-]+\.(png|jpe?g|webp)$/.test(url || '') ? url : null;
   } catch { return null; }
 }
-const CREATIVE_OPTIONS = {
-  vibe: [
-    ['snow', '❄', '冰雪潮玩', '蓬松软萌 · 奶油质感'],
-    ['street', '✦', '街头酷玩', '廓形穿搭 · 潮流配饰'],
-    ['sweet', '♡', '甜梦收藏', '糖霜色彩 · 精致娃娃'],
-    ['retro', '●', '复古俏皮', '波点图案 · 张扬姿态'],
-    ['future', '◇', '未来雪域', '极简科技 · 银白光泽'],
-  ],
-  sport: [
-    ['ski', '双板滑雪'], ['snowboard', '单板滑雪'], ['skate', '花样滑冰'],
-    ['curling', '冰壶'], ['hockey', '冰球'],
-  ],
-  scene: [
-    ['studio', '收藏级影棚'], ['mountain', '雪山赛道'],
-    ['rink', '梦幻冰场'], ['aurora', '极光夜色'],
-  ],
-};
 function loadCreative() {
   try {
-    const saved = JSON.parse(localStorage.getItem(CREATIVE_KEY) || '{}');
-    return {
-      vibe: CREATIVE_OPTIONS.vibe.some(([id]) => id === saved.vibe) ? saved.vibe : 'snow',
-      sport: CREATIVE_OPTIONS.sport.some(([id]) => id === saved.sport) ? saved.sport : 'ski',
-      scene: CREATIVE_OPTIONS.scene.some(([id]) => id === saved.scene) ? saved.scene : 'studio',
-      details: typeof saved.details === 'string' ? saved.details.slice(0, 240) : '',
-    };
-  } catch { return { vibe: 'snow', sport: 'ski', scene: 'studio', details: '' }; }
+    return normalizeCreative(JSON.parse(localStorage.getItem(CREATIVE_KEY) || '{}'));
+  } catch { return normalizeCreative(DEFAULT_CREATIVE); }
 }
 function saveCreative() {
-  try { localStorage.setItem(CREATIVE_KEY, JSON.stringify(state.creative)); } catch { /* private browsing */ }
+  state.creative = normalizeCreative(state.creative);
+  try { localStorage.setItem(CREATIVE_KEY, JSON.stringify(state.creative)); } catch { /* private browsing: keep this session usable */ }
 }
 const soundscape = createSoundscape();
 let tourEntered = false;
@@ -105,11 +89,18 @@ const state = {
   providerId: null,
   styleId: 'avatar',
   creative: loadCreative(),
+  workshopOpen: { presets: false, base: true, personality: false, visual: false, custom: false },
+  workshopGroupOpen: { style: true },
+  workshopMessage: '',
   generatedArtworkUrl: loadArtworkUrl(),
   tab: 'photo',
   activeId: null,
   visited: new Set(),
-  stamps: new Set(),
+  medals: new Set(),
+  bestScores: {},
+  goalieBest: 0,
+  quizBest: 0,
+  quizBadge: false,
   photo: null, // 见 openEditor
   pendingVenue: null,
 };
@@ -118,26 +109,26 @@ const state = {
 /* 进度存取                                                            */
 /* ------------------------------------------------------------------ */
 
+let progressStore = null;
 function loadProgress() {
-  try {
-    const raw = JSON.parse(localStorage.getItem(PROGRESS_KEY) || '{}');
-    state.visited = new Set(raw.visited || []);
-    state.stamps = new Set(raw.stamps || []);
-  } catch {
-    state.visited = new Set();
-    state.stamps = new Set();
-  }
+  progressStore = createProgressStore({
+    getItem: (key) => localStorage.getItem(key),
+    setItem: (key, value) => localStorage.setItem(key, value),
+  }, state.venues.map((place) => place.id), state.venues.filter((place) => place.kind === 'venue').map((place) => place.id));
+  const saved = progressStore.load();
+  state.visited = new Set(saved.explored);
+  state.medals = new Set(saved.medals);
+  state.bestScores = saved.bestScores;
+  state.goalieBest = saved.goalieBest;
+  state.quizBest = saved.quizBest;
+  state.quizBadge = saved.quizBadge;
 }
 
 function saveProgress() {
-  try {
-    localStorage.setItem(
-      PROGRESS_KEY,
-      JSON.stringify({ visited: [...state.visited], stamps: [...state.stamps] }),
-    );
-  } catch {
-    /* 隐私模式下存不上，不影响本次游玩 */
-  }
+  progressStore?.save({
+    explored: [...state.visited], medals: [...state.medals], bestScores: state.bestScores,
+    goalieBest: state.goalieBest, quizBest: state.quizBest, quizBadge: state.quizBadge,
+  });
 }
 
 /* ------------------------------------------------------------------ */
@@ -282,19 +273,21 @@ function exportPassport() {
   ctx.fillText(`${state.cfg.name || '冰雪旅行者'}的冰雪分身`, 540, 1040);
   ctx.fillStyle = '#fff';
   ctx.font = 'bold 32px "Microsoft YaHei", sans-serif';
-  ctx.fillText(`已探索 ${state.visited.size} 座场馆 · 收集 ${state.stamps.size} 枚纪念章`, 540, 1160);
+  ctx.fillText(`已探索 ${state.visited.size} / ${state.venues.length} 个地点 · 场馆挑战奖章 ${state.medals.size} / ${state.venues.filter((place) => place.kind === 'venue').length}`, 540, 1160);
   for (let i = 0; i < 10; i++) {
     ctx.beginPath();
     ctx.arc(153 + i * 86, 1235, 25, 0, Math.PI * 2);
-    ctx.fillStyle = i < state.stamps.size ? '#9ee9e1' : '#ffffff26';
+    ctx.fillStyle = i < state.medals.size ? '#9ee9e1' : '#ffffff26';
     ctx.fill();
-    ctx.fillStyle = i < state.stamps.size ? '#0f3555' : '#bdd7e0';
+    ctx.fillStyle = i < state.medals.size ? '#0f3555' : '#bdd7e0';
     ctx.font = '20px sans-serif';
-    ctx.fillText(i < state.stamps.size ? '★' : '·', 153 + i * 86, 1242);
+    ctx.fillText(i < state.medals.size ? '★' : '·', 153 + i * 86, 1242);
   }
   ctx.fillStyle = '#c3e5ee';
   ctx.font = '24px "Microsoft YaHei", sans-serif';
-  ctx.fillText('一张照片出发，把冰雪故事带回家', 540, 1342);
+  ctx.fillText(state.quizBadge ? '冰雪知识徽章 · 已收入手册' : `知识快问快答 · 最佳 ${state.quizBest} / ${QUIZ_QUESTIONS.length}`, 540, 1305);
+  ctx.font = '22px "Microsoft YaHei", sans-serif';
+  ctx.fillText('从照片或预设角色出发，把冰雪故事带回家', 540, 1365);
   const url = canvas.toDataURL('image/png');
   const sheet = document.createElement('div');
   sheet.className = 'sheet';
@@ -379,10 +372,14 @@ function selectTab(id) {
  */
 function renderPhotoTab(body) {
   const has = Boolean(photo.source);
-
-  body.appendChild(group(has ? '① 照片已就位' : '① 上传一张自己的照片'));
+  const importCard = document.createElement('section');
+  importCard.className = 'role-import-card';
+  const importHeading = document.createElement('div');
+  importHeading.className = 'role-import-heading';
+  importHeading.innerHTML = `<span class="role-import-step">01</span><span><b>${has ? '照片已就位' : '导入或选择角色'}</b><small>${has ? '点击生成后才会将照片发送给所选模型' : '上传照片、摄像头拍摄，或直接使用冰雪伙伴'}</small></span>`;
+  importCard.appendChild(importHeading);
   const row = document.createElement('div');
-  row.className = 'row';
+  row.className = 'row role-import-actions';
   const cam = document.createElement('button');
   cam.className = 'opt';
   cam.type = 'button';
@@ -394,54 +391,66 @@ function renderPhotoTab(body) {
   upload.textContent = has ? '换一张照片' : '上传照片';
   upload.addEventListener('click', () => $('fileInput').click());
   row.append(cam, upload);
-  body.appendChild(row);
+  importCard.appendChild(row);
 
   if (has && photo.thumb) {
     const thumb = document.createElement('img');
     thumb.className = 'thumb';
     thumb.src = photo.thumb;
     thumb.alt = '已选照片';
-    body.appendChild(thumb);
+    thumb.classList.add('role-photo-thumb');
+    importCard.appendChild(thumb);
   }
 
-  const guide = document.createElement('p');
-  guide.className = 'note';
-  guide.textContent = '生成结果会直接成为地图和小游戏里的全身角色。建议上传单人、正面、全身入镜且光线清晰的照片。';
-  body.appendChild(guide);
+  const guide = document.createElement('small');
+  guide.className = 'role-import-guide';
+  guide.textContent = has ? '建议使用单人、正面、全身清晰的照片。' : '直接试玩无需照片或生图服务。';
+  importCard.appendChild(guide);
   if (state.styleId === 'avatar') {
     const preview = document.createElement('div');
     preview.className = 'figure-style-preview';
-    const image = document.createElement('img');
-    image.src = '/assets/ski-figurine-style-preview.png';
-    image.alt = '原创冰雪运动手办画风示意';
     const caption = document.createElement('div');
-    caption.innerHTML = '<b>角色风格参考</b><small>这是一张示意图。你可以在下方选择运动、服装感觉和画面细节。</small>';
-    preview.append(image, caption);
-    body.appendChild(preview);
+    caption.className = 'figure-style-copy';
+    const heading = document.createElement('b');
+    heading.textContent = '冰雪伙伴 · 直接试玩';
+    const description = document.createElement('small');
+    description.textContent = has ? '保留照片角色；也可切换为预设伙伴。' : '不上传照片、不调用图片模型，角色即刻进入地图。';
+    caption.append(heading, description);
+    const useReference = document.createElement('button');
+    useReference.className = 'opt reference-avatar-button';
+    useReference.type = 'button';
+    useReference.textContent = has ? '改用冰雪伙伴' : '使用这位角色';
+    useReference.addEventListener('click', () => useReferenceCharacter(useReference));
+    caption.appendChild(useReference);
+    preview.append(caption);
+    importCard.appendChild(preview);
     if (state.generatedArtworkUrl) {
       const artwork = document.createElement('div');
-      artwork.className = 'generated-artwork';
-      const result = document.createElement('img');
-      result.src = state.generatedArtworkUrl;
-      result.alt = '根据你的照片生成的完整卡通角色作品';
+      artwork.className = 'generated-artwork generated-artwork-link';
       const info = document.createElement('div');
       const heading = document.createElement('b');
       heading.textContent = '已生成的角色';
       const hint = document.createElement('small');
-      hint.textContent = '可以查看原图，或调整下方设定后重新生成。';
+      hint.textContent = '作品已显示在左侧预览，可调整设定后重新生成。';
       const open = document.createElement('a');
       open.href = state.generatedArtworkUrl;
       open.target = '_blank';
       open.rel = 'noopener noreferrer';
       open.textContent = '查看原图 ↗';
       info.append(heading, hint, open);
-      artwork.append(result, info);
-      body.appendChild(artwork);
+      artwork.append(info);
+      importCard.appendChild(artwork);
     }
-    renderCreativeControls(body);
   }
+  body.appendChild(importCard);
+  renderGenerationControls(body, has);
+  if (state.styleId === 'avatar') renderCreativeControls(body);
+}
 
-  body.appendChild(group('② 生成我的全身冰雪角色'));
+function renderGenerationControls(body, has) {
+  const generation = document.createElement('section');
+  generation.className = 'workshop-generation';
+  generation.setAttribute('aria-label', '生成我的冰雪角色');
   if (state.providers.length) {
     const label = document.createElement('label');label.className = 'field model-choice';
     const title = document.createElement('span');title.textContent = '生成模型';
@@ -455,7 +464,7 @@ function renderPhotoTab(body) {
     select.value = state.providerId;
     select.disabled = Boolean(state.generating);
     select.addEventListener('change', () => { state.providerId = select.value; });
-    label.append(title,select);body.append(label);
+    label.append(title,select);generation.append(label);
   }
   const gen = document.createElement('button');
   gen.className = 'primary wide';
@@ -465,7 +474,7 @@ function renderPhotoTab(body) {
   gen.addEventListener('click', () => {
     startGenerate().catch(reportGenerateError);
   });
-  body.appendChild(gen);
+  generation.appendChild(gen);
 
   const bar = document.createElement('div');
   bar.className = 'gen-bar';
@@ -475,32 +484,64 @@ function renderPhotoTab(body) {
   fill.className = 'gen-fill';
   fill.id = 'genFill';
   bar.appendChild(fill);
-  body.appendChild(bar);
+  generation.appendChild(bar);
 
   const status = document.createElement('p');
   status.className = 'note';
   status.id = 'genNote';
   status.textContent = '生成后会直接用完整角色游览场馆、参加小游戏。等待时也可以先看看场馆。';
-  body.appendChild(status);
-
-  const note = document.createElement('p');
-  note.className = 'note';
-  note.textContent = '生成结果保存在本地服务器，并用于地图和小游戏；浏览器会记住当前角色。';
-  body.appendChild(note);
+  generation.appendChild(status);
 
   const clear = document.createElement('button');
   clear.className = 'opt';
   clear.type = 'button';
   clear.textContent = '清空重做';
-  clear.style.marginTop = '8px';
   clear.addEventListener('click', () => {
     state.cfg = defaultConfig();
     state.generatedArtworkUrl = null;
     try { localStorage.removeItem(ARTWORK_KEY); } catch { /* private browsing */ }
-    applyChange();
-    renderTabBody();
+    void useReferenceCharacter(clear);
   });
-  body.appendChild(clear);
+  clear.className = 'opt workshop-clear';
+  const clearWrap = document.createElement('div'); clearWrap.className = 'workshop-clear-wrap'; clearWrap.appendChild(clear);
+  generation.appendChild(clearWrap);
+  body.appendChild(generation);
+}
+
+async function useReferenceCharacter(button) {
+  if (state.loadingReference) return;
+  state.loadingReference = true;
+  button.disabled = true;
+  button.textContent = '正在准备角色…';
+  try {
+    const figure = await createReferenceFigure();
+    state.cfg.face = defaultConfig().face;
+    state.cfg.figure = { canvas: figure, outfitKey: outfitKey(state.cfg) };
+    state.cfg.name = state.cfg.name || '雪道伙伴';
+    $('nameInput').value = state.cfg.name;
+    tourEntered = false;
+    map?.setHeroVisible(false);
+    applyChange();
+    $('departureNote').textContent = '已使用风格参考人物，无需照片或生图 API。点击「带我去游览」即可出发。';
+    renderTabBody();
+    $('enterTour').focus();
+  } catch {
+    button.disabled = false;
+    button.textContent = '重新载入参考角色';
+    $('departureNote').textContent = '参考人物载入失败，请检查网络后重试。';
+  } finally {
+    state.loadingReference = false;
+  }
+}
+
+async function createReferenceFigure() {
+  const image = await loadImage('/assets/ski-figurine-style-preview.png');
+  const scale = Math.min(1, 640 / Math.max(image.width, image.height));
+  const figure = document.createElement('canvas');
+  figure.width = Math.max(1, Math.round(image.width * scale));
+  figure.height = Math.max(1, Math.round(image.height * scale));
+  figure.getContext('2d').drawImage(image, 0, 0, figure.width, figure.height);
+  return figure;
 }
 
 function renderCreativeControls(body) {
@@ -508,59 +549,142 @@ function renderCreativeControls(body) {
   identity.className = 'identity-promise';
   identity.innerHTML = '<span>i</span><div><b>关于照片</b><small>提示词会要求模型参考脸型、发型和眼镜等特征。生成效果会因照片与模型而变化。</small></div>';
   body.appendChild(identity);
+  const heading = document.createElement('div');
+  heading.className = 'workshop-heading';
+  heading.innerHTML = '<div><span class="workshop-kicker">YOUR WINTER AVATAR</span><h3>冰雪角色造型工坊</h3><p>搭配你的冰雪角色，确认后再生成作品。</p></div>';
+  body.appendChild(heading);
 
-  body.appendChild(group('③ 定义你的角色'));
-  const subtitle = document.createElement('p');
-  subtitle.className = 'creative-subtitle';
-  subtitle.textContent = '潮玩画风';
-  body.appendChild(subtitle);
-  const vibeGrid = document.createElement('div');
-  vibeGrid.className = 'vibe-grid';
-  for (const [id, icon, name, desc] of CREATIVE_OPTIONS.vibe) {
-    const card = document.createElement('button');
-    card.type = 'button';
-    card.className = `vibe-card vibe-${id}`;
-    card.setAttribute('aria-pressed', String(state.creative.vibe === id));
-    card.innerHTML = `<span class="vibe-icon">${icon}</span><b>${name}</b><small>${desc}</small>`;
-    card.addEventListener('click', () => { state.creative.vibe = id; saveCreative(); renderTabBody(); });
-    vibeGrid.appendChild(card);
+  const presetSection = document.createElement('details');
+  presetSection.className = 'workshop-section workshop-presets-section';
+  presetSection.open = Boolean(state.workshopOpen.presets);
+  presetSection.addEventListener('toggle', () => { state.workshopOpen.presets = presetSection.open; });
+  const presetSummary = document.createElement('summary');
+  presetSummary.innerHTML = '<span><b>快速造型预设</b><small>8 套完整搭配，一键套用</small></span><i aria-hidden="true">⌄</i>';
+  const presets = document.createElement('div');
+  presets.className = 'workshop-presets';
+  presets.setAttribute('aria-label', '一键造型预设');
+  for (const preset of CREATIVE_PRESETS) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.dataset.workshopFocus = `preset:${preset.id}`;
+    button.className = 'workshop-preset';
+    button.innerHTML = `<b>${escapeHtml(preset.label)}</b><small>${escapeHtml(preset.description)}</small>`;
+    button.addEventListener('click', () => { state.creative = applyCreativePreset(preset.id); saveCreative(); renderTabBody(); });
+    presets.appendChild(button);
   }
-  body.appendChild(vibeGrid);
+  presetSection.append(presetSummary, presets);
+  body.appendChild(presetSection);
 
-  for (const [key, heading] of [['sport', '冰雪运动'], ['scene', '画面氛围']]) {
-    const label = document.createElement('p');
-    label.className = 'creative-subtitle';
-    label.textContent = heading;
-    body.appendChild(label);
-    const row = document.createElement('div');
-    row.className = 'creative-chips';
-    for (const [id, name] of CREATIVE_OPTIONS[key]) {
-      const chip = document.createElement('button');
-      chip.type = 'button';
-      chip.className = 'creative-chip';
-      chip.textContent = name;
-      chip.setAttribute('aria-pressed', String(state.creative[key] === id));
-      chip.addEventListener('click', () => { state.creative[key] = id; saveCreative(); renderTabBody(); });
-      row.appendChild(chip);
-    }
-    body.appendChild(row);
+  const actions = document.createElement('div');
+  actions.className = 'workshop-actions';
+  const actionButton = (label, fn, className = '') => {
+    const button = document.createElement('button'); button.type = 'button'; button.className = `workshop-action ${className}`;
+    button.dataset.workshopFocus = `action:${actions.childElementCount}`;
+    button.textContent = label; button.addEventListener('click', () => { fn(); saveCreative(); renderTabBody(); }); actions.appendChild(button);
+  };
+  actionButton('🎲 随机搭配', () => { state.creative = randomCreative(); });
+  actionButton('恢复默认', () => { state.creative = normalizeCreative(DEFAULT_CREATIVE); });
+  actionButton('清空可选细节', () => { state.creative = clearCreativeDetails(state.creative); });
+  body.appendChild(actions);
+
+  const selected = summarizeCreative(state.creative);
+  const summary = document.createElement('div'); summary.className = 'workshop-summary';
+  summary.innerHTML = `<b>当前搭配</b><p>${escapeHtml(selected.join(' · '))}</p><small>左侧预览展示当前角色；这些造型选项会在你点击生成后应用到作品，不会提前伪装成已渲染效果。</small>`;
+  const summaryText = summary.querySelector('p');
+  body.appendChild(summary);
+
+  const status = document.createElement('p'); status.className = 'workshop-status'; status.setAttribute('role', 'status'); status.textContent = state.workshopMessage || '';
+  body.appendChild(status);
+
+  const sections = [
+    { id:'base', title:'基础造型', note:'画风、主题、运动与服装', groups:['style','theme','sport','outfit'] },
+    { id:'personality', title:'个性细节', note:'发型、装饰、表情与动作', groups:['hairstyle','headwear','accessory','expression','pose'] },
+    { id:'visual', title:'视觉效果', note:'场景氛围、配色、材质与镜头', groups:['scene','palette','material','effect','composition'] },
+  ];
+  for (const section of sections) {
+    const details = document.createElement('details'); details.className = 'workshop-section'; details.open = Boolean(state.workshopOpen[section.id]);
+    details.addEventListener('toggle', () => { state.workshopOpen[section.id] = details.open; });
+    const summaryEl = document.createElement('summary'); summaryEl.innerHTML = `<span><b>${section.title}</b><small>${section.note}</small></span><i aria-hidden="true">⌄</i>`; details.appendChild(summaryEl);
+    for (const key of section.groups) renderCreativeOptionGroup(details, key);
+    body.appendChild(details);
   }
 
-  const custom = document.createElement('label');
-  custom.className = 'creative-custom';
-  const title = document.createElement('span');
-  title.innerHTML = '<b>给角色加点你的灵感</b><small>可写服饰、颜色、配饰或姿态。不会替换你本人的脸。</small>';
-  const textarea = document.createElement('textarea');
-  textarea.maxLength = 240;
-  textarea.rows = 3;
-  textarea.placeholder = '例如：蓝莓色短发配饰、星星发夹、毛绒滑雪外套、开心地挥手……';
-  textarea.value = state.creative.details;
-  textarea.addEventListener('input', () => { state.creative.details = textarea.value; saveCreative(); count.textContent = `${textarea.value.length}/240`; });
-  const count = document.createElement('small');
-  count.className = 'creative-count';
-  count.textContent = `${textarea.value.length}/240`;
-  custom.append(title, textarea, count);
-  body.appendChild(custom);
+  const customSection = document.createElement('details'); customSection.className = 'workshop-section'; customSection.open = Boolean(state.workshopOpen.custom);
+  customSection.addEventListener('toggle', () => { state.workshopOpen.custom = customSection.open; });
+  const customSummary = document.createElement('summary'); customSummary.innerHTML = '<span><b>自定义描述</b><small>补充独特创意，最多 240 字</small></span><i aria-hidden="true">⌄</i>'; customSection.appendChild(customSummary);
+  const custom = document.createElement('label'); custom.className = 'creative-custom workshop-custom';
+  const title = document.createElement('span'); title.innerHTML = '<b>写下你想加入的细节</b><small>如银白短款羽绒服、袖口雪花刺绣、透明冰晶背包。</small>';
+  const textarea = document.createElement('textarea'); textarea.maxLength = 240; textarea.rows = 3; textarea.placeholder = '银白色短款羽绒服，袖口有蓝色雪花刺绣，背着透明冰晶小背包'; textarea.value = state.creative.details;
+  textarea.addEventListener('input', () => {
+    state.creative.details = textarea.value.slice(0,240); saveCreative();
+    count.textContent = `还可输入 ${240 - state.creative.details.length} 字`;
+    const current = summarizeCreative(state.creative); summaryText.textContent = current.join(' · ');
+  });
+  const count = document.createElement('small'); count.className = 'creative-count'; count.textContent = `还可输入 ${240 - textarea.value.length} 字`;
+  custom.append(title, textarea, count); customSection.appendChild(custom); body.appendChild(customSection);
+}
+
+function escapeHtml(value) { return String(value).replace(/[&<>"']/g, (char) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[char]); }
+
+function summarizeCreative(creative) {
+  const labels = [];
+  for (const key of ['style','theme','sport','outfit','hairstyle','headwear','expression','pose','scene','palette','material','composition']) {
+    const item = CREATIVE_GROUPS[key].find((option) => option.id === creative[key]); if (item) labels.push(item.label);
+  }
+  for (const key of ['accessory','effect']) for (const id of creative[key === 'accessory' ? 'accessories' : 'effects']) {
+    const item = CREATIVE_GROUPS[key].find((option) => option.id === id); if (item && id !== 'none') labels.push(item.label);
+  }
+  if (creative.details) labels.push('自定义细节');
+  return labels;
+}
+
+function renderCreativeOptionGroup(parent, key) {
+  const options = CREATIVE_GROUPS[key];
+  const multi = key === 'accessory' || key === 'effect';
+  const selectedIds = key === 'accessory' ? state.creative.accessories : key === 'effect' ? state.creative.effects : [state.creative[key]];
+  const block = document.createElement('details'); block.className = 'workshop-option-group';
+  block.open = Boolean(state.workshopGroupOpen[key]);
+  block.addEventListener('toggle', () => { state.workshopGroupOpen[key] = block.open; });
+  const head = document.createElement('summary'); head.className = 'workshop-option-head';
+  const label = ({ style:'艺术风格',theme:'角色主题',sport:'冰雪运动',outfit:'服装',hairstyle:'发型',headwear:'头部装饰',accessory:'配饰',expression:'表情',pose:'动作与姿势',scene:'场景氛围',palette:'主色调',material:'材质质感',effect:'特效与氛围',composition:'镜头与构图' })[key];
+  const chosenOptions = selectedIds.map((id) => options.find((item) => item.id === id)?.label).filter(Boolean);
+  const selectionSummary = multi
+    ? `已选 ${selectedIds.filter((id) => id !== 'none').length}/${key === 'accessory' ? 3 : 2}${chosenOptions.length ? ` · ${chosenOptions.join('、')}` : ''}`
+    : chosenOptions[0] || '请选择';
+  head.innerHTML = `<span><b>${label}</b><small>${escapeHtml(selectionSummary)}</small></span><i aria-hidden="true">⌄</i>`;
+  block.appendChild(head);
+  if (key === 'scene') { const note = document.createElement('small'); note.className = 'workshop-scene-note'; note.textContent = '场景选项用于角色光线与配色氛围；为保证现有抠图，生成背景仍是纯色抠图幕。'; block.appendChild(note); }
+  const grid = document.createElement('div'); grid.className = `workshop-options${multi ? ' is-multi' : ''}`;
+  for (const option of options) {
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'workshop-option';
+    button.dataset.workshopFocus = `option:${key}:${option.id}`;
+    const chosen = selectedIds.includes(option.id); button.setAttribute('aria-pressed', String(chosen));
+    button.innerHTML = `<span class="workshop-option-check" aria-hidden="true">${chosen ? '✓' : '+'}</span><b>${escapeHtml(option.label)}</b><small>${escapeHtml(option.description)}</small>`;
+    button.addEventListener('click', () => {
+      state.workshopMessage = '';
+      if (!multi) {
+        if (key === 'sport') state.creative = recommendCreativeForSport(state.creative, option.id);
+        else state.creative[key] = option.id;
+      } else {
+        const field = key === 'accessory' ? 'accessories' : 'effects';
+        let values = [...state.creative[field]];
+        if (option.id === 'none') values = chosen ? [] : ['none'];
+        else {
+          values = values.filter((id) => id !== 'none');
+          values = chosen ? values.filter((id) => id !== option.id) : values;
+          if (!chosen && values.length >= (key === 'accessory' ? 3 : 2)) {
+            state.workshopMessage = `最多选择${key === 'accessory' ? ' 3 项配饰' : ' 2 项特效'}，请先取消一项。`;
+            saveCreative(); renderTabBody(); return;
+          }
+          if (!chosen) values.push(option.id);
+        }
+        state.creative[field] = values;
+      }
+      saveCreative(); renderTabBody();
+    });
+    grid.appendChild(button);
+  }
+  block.appendChild(grid); parent.appendChild(block);
 }
 
 function setGenStatus(text, progress) {
@@ -914,10 +1038,20 @@ function swatchRow(key, current, onPick) {
 
 function renderTabBody() {
   const body = $('tabBody');
+  const previousScroll = window.scrollY;
+  const focusedWorkshopControl = document.activeElement?.dataset?.workshopFocus || '';
   body.innerHTML = '';
+  const restoreViewport = () => requestAnimationFrame(() => {
+    if (window.scrollY !== previousScroll) window.scrollTo({ top: previousScroll, behavior: 'instant' });
+    if (focusedWorkshopControl) {
+      const target = [...body.querySelectorAll('[data-workshop-focus]')].find((node) => node.dataset.workshopFocus === focusedWorkshopControl);
+      target?.focus({ preventScroll:true });
+    }
+  });
 
   if (state.tab === 'photo') {
     renderPhotoTab(body);
+    restoreViewport();
     return;
   }
 
@@ -949,6 +1083,7 @@ function renderTabBody() {
     note.textContent = '单板是背在背后的，冰球杆和小旗拿在手上——小游戏里只用得到脸，道具是给你在地图上看的。';
     body.appendChild(note);
   }
+  restoreViewport();
 }
 
 /** 模板脸的画布只生成一次，五个按钮共用 */
@@ -1380,22 +1515,29 @@ function buildChips() {
 function syncChips() {
   for (const btn of document.querySelectorAll('.chip[data-id]')) {
     btn.classList.toggle('active', btn.dataset.id === state.activeId);
-    btn.classList.toggle('done', state.stamps.has(btn.dataset.id));
+    btn.classList.toggle('explored', state.visited.has(btn.dataset.id));
+    btn.classList.toggle('done', state.medals.has(btn.dataset.id));
   }
   for (const dot of document.querySelectorAll('.stamp')) {
-    dot.classList.toggle('on', state.stamps.has(dot.dataset.id));
+    dot.classList.toggle('on', state.medals.has(dot.dataset.id));
   }
-  $('stampText').textContent = `已集 ${state.stamps.size} / ${state.venues.length} 枚章`;
+  $('stampText').textContent = `已集 ${state.medals.size} / ${state.venues.filter((place) => place.kind === 'venue').length} 枚挑战奖章`;
+  $('explorationProgress').textContent = `${state.visited.size} / ${state.venues.length}`;
+  $('medalProgress').textContent = `${state.medals.size} / ${state.venues.filter((place) => place.kind === 'venue').length}`;
+  $('quizBadgeStatus').textContent = state.quizBadge ? '已获得' : '未获得';
+  $('quizBestStatus').textContent = `最佳 ${state.quizBest} / ${QUIZ_QUESTIONS.length} · 答对 4 题可获得`;
+  $('goalieBest').textContent = `最佳扑救 ${state.goalieBest} / 5`;
 }
 
 function buildStamps() {
   const row = $('stampRow');
   row.innerHTML = '';
-  for (const venue of state.venues) {
+  for (const venue of state.venues.filter((place) => place.kind === 'venue')) {
     const dot = document.createElement('span');
     dot.className = 'stamp';
     dot.dataset.id = venue.id;
     dot.title = venue.name;
+    dot.setAttribute('aria-hidden', 'true');
     row.appendChild(dot);
   }
   syncChips();
@@ -1433,14 +1575,33 @@ function syncPageFlipToggle() {
   $('pageFlipToggle').setAttribute('aria-label', `逐页翻动：${fullPageFlips ? '开启' : '关闭'}`);
 }
 
+function syncMapSidebar() {
+  const extras = [
+    document.querySelector('#mapPanel .progress-summary, #workshopPanel .progress-summary'),
+    document.querySelector('#mapPanel .bonus-challenges, #workshopPanel .bonus-challenges'),
+    document.querySelector('#mapPanel .live-summary, #workshopPanel .live-summary'),
+  ];
+  if (extras.some(item => !item)) return;
+  if (document.body.dataset.book === 'map' && matchMedia('(min-width: 900px)').matches) {
+    if (extras[0].parentElement === $('workshopPanel')) return;
+    $('bookMapSide').after(...extras);
+  } else {
+    if (extras[0].parentElement === $('mapPanel')) return;
+    document.querySelector('#mapPanel .map-wrap').before(...extras.slice(0, 2));
+    document.querySelector('#mapPanel .stats-caption').before(extras[2]);
+  }
+}
+
 function setBookChapter(chapter) {
   document.body.dataset.book = chapter;
+  syncMapSidebar();
   const blocked = chapter === 'cover' || chapter === 'detail';
   $('bookSpread').inert = blocked;
   $('bookChapterBar').inert = blocked;
   document.querySelector('.top').inert = blocked;
-  for (const selector of ['#mapPanel .explore-tools','#mapPanel .map-wrap','#mapPanel .live-summary','#mapPanel .chips']) {
-    document.querySelector(selector).inert = chapter === 'creator';
+  for (const selector of ['#mapPanel .explore-tools','#mapPanel .map-wrap','.live-summary','#mapPanel .chips']) {
+    const element = document.querySelector(selector);
+    if (element) element.inert = chapter === 'creator';
   }
   if (chapter === 'creator') {
     $('workshopPanel').querySelector('.panel-head h2').textContent = '做一个自己的冰雪角色';
@@ -1600,6 +1761,31 @@ async function openBook() {
     cover.getAnimations().forEach(animation => animation.cancel());
     reveal?.cancel();
     bookTurning = false;
+  }
+}
+
+async function startDemo() {
+  const button = $('coverDemo');
+  button.disabled = true;
+  try {
+    const demo = defaultConfig();
+    demo.name = state.cfg.name || '雪道伙伴';
+    demo.figure = { canvas: await createReferenceFigure(), outfitKey: outfitKey(demo) };
+    state.cfg = demo;
+    $('nameInput').value = demo.name;
+    applyChange();
+    tourEntered = false;
+    map.setHeroVisible(false);
+    refreshStageHint();
+    renderTabBody();
+    $('departureNote').textContent = '已选用本地预设角色，无需照片或生图服务。';
+    if (!$('bookCover').hidden) await openBook();
+    const entered = await enterTour();
+    if (!entered) $('departureNote').textContent = '试玩角色已准备好，点击「带我去游览」即可继续。';
+  } catch {
+    $('departureNote').textContent = '试玩角色没有加载成功，请刷新页面后重试。';
+  } finally {
+    button.disabled = false;
   }
 }
 
@@ -1777,11 +1963,11 @@ function onArrive() {
   const venue = state.venues.find((v) => v.id === walkVenueId);
   if (!venue) return;
   if (visitPending) { recordVisit(venue.id); visitPending = false; }
-  if (venue.kind === 'attraction') { state.stamps.add(venue.id); map.setVisited(state.stamps); }
   soundscape.playSuccess();
   $('walkBar').hidden = true;
   state.visited.add(venue.id);
   saveProgress();
+  map.setProgress(state.visited, state.medals);
   showCard(venue);
   syncChips();
 }
@@ -1861,7 +2047,12 @@ function showCard(venue) {
   const ictx = icon.getContext('2d');
   drawVenueIllustration(ictx, venue, 0, 0, icon.width, icon.height);
   $('venuePlay').hidden = !venue.game;
-  $('venuePlay').textContent = state.stamps.has(venue.id) ? '再玩一次' : '挑战成功，收集纪念章';
+  $('venuePlay').textContent = state.medals.has(venue.id) ? '再挑战一次' : '开始场馆挑战';
+  $('venueProgress').textContent = venue.kind === 'venue'
+    ? (state.medals.has(venue.id) ? '已探索 · 挑战奖章已获得' : '已探索 · 赢得挑战可收集奖章')
+    : '已探索 · 城市景点手记';
+  $('venuePersonalBest').textContent = venue.kind === 'venue' && state.bestScores[venue.id] !== undefined
+    ? `个人最佳：${state.bestScores[venue.id]}` : '';
   $('venueCard').hidden = false;
   state.pendingVenue = venue;
   if (document.body.dataset.book === 'map') void openDetailPage(venue);
@@ -1926,6 +2117,19 @@ async function shootPhoto() {
 /* ------------------------------------------------------------------ */
 
 let host = null;
+let quiz = null;
+
+function initQuiz() {
+  quiz = createQuiz($('quizModal'), {
+    getSourceUrl: (id) => state.venues.find((place) => place.id === id)?.sourceUrl,
+    onFinish: ({ score, earnedBadge }) => {
+      state.quizBest = Math.max(state.quizBest, score);
+      state.quizBadge = state.quizBadge || earnedBadge;
+      saveProgress();
+      syncChips();
+    },
+  });
+}
 
 function initGame() {
   host = createMinigameHost({
@@ -1936,14 +2140,28 @@ function initGame() {
     getAvatar: () => state.cfg,
     onFinish: (won, result, venue) => {
       if (!venue) return;
-      if (won) {
-        state.stamps.add(venue.id);
+      if (venue.id === 'bonus-goalie') {
+        state.goalieBest = Math.max(state.goalieBest, Math.floor(result.score || 0));
+        result.rewardText = `本局扑救 ${result.score} 次；最佳纪录 ${state.goalieBest} / 5。`;
         saveProgress();
-        map.setVisited(state.stamps);
+      } else if (won && venue.kind === 'venue') {
+        const firstMedal = !state.medals.has(venue.id);
+        state.medals.add(venue.id);
+        if (Number.isFinite(result.score)) state.bestScores[venue.id] = Math.max(state.bestScores[venue.id] || 0, Math.floor(result.score));
+        result.rewardText = firstMedal ? '新的场馆挑战奖章已收入护照。' : '这枚场馆奖章已在护照中；本次最佳成绩也已保存。';
+        saveProgress();
+        map.setProgress(state.visited, state.medals);
         syncChips();
-        $('venuePlay').textContent = '再玩一次';
+        $('venuePlay').textContent = '再挑战一次';
+        $('venueProgress').textContent = '已探索 · 挑战奖章已获得';
+        $('venuePersonalBest').textContent = `个人最佳：${state.bestScores[venue.id]}`;
         soundscape.playSuccess();
-        celebrateStamp(venue);
+        if (firstMedal) celebrateStamp(venue);
+      } else if (venue.kind === 'venue') {
+        if (Number.isFinite(result.score)) state.bestScores[venue.id] = Math.max(state.bestScores[venue.id] || 0, Math.floor(result.score));
+        result.rewardText = `再试一次，${venue.name}的挑战奖章还等着你。`;
+        if (state.bestScores[venue.id] !== undefined) $('venuePersonalBest').textContent = `个人最佳：${state.bestScores[venue.id]}`;
+        saveProgress();
       }
       soundscape.setMode('world');
       void result;
@@ -2019,6 +2237,7 @@ function wireEvents() {
     syncPageFlipToggle();
   });
   $('openBook').addEventListener('click', () => void openBook());
+  $('coverDemo').addEventListener('click', () => void startDemo());
   $('backToCover').addEventListener('click', showCover);
   $('editCharacter').addEventListener('click', () => void returnToCreator());
   $('backToMap').addEventListener('click', () => void returnToMap());
@@ -2133,6 +2352,11 @@ function wireEvents() {
   $('fitBtn').addEventListener('click', () => map.fit());
   $('venueClose').addEventListener('click', hideCard);
   $('venuePlay').addEventListener('click', () => playVenue(state.pendingVenue));
+  $('goalieOpen').addEventListener('click', () => playVenue({
+    id: 'bonus-goalie', name: '冰球门神反应挑战', kind: 'bonus',
+    game: { engine: 'goalie', title: '冰球门神反应挑战', subtitle: '五次射门，读轨迹并扑救三球即可完成', icon: '🥅', params: {} },
+  }));
+  $('quizOpen').addEventListener('click', (event) => quiz?.open(event.currentTarget));
   $('enterTour').addEventListener('click', () => void enterTour());
   for (const btn of document.querySelectorAll('[data-filter]')) btn.addEventListener('click', () => {
     const filter = btn.dataset.filter; map.setFilter(filter); hideCard();
@@ -2140,7 +2364,10 @@ function wireEvents() {
     for (const chip of document.querySelectorAll('.chip[data-kind]')) chip.hidden = filter !== 'all' && chip.dataset.kind !== filter;
   });
 
-  window.addEventListener('resize', () => map.resize());
+  window.addEventListener('resize', () => {
+    syncMapSidebar();
+    requestAnimationFrame(() => map.resize());
+  });
   window.addEventListener('resize', () => refreshPreview(true));
 }
 
@@ -2165,12 +2392,25 @@ async function readImage(file) {
 /* ------------------------------------------------------------------ */
 
 async function boot() {
-  loadProgress();
   const saved = loadConfig();
+  let preparedReferenceByDefault = false;
   if (saved) {
     state.cfg = saved;
     // 旧版缓存里的头像不再作为人物渲染；已有全身作品会在画布就绪后恢复。
     state.cfg.face = defaultConfig().face;
+  }
+
+  // 未上传照片、也没有保存的全身角色时，直接把风格参考图作为真实默认角色。
+  // 这样舞台、地图、跳转动画与小游戏使用的是同一位冰雪伙伴，而非另画一个简化模板。
+  if (!state.cfg.figure && state.cfg.face.kind === 'none' && !state.cfg.face.canvas) {
+    try {
+      const figure = await createReferenceFigure();
+      state.cfg.figure = { canvas: figure, outfitKey: outfitKey(state.cfg) };
+      state.cfg.name = state.cfg.name || '雪道伙伴';
+      preparedReferenceByDefault = true;
+    } catch {
+      // 网络或素材暂时不可用时仍保留原有可编辑模板角色。
+    }
   }
 
   previewCanvas.width = 128;
@@ -2188,6 +2428,7 @@ async function boot() {
     fetch('/api/config').then((r) => r.json()).catch(() => null),
   ]);
   state.venues = venuesPayload.places || [];
+  loadProgress();
   $('mapNote').textContent = '10 座场馆 · 6 处景点';
   $('placeTotal').textContent = state.venues.length;
   state.styles = (appConfig && appConfig.styles) || [];
@@ -2204,9 +2445,10 @@ async function boot() {
   map = createMapView(mapCanvas, { venues: state.venues, onPick: inspectPlace, heroVisible: false });
   $('bookDetailContent').append($('venueCard'));
   map.setCharacter(state.cfg);
-  map.setVisited(state.stamps);
+  map.setProgress(state.visited, state.medals);
   setBookChapter('cover');
   initGame();
+  initQuiz();
   wireEvents();
   connectStats(data => {
     liveStats = data; map.setCounts(data.places);
@@ -2237,6 +2479,7 @@ async function boot() {
   }
 
   $('loading').classList.add('hidden');
+  if (preparedReferenceByDefault) $('departureNote').textContent = '已为你准备好风格参考人物，无需照片；点击「带我去游览」即可出发。';
   if (document.body.dataset.book === 'cover') window.scrollTo({ top:0, behavior:'instant' });
   requestAnimationFrame(loop);
 
@@ -2290,7 +2533,9 @@ window.__play = {
     totalVisits: liveStats?.total ?? null,
     active: state.activeId,
     visited: [...state.visited],
-    stamps: [...state.stamps],
+    medals: [...state.medals],
+    stamps: [...state.medals],
+    bestScores: { ...state.bestScores },
     face: state.cfg.face.kind,
     hat: state.cfg.parts.hat,
     coat: state.cfg.parts.coat,

@@ -1,3 +1,5 @@
+import { buildCreativePrompt } from '../web/creative-prompt.js';
+
 /**
  * ★ 这个文件是整个项目的核心资产。
  *
@@ -53,44 +55,18 @@ export function describeFigurineOutfit(outfit = {}) {
   const colors = outfit.colors || {};
   const items = Object.entries(FIGURINE_PARTS).map(([key, labels]) => labels[parts[key]] || Object.values(labels)[0]);
   const safeColor = (key) => /^#[0-9a-fA-F]{6}$/.test(colors[key] || '') ? colors[key] : '#67D6E5';
-  return `服饰元素：${items.join('、')}。头盔/帽子主色${safeColor('hat')}，外套主色${safeColor('coat')}，裤子主色${safeColor('pants')}，鞋子主色${safeColor('boots')}。这些色彩应统一协调。鞋类、护具和器材必须符合所选运动项目；与运动冲突的服饰仅保留配色和廓形灵感。`;
+  return `沿用已有角色搭配中的色彩作为个人偏好参考（${items.join('、')}；头部${safeColor('hat')}、外套${safeColor('coat')}、裤装${safeColor('pants')}、鞋靴${safeColor('boots')}）。如与造型工坊明确选择的服装轮廓、发型或运动装备冲突，以工坊选择及运动项目合理性为准。`;
 }
 
-const FIGURINE_CREATIVE = {
-  vibe: {
-    snow: '冰雪潮玩：软糯圆润的收藏级动画手办，蓬松织物、奶油高光、清爽冰蓝配色。',
-    street: '街头酷玩：大胆廓形的潮流运动穿搭，层次分明的配饰，自信帅气但亲切的神态。',
-    sweet: '甜梦收藏：精细的娃娃级手办质感，糖霜般柔和的色彩，小巧饰物与轻盈发丝。',
-    retro: '复古俏皮：波点或几何纹样、明快撞色、俏皮站姿，像精心设计的潮玩收藏品。',
-    future: '未来雪域：简洁银白运动装备、微光线条和未来感材质，面部必须清晰可辨，不能使用遮脸面罩。',
-  },
-  sport: {
-    ski: '双板滑雪：双脚各踩一块滑雪板，手握双雪杖，姿态轻快而运动装备合理。',
-    snowboard: '单板滑雪：双脚固定在同一块单板上，身体侧向滑行，动态轻盈。',
-    skate: '花样滑冰：穿一双冰刀鞋，在冰面上完成优雅旋转或滑行，不出现滑雪板。',
-    curling: '冰壶：站在冰壶赛道上，手持冰壶刷，脚边一枚冰壶，姿势活泼。',
-    hockey: '冰球：穿冰球鞋，手持球杆并与冰球互动，护具可爱而符合运动逻辑。',
-  },
-  scene: {
-    studio: '影棚氛围：柔和轮廓光与收藏级质感；仅影响角色光线和配色，背景仍为纯洋红色幕（#FF00FF），人物及器材不得使用洋红色。',
-    mountain: '雪山氛围：冷冽日光与雪白、冰蓝配色；仅作角色光线和配色灵感，背景仍为纯洋红色幕（#FF00FF），人物及器材不得使用洋红色。',
-    rink: '梦幻冰场氛围：清透反光与冰晶般高光；仅影响角色光线和配色，背景仍为纯洋红色幕（#FF00FF），人物及器材不得使用洋红色。',
-    aurora: '极光氛围：青紫色柔光映在角色边缘，面部由柔和正面光照亮；背景仍为纯洋红色幕（#FF00FF），人物及器材不得使用洋红色。',
-  },
-};
-
 export function describeFigurineCreative(creative = {}) {
-  const selected = ['vibe', 'sport', 'scene'].map((key) => {
-    const value = creative?.[key];
-    return Object.hasOwn(FIGURINE_CREATIVE[key], value)
-      ? FIGURINE_CREATIVE[key][value]
-      : Object.values(FIGURINE_CREATIVE[key])[0];
-  });
-  const details = typeof creative?.details === 'string'
-    ? creative.details.replace(/[\u0000-\u001f\u007f<>]/g, ' ').trim().slice(0, 240)
-    : '';
-  if (details) selected.push(`用户的补充创意（仅用于服饰、配色、配饰或动作；不得改变人物身份）：${details}`);
-  return selected.join('\n');
+  return buildCreativePrompt(creative);
+}
+
+// 新工坊的选项已经包含服装、配色和器材；旧换装配置只用于没有工坊配置的旧客户端。
+export function describeFigurineSelection(creative, outfit) {
+  return creative && typeof creative === 'object' && !Array.isArray(creative)
+    ? describeFigurineCreative(creative)
+    : describeFigurineOutfit(outfit);
 }
 
 export const FIGURINE_COMPOSITION = {
@@ -267,14 +243,13 @@ export function buildPrompt({ styleId, locale = 'zh', extra = '', purpose } = {}
   if (purpose === 'figurine') {
     return [
       locale === 'zh'
-        ? '以照片中的人为唯一原型，把本人转化为原创、精致的冰雪运动潮玩。准确保留脸型、五官布局、眼距、鼻嘴形状、年龄感、发型和眼镜等可辨认的个人特征；不能变成另一张通用娃娃脸。用户可改变服饰、配饰和场景，但人物面部身份必须保持。'
-        : 'Transform the person in the reference photo into an original charming winter-sports animated figurine. Preserve recognisable face shape, hairstyle, glasses and age; do not change identity.',
+        ? '以照片中的人为唯一身份参考，准确保留脸型、五官布局、眼距、鼻嘴形状、年龄感和眼镜等可辨认的面部特征；不能变成另一张通用娃娃脸。照片中的服装、颜色、动作和场景不作为造型模板，除非用户明确选择保留；人物面部身份必须保持。'
+        : 'Use the person in the reference photo only as the identity reference. Preserve recognisable face shape, features, glasses and age. Do not copy the photo’s clothing, colours, pose or scene unless explicitly requested.',
       locale === 'zh'
-        ? '高质量三维动画手办质感，圆润雕塑轮廓，细腻柔和的材质、柔光和清楚的体积阴影；色彩明快但不刺眼。脸部是同一种卡通材质，不要把真人照片贴在玩具头上。'
-        : 'High-quality 3D animated figurine style: rounded sculpted shapes, soft materials, gentle lighting and clear volume. Bright coordinated colors. Render the face in the same cartoon material; never paste a photograph onto the toy head.',
+        ? '严格采用造型工坊所选的艺术风格、服装、主色调、材质、运动项目和动作，不套用固定的蓝色滑雪服或三维手办模板。主色调覆盖主题与场景中提到的颜色；服装选择覆盖照片原衣着；运动项目与动作选择决定器材和身体姿态。面部与身体使用同一种所选画风，不要把真人照片贴在角色脸上。'
+        : 'Follow the workshop’s selected art style, outfit, palette, material, sport and pose. Do not default to a blue ski outfit or a 3D toy. The selected palette overrides theme or scene colours; the selected outfit overrides clothing in the photo; sport and pose determine equipment and body position. Render face and body in the same selected style.',
       extra,
-      FIGURINE_COMPOSITION[locale],
-      locale === 'zh' ? '最终检查：角色的脸必须仍然像上传照片中的本人，五官完整清晰；整体必须是统一的精致卡通材质，不把真人照片直接贴到玩偶上。' : 'Final check: the face must remain recognisably the person in the uploaded photo, with clear complete features and one consistent refined cartoon material.',
+      locale === 'zh' ? '最终检查：角色的脸必须仍然像上传照片中的本人，五官完整清晰；脸部、服装和身体必须统一采用用户所选画风，不把真人照片直接贴到角色上。' : 'Final check: the face must remain recognisably the person in the uploaded photo, with clear features; render the face, outfit and body consistently in the selected art style rather than pasting a photograph onto the character.',
       locale === 'zh' ? `避免出现：${NEGATIVE.zh}` : `Avoid: ${NEGATIVE.en}`,
     ].filter(Boolean).join('\n');
   }

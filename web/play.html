@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
     <meta name="theme-color" content="#18324a" />
     <meta name="description" content="翻开长春大运会冰雪漫游手册，制作卡通角色，走进冰雪场馆，再顺路探索长春景点。" />
@@ -32,7 +32,7 @@
           <div class="cover-inside" aria-hidden="true"><span>长春大运会冰雪漫游 · 扉页</span><div class="cover-inside-art"></div><strong>每场精彩，<br />都值得<br /><em>亲自出发。</em></strong><small>01 画出角色　 →　 02 走进赛场</small></div>
           </div>
         </div>
-        <div class="cover-intro"><p>从大运会赛场出发的旅行手册</p><button id="openBook" type="button">翻开第一页 <span>→</span></button><small>01 制作角色　·　02 冰雪赛场　·　03 城市延伸</small></div>
+        <div class="cover-intro"><p>从大运会赛场出发的旅行手册</p><button id="openBook" type="button">创建我的冰雪分身 <span>→</span></button><button id="coverDemo" class="cover-demo" type="button">直接试玩 · 无需照片或生图 API</button><small>创建或选择角色 → 探索地点 → 玩挑战、收集奖章</small></div>
         <div class="cover-event-ticket" aria-hidden="true"><div class="ticket-top"><span>2027 · CHANGCHUN</span><b>冬季大运会</b></div><strong>冰雪赛场<br />观赛路线</strong><div class="ticket-sports"><span>冰上竞技</span><span>雪上竞速</span><span>城市漫游</span></div><div class="ticket-foot"><b>10</b><span>个场馆优先探索<br />再认识长春的另一面</span><i>✳</i></div></div>
         <span class="desk-note desk-note-bottom">CHANGCHUN · A WINTER TO EXPLORE</span>
       </div>
@@ -54,9 +54,9 @@
         <div class="hero-copy">
           <p class="kicker"><span class="kicker-line" aria-hidden="true"></span> 长春 2027 · 冬季城市导览</p>
           <h1>带上你的角色，<br /><em>去逛一座冬天的城。</em></h1>
-          <p class="hero-lead">用照片生成卡通形象，再从地图选一处想去的地方。角色抵达后，看看场馆与城市背后的故事。</p>
+          <p class="hero-lead">创建或选择角色，探索一处冰雪场馆，再玩挑战收集奖章。也可以直接用预设角色试玩，无需照片或生图 API。</p>
           <div class="hero-actions">
-            <button class="hero-cta" id="startBtn" type="button">开始制作角色 <span>→</span></button>
+            <button class="hero-cta" id="startBtn" type="button">创建我的冰雪分身 <span>→</span></button>
             <a class="event-link" href="https://changchun2027.fisu.net/" target="_blank" rel="noopener noreferrer">赛事官网 ↗</a>
           </div>
           <div class="hero-meta"><span><b>10</b> 座竞赛场馆</span><span><b>6</b> 处城市景点</span><span><b>16</b> 个可游览地点</span></div>
@@ -142,6 +142,16 @@
           </div>
           <span class="live-state" id="statsStatus" role="status">正在连接统计…</span>
         </div>
+        <section class="progress-summary" aria-label="我的旅行进度">
+          <div><span>地点探索</span><strong id="explorationProgress">0 / 16</strong><small>角色抵达后记录</small></div>
+          <div><span>场馆挑战奖章</span><strong id="medalProgress">0 / 10</strong><small>赢得场馆小游戏</small></div>
+          <div><span>知识徽章</span><strong id="quizBadgeStatus">未获得</strong><small id="quizBestStatus">答对 4 题可获得</small></div>
+        </section>
+        <section class="bonus-challenges" aria-labelledby="bonusTitle">
+          <div><p class="panel-kicker">额外挑战 · 不占场馆奖章</p><h3 id="bonusTitle">再来一场冬日加练</h3></div>
+          <button id="goalieOpen" type="button"><b>冰球门神</b><small>读出射门方向，五次扑救</small><span id="goalieBest">最佳扑救 0 / 5</span></button>
+          <button id="quizOpen" type="button"><b>冰雪快问快答</b><small>五道场馆与城市知识题</small><span>知识徽章独立记录</span></button>
+        </section>
         <div class="book-map-preview" id="bookMapPreview">
           <span>下一页 · 大运会赛事地图</span>
           <h3>把角色带进<br />冰雪赛场。</h3>
@@ -163,7 +173,7 @@
 
           <div class="venue-card" id="venueCard" hidden>
             <button class="venue-close" id="venueClose" type="button">×</button>
-            <p class="place-eyebrow">到达记录 <span>·</span> 城市手记</p>
+            <p class="place-eyebrow">到达记录 <span>·</span> 城市手记 <span class="venue-progress" id="venueProgress"></span></p>
             <div class="venue-head">
               <canvas class="venue-icon" id="venueIcon" width="128" height="128"></canvas>
               <div>
@@ -182,6 +192,7 @@
             <a class="place-source" id="placeSource" target="_blank" rel="noopener noreferrer">阅读资料来源 ↗</a>
             <div class="venue-actions">
               <button class="primary" id="venuePlay" type="button">玩这里的小游戏</button>
+              <small id="venuePersonalBest" class="venue-personal-best"></small>
             </div>
           </div>
 
@@ -297,7 +308,7 @@
     </div>
 
     <!-- 小游戏：结构必须和 minigames.js 里查的 id 一致 -->
-    <div class="mg" id="mg" hidden>
+    <div class="mg" id="mg" hidden role="dialog" aria-modal="true" aria-labelledby="mgTitle">
       <div class="mg-panel">
         <div class="mg-head">
           <div>
@@ -315,6 +326,7 @@
         </div>
         <div class="mg-result" id="mgResult" hidden>
           <p class="mg-result-text" id="mgResultText"></p>
+          <p class="mg-reward" id="mgReward" role="status"></p>
           <div class="mg-result-actions">
             <button class="mg-btn primary" id="mgAgain" type="button">再来一次</button>
             <button class="mg-btn" id="mgExit" type="button">返回场馆</button>
@@ -322,6 +334,8 @@
         </div>
       </div>
     </div>
+
+    <dialog class="quiz-modal" id="quizModal" aria-labelledby="quizTitle"></dialog>
 
     <div class="loading" id="loading">
       <div class="loading-inner">

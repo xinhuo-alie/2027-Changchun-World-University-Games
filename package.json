@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "长春 2027 大冬会云游览 —— 第一阶段：卡通形象生成",
+  "description": "长春大运会冬日漫游：角色、城市探索与冰雪小游戏",
   "scripts": {
     "dev": "node server/index.js",
     "start": "node server/index.js"

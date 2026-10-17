@@ -1,13 +1,7 @@
 /**
- * 小游戏引擎（四套）。
- *
- * rhythm 节奏加速 —— 左右交替点击，速度掉得比你按得快。（速滑、短道速滑）
- * aim    精准瞄准 —— 力度与方向两条摆动条，抓时机锁定。（冰壶、冰球）
- * dodge  变道闪避 —— 俯视雪道，左右变道躲障碍、贴旗门得分。（单板、高山滑雪）
- * jump   跳跃越障 —— 侧视，一键起跳跨过雪堆岩石。（越野跑、越野滑雪、空中技巧）
- *
- * 大多数关卡约 10 秒；需要三次投掷的精准关卡给足 18 秒。
- * 画风全部走圆润卡通 + 糖果色，和主场景一致。
+ * Shared scene drawing primitives for the sport-specific mini-games in
+ * minigame-redesign.js. The old generic simulations remain exported for
+ * compatibility with local tools, but the app host no longer uses them.
  */
 
 import { drawVenueIllustration } from './venue-art.js';
@@ -161,7 +155,7 @@ export function cuteBlob(ctx, x, y, r, color, opts = {}) {
  */
 export function playerBall(ctx, x, y, r, color, api, opts) {
   if (api && typeof api.avatarFigure === 'function') {
-    api.avatarFigure(ctx, x, y, r);
+    api.avatarFigure(ctx, x, y, r, opts || {});
     return;
   }
   cuteBlob(ctx, x, y, r, color, opts);
@@ -313,7 +307,8 @@ export function rhythmEngine(canvas, params, api) {
     ctx.lineTo(w, laneY + laneH / 2);
     ctx.stroke();
 
-    const fx = w - 30;
+    const raceInset = Math.min(72, Math.max(54, w * 0.1));
+    const fx = w - raceInset;
     ctx.strokeStyle = CANDY.coral;
     ctx.lineWidth = 4;
     ctx.setLineDash([7, 7]);
@@ -323,12 +318,12 @@ export function rhythmEngine(canvas, params, api) {
     ctx.stroke();
     ctx.setLineDash([]);
 
-    cuteBlob(ctx, 26 + Math.min(1, rival) * (fx - 26), laneY + laneH * 0.28, 11, '#B9CAD8', {
+    cuteBlob(ctx, raceInset + Math.min(1, rival) * (fx - raceInset), laneY + laneH * 0.28, 11, '#B9CAD8', {
       face: false,
     });
     playerBall(
       ctx,
-      26 + Math.min(1, progress) * (fx - 26),
+      raceInset + Math.min(1, progress) * (fx - raceInset),
       laneY + laneH * 0.72,
       14,
       params.accent || CANDY.blue,
@@ -491,7 +486,7 @@ export function aimEngine(canvas, params, api) {
       const ex = cx + lockedAngle * maxR * 0.9;
       const x = sx + (ex - sx) * t;
       const y = sy + (cy - sy) * t - Math.sin(t * Math.PI) * 18 * (0.4 + lockedPower);
-      playerBall(ctx, x, y, 11, params.accent || CANDY.blue, api);
+      playerBall(ctx, x, y, 11, params.accent || CANDY.blue, api, { avatarScale: 0.45 });
     }
 
     const bar = (y, label, ratio, active) => {

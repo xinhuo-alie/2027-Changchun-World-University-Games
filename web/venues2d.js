@@ -286,6 +286,7 @@ export function createMapView(canvas, opts = {}) {
   let counts = new Map();
   let landedAt = -10;
   let visited = new Set();
+  let medals = new Set();
   let activeId = null;
   let walk = null;
   let followHero = true;
@@ -447,6 +448,7 @@ export function createMapView(canvas, opts = {}) {
       const p = project(v.mapPos.x, v.mapPos.z);
       const isActive = v.id === activeId;
       const done = visited.has(v.id);
+      const medal = medals.has(v.id);
       if (isActive) {
         const pulse = 1 + Math.sin(time * 3.4) * 0.12;
         ctx.strokeStyle = 'rgba(255, 143, 122, 0.75)';
@@ -488,6 +490,15 @@ export function createMapView(canvas, opts = {}) {
         ctx.lineTo(artX + artW + 5, artY - 3);
         ctx.stroke();
       }
+      if (medal) {
+        ctx.fillStyle = '#E7BD68';
+        ctx.beginPath();
+        ctx.arc(artX + 7, artY + 7, r * 0.34, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#604820';
+        ctx.font = '700 10px system-ui';
+        ctx.fillText('★', artX + 7, artY + 7.5);
+      }
 
       const count = counts.get(v.id) || 0;
       if (count > 0) {
@@ -510,10 +521,14 @@ export function createMapView(canvas, opts = {}) {
     }
   }
 
+  function heroHeight() {
+    return Math.max(78, Math.min(120, size.w / 6.8));
+  }
+
   function drawHero() {
     if (!heroVisible || !cfg) return;
     const p = project(hero.pos.x, hero.pos.z);
-    const h = Math.max(64, Math.min(100, size.w / 8));
+    const h = heroHeight();
     ctx.save();
     const age = time - landedAt;
     if (age >= 0 && age < .65) {
@@ -738,13 +753,13 @@ export function createMapView(canvas, opts = {}) {
      * 而且起点仍然是"当前位置"，不会瞬移回起点。
      */
     const route = buildRouteFrom(hero.pos, venue);
-    const speed = 175; // 世界单位 / 秒：近的场馆一两秒就到，远的五六秒，别让人干等
+    const speed = 450; // 世界单位 / 秒：在原速度基础上翻倍
     walk = {
       venueId,
       route,
       traveled: 0,
       total: route.total,
-      duration: Math.max(0.8, route.total / speed),
+      duration: Math.max(0.4, route.total / speed),
       elapsed: 0,
     };
     hero.moving = true;
@@ -760,7 +775,7 @@ export function createMapView(canvas, opts = {}) {
     const route = walk.route;
     walk.traveled = Math.min(route.total, (walk.elapsed / walk.duration) * route.total);
     const pt = pointAt(route, walk.traveled);
-    if (Math.abs(pt.dx) > 0.2) hero.facing = pt.dx > 0 ? -1 : 1;
+    if (Math.abs(pt.dx) > 0.2) hero.facing = pt.dx > 0 ? 1 : -1;
     hero.pos = { x: pt.x, z: pt.z };
     if (followHero) centerOn(hero.pos.x, hero.pos.z);
     if (walk.traveled >= route.total) {
@@ -789,12 +804,16 @@ export function createMapView(canvas, opts = {}) {
     setHeroVisible(value) { heroVisible = Boolean(value); if(value) landedAt = time; },
     setFilter(value) { filter = value; },
     setCounts(rows) { counts = new Map(rows.map(r => [r.id, r.count])); },
-    heroScreen() { return { ...project(hero.pos.x, hero.pos.z), height: Math.max(64, Math.min(100, size.w / 8)) }; },
+    heroScreen() { return { ...project(hero.pos.x, hero.pos.z), height: heroHeight() }; },
     setCharacter(next) {
       cfg = next;
     },
     setVisited(set) {
       visited = set;
+    },
+    setProgress(explored, challengeMedals) {
+      visited = explored;
+      medals = challengeMedals;
     },
     setActive(id) {
       activeId = id;

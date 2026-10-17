@@ -1,10 +1,10 @@
-import { ENGINES } from '/minigame-engines.js';
+import { ENGINES } from '/minigame-redesign.js';
 import { drawCharacter } from '/avatar-parts.js';
 
 /**
  * 小游戏外壳：叠加层、按钮与键盘输入、主循环。
  *
- * 具体玩法在 minigame-engines.js 里，这里只负责：
+ * 具体玩法在 minigame-redesign.js 里，这里只负责：
  *   · 按场馆配置挑引擎、配按钮文案
  *   · 驱动 update/draw
  *   · 结算界面
@@ -29,6 +29,7 @@ export function createMinigameHost(options = {}) {
     controls: document.getElementById('mgControls'),
     result: document.getElementById('mgResult'),
     resultText: document.getElementById('mgResultText'),
+    reward: document.getElementById('mgReward'),
     close: document.getElementById('mgClose'),
     again: document.getElementById('mgAgain'),
     exit: document.getElementById('mgExit'),
@@ -45,6 +46,7 @@ export function createMinigameHost(options = {}) {
   let size = { w: 320, h: 220 };
   let audio = null;
   let roundId = 0;
+  let lastOpener = null;
   const intro = document.createElement('div');
   intro.className = 'mg-intro';
   intro.innerHTML = '<span class="mg-intro-icon"></span><strong></strong><p></p><button type="button" class="primary">开始挑战 →</button>';
@@ -52,10 +54,12 @@ export function createMinigameHost(options = {}) {
   let countdownTimer = null;
 
   const goals = {
-    rhythm: '左右交替，保持连击并抢先冲线。速度条越满，跑得越快。',
-    aim: '三次机会！先锁力度，再锁方向，尽量把冰壶或球送进靶心。',
-    dodge: '提前看准旗门缺口，左右变道；连续穿门加分，撞到岩石连击归零。',
-    jump: '障碍靠近时点击起跳；成功跨过 3 个障碍，就能赢得纪念章。',
+    rhythm: '跟着冰面节拍左右交替踩拍。踩准拍点会更快，连着完美节拍就能追上对手。',
+    curling: '先选力度，再选路线。撞开对手的壶，或把自己的壶送到营心附近。',
+    hockey: '左右移动瞄准点，观察守门员的方向，在他移动到另一侧时射门。',
+    dodge: '左右切换雪道穿过旗门，躲开雪堆；攒够能量后点冲刺。',
+    jump: '沿助滑道加速，在黄色起跳区按起跳；腾空后按一次收板，再轻点左右让平衡标记回到中间，看到落地提示后按落地。每次点按只修正一点，连续乱按会失衡。',
+    endurance: '上坡省体力，下坡顺势恢复。用左右调整滑行强度，冲刺留给关键路段。',
   };
 
   function beep(freq = 660, dur = 0.05, vol = 0.035) {
@@ -93,25 +97,44 @@ export function createMinigameHost(options = {}) {
   }
 
   /** 按引擎类型配置界面文案与可见按钮 */
-  function setupControls(kind) {
-    const twoButton = kind === 'rhythm' || kind === 'dodge';
-    els.left.hidden = !twoButton;
-    els.right.hidden = !twoButton;
-    els.primary.hidden = twoButton;
+  function setupControls(kind, params = {}) {
+    const hasSides = ['rhythm', 'dodge', 'jump', 'endurance', 'goalie'].includes(kind) || (kind === 'aim' && params.mode === 'hockey');
+    const hasPrimary = kind !== 'rhythm';
+    els.left.hidden = !hasSides;
+    els.right.hidden = !hasSides;
+    els.primary.hidden = !hasPrimary;
 
     if (kind === 'rhythm') {
-      els.hint.textContent = '左右交替点击加速（键盘 A / D）';
-      els.left.textContent = '← 左腿';
-      els.right.textContent = '右腿 →';
+      els.hint.textContent = '看提示交替踩：左脚 A / ←，右脚 D / →；等金圈亮起再按。踩准会加速，踩错会掉速。';
+      els.left.textContent = '左脚踩拍';
+      els.right.textContent = '右脚踩拍';
     } else if (kind === 'dodge') {
-      els.hint.textContent = '左右变道躲岩石、穿过旗门（键盘 ← →）';
-      els.left.textContent = '← 变道';
-      els.right.textContent = '变道 →';
+      els.hint.textContent = '左右切换雪道，点冲刺消耗能量（键盘 ← → / 空格）';
+      els.left.textContent = '← 左刃';
+      els.right.textContent = '右刃 →';
+      els.primary.textContent = '短冲刺';
     } else if (kind === 'jump') {
-      els.hint.textContent = '点击起跳，跳过所有障碍（键盘空格）';
-      els.primary.textContent = '起跳';
+      els.hint.textContent = '黄色区按起跳 → 空中按一次收板 → 轻点左右修正平衡 → 落地窗口按落地。每次点按修正一点；按住方向不累计。';
+      els.left.textContent = '重心 ←';
+      els.right.textContent = '重心 →';
+      els.primary.textContent = '起跳 / 收板 / 落地';
+    } else if (kind === 'endurance') {
+      els.hint.textContent = '左键降强度恢复体力，右键加力，空格短冲刺';
+      els.left.textContent = '轻松滑';
+      els.right.textContent = '强力蹬';
+      els.primary.textContent = '蓄力冲刺';
+    } else if (kind === 'aim' && params.mode === 'hockey') {
+      els.hint.textContent = '左右调整射门方向，避开守门员再出手';
+      els.left.textContent = '← 瞄左';
+      els.right.textContent = '瞄右 →';
+      els.primary.textContent = '射门';
+    } else if (kind === 'goalie') {
+      els.hint.textContent = '看清冰球轨迹，再按 A / S / D 或 ← / 空格 / → 扑左、中、右';
+      els.left.textContent = '← 扑左';
+      els.right.textContent = '扑右 →';
+      els.primary.textContent = '扑中 S';
     } else {
-      els.hint.textContent = '先锁定力度，再锁定方向（键盘空格）';
+      els.hint.textContent = '点一次锁定力度，再点一次选择路线；观察冰壶间的空位';
       els.primary.textContent = '锁定';
     }
   }
@@ -122,6 +145,7 @@ export function createMinigameHost(options = {}) {
     cancelAnimationFrame(raf);
     engine = null;
     current = venue;
+    if (root.hidden) lastOpener = document.activeElement;
     const cfg = venue.game;
     if (!cfg) return;
     els.title.textContent = cfg.title;
@@ -130,13 +154,17 @@ export function createMinigameHost(options = {}) {
     els.controls.hidden = false;
     root.hidden = false;
     root.classList.add('open');
-    setupControls(cfg.engine);
+    setupControls(cfg.engine, cfg.params || {});
     intro.querySelector('.mg-intro-icon').textContent = cfg.icon || '❄';
     intro.querySelector('strong').textContent = cfg.title;
-    intro.querySelector('p').textContent = goals[cfg.engine] || cfg.subtitle;
+    const goalKey = cfg.engine === 'aim' && cfg.params?.mode === 'hockey' ? 'hockey'
+      : cfg.engine === 'aim' ? 'curling' : cfg.engine;
+    intro.querySelector('p').textContent = goals[goalKey] || cfg.subtitle;
     intro.hidden = false;
     intro.querySelector('button').disabled = false;
     els.controls.hidden = true;
+    intro.querySelector('button').focus();
+    els.reward.textContent = '';
 
     // 先把玩法交代清楚；倒数结束后才开始计时和生成障碍。
     intro.querySelector('button').onclick = () => {
@@ -172,9 +200,15 @@ export function createMinigameHost(options = {}) {
       hit: () => beep(780, 0.03),
       miss: () => beep(220, 0.09, 0.03),
       // 小游戏也直接画完整角色，避免人物在关卡中退化为头像球。
-      avatarFigure: avatar ? (c, x, y, r) => drawCharacter(c, avatar,
-        { x: x - r * 1.25, y: y - r * 2.1, w: r * 2.5, h: r * 3.2 },
-        { t: 0, moving: false, shadow: false }) : null,
+      avatarFigure: avatar ? (c, x, y, r, pose = {}) => {
+        const scale = Number.isFinite(pose.avatarScale) ? pose.avatarScale : 1;
+        const height = Math.max(92, Math.min(132, size.h * 0.30)) * scale;
+        const width = height * 0.78;
+        // y 是旧球形角色的中心；脚底仍落在原赛道附近，向上扩展完整人物。
+        drawCharacter(c, avatar,
+          { x: x - width / 2, y: y - height * 0.86, w: width, h: height },
+          { t: pose.t || 0, moving: Boolean(pose.moving), ski: Boolean(pose.ski), cheer: pose.cheer || 0, shadow: false });
+      } : null,
       finish: (won, result) => {
         if (thisRound !== roundId || root.hidden) return;
         if (engine) engine.done = true;
@@ -182,11 +216,18 @@ export function createMinigameHost(options = {}) {
         beep(won ? 880 : 320, 0.18);
         els.controls.hidden = true;
         els.result.hidden = false;
-        els.resultText.innerHTML =
-          `${won ? '🎉 完成' : '💪 再试一次'}<br>` +
-          `<span class="mg-score">${result.score} ${result.unit}</span>` +
-          `<span class="mg-detail">${result.detail}</span>`;
-        if (options.onFinish) options.onFinish(won, result, current);
+        options.onFinish?.(won, result, current);
+        const heading = document.createElement('strong');
+        heading.textContent = won ? '挑战完成' : '再试一次';
+        const score = document.createElement('span');
+        score.className = 'mg-score';
+        score.textContent = `${result.score} ${result.unit}`;
+        const detail = document.createElement('span');
+        detail.className = 'mg-detail';
+        detail.textContent = result.detail || '';
+        els.resultText.replaceChildren(heading, document.createElement('br'), score, detail);
+        els.reward.textContent = result.rewardText || '';
+        els.again.focus();
       },
     });
     engine.done = false;
@@ -203,11 +244,12 @@ export function createMinigameHost(options = {}) {
     root.hidden = true;
     root.classList.remove('open');
     if (options.onStop) options.onStop();
+    if (lastOpener?.isConnected) lastOpener.focus();
   }
 
   els.controls.addEventListener('click', (event) => {
-    const act = event.target && event.target.dataset ? event.target.dataset.act : null;
-    if (act && engine) engine.onAction(act);
+    const rawAction = event.target && event.target.dataset ? event.target.dataset.act : null;
+    if (rawAction && engine) engine.onAction(rawAction === 'primary' && current?.game?.engine === 'goalie' ? 'center' : rawAction);
   });
 
   const keyMap = {
@@ -215,15 +257,27 @@ export function createMinigameHost(options = {}) {
     arrowleft: 'left',
     d: 'right',
     arrowright: 'right',
+    s: 'center',
     ' ': 'primary',
     enter: 'primary',
   };
   window.addEventListener('keydown', (event) => {
     if (root.hidden) return;
+    if (event.key === 'Tab') {
+      const focusable = [...root.querySelectorAll('button:not(:disabled), [href], [tabindex]:not([tabindex="-1"])')]
+        .filter((element) => !element.hidden && element.getClientRects().length > 0);
+      const first = focusable[0];
+      const lastFocusable = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); lastFocusable?.focus(); }
+      else if (!event.shiftKey && document.activeElement === lastFocusable) { event.preventDefault(); first?.focus(); }
+      else if (!root.contains(document.activeElement)) { event.preventDefault(); first?.focus(); }
+      return;
+    }
     const act = keyMap[event.key.toLowerCase()];
     if (act) {
+      if (event.repeat && current?.game?.engine === 'jump' && ['left', 'right'].includes(act)) return;
       event.preventDefault();
-      if (engine) engine.onAction(act);
+      if (engine) engine.onAction(act === 'primary' && current?.game?.engine === 'goalie' ? 'center' : act);
     }
     if (event.key === 'Escape') stop();
   });

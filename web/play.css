@@ -857,7 +857,9 @@ body {
 }
 
 .mg-panel {
-  width: min(460px, 100%);
+  width: min(760px, 100%);
+  max-height: min(94dvh, 940px);
+  overflow: auto;
   background: #fff;
   border-radius: 20px;
   padding: 16px;
@@ -897,7 +899,7 @@ body {
 #mgCanvas {
   display: block;
   width: 100%;
-  height: 230px;
+  height: clamp(300px, 48dvh, 520px);
   border-radius: 14px;
   background: #eef7fd;
 }
@@ -1039,6 +1041,14 @@ body {
   }
 
   #mgCanvas {
-    height: 190px;
+    height: clamp(260px, 42dvh, 440px);
   }
+}
+
+@media (max-width: 560px) {
+  .mg { padding: 8px; }
+  .mg-panel { width: 100%; max-height: calc(100dvh - 16px); padding: 12px; border-radius: 16px; }
+  #mgCanvas { height: clamp(230px, 36dvh, 330px); }
+  .mg-controls, .mg-result-actions { gap: 6px; }
+  .mg-btn { min-width: 0; padding: 12px 6px; font-size: 12px; }
 }

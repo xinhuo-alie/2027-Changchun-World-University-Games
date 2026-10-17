@@ -3,7 +3,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { config, RESULT_DIR } from './env.js';
 import { resolveProvider, promptLocaleFor } from './providers/index.js';
-import { buildPrompt, describeFigurineOutfit, describeFigurineCreative } from './styles.js';
+import { buildPrompt, describeFigurineSelection } from './styles.js';
 
 /**
  * 任务队列 + 结果存储。
@@ -89,7 +89,7 @@ async function runJob(id) {
       styleId: job.styleId,
       locale: promptLocaleFor(provider.id),
       purpose: job.purpose,
-      extra: job.purpose === 'figurine' ? `${describeFigurineCreative(job._creative)}\n${describeFigurineOutfit(job._outfit)}` : '',
+      extra: job.purpose === 'figurine' ? describeFigurineSelection(job._creative, job._outfit) : '',
     });
 
     const output = await provider.generate({
