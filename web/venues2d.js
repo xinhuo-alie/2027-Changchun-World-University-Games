@@ -12,7 +12,7 @@ import { drawCityMap } from '/city-map.js';
  */
 
 import { drawCharacterAt } from '/avatar-parts.js';
-import { drawVenueIllustration } from '/venue-art.js';
+import { drawVenueMiniature } from '/venue-art.js';
 
 
 
@@ -303,6 +303,18 @@ export function createMapView(canvas, opts = {}) {
 
   const project = (x, z) => ({ x: panX + x * scale, y: panY + z * scale });
   const unproject = (sx, sy) => ({ x: (sx - panX) / scale, z: (sy - panY) / scale });
+  // 密集的主城场馆略微错开，建筑脚座仍通过一条细线指回实际示意位置。
+  const markerOffsets = {
+    wuhuan: [55, 0], speed: [-27, 25], cityhall: [27, 26],
+    provhall: [-16, -18], palace: [34, -25], culture: [-34, -21],
+    film: [-24, 12], sculpture: [-26, 23], nanhu: [10, 22],
+    olympic: [11, -13], jingyue: [18, 18], lianhua: [20, -8],
+  };
+  const markerPoint = (v) => {
+    const anchor = project(v.mapPos.x, v.mapPos.z);
+    const [dx, dy] = markerOffsets[v.id] || [0, 0];
+    return { x: anchor.x + dx, y: anchor.y + dy, anchor };
+  };
 
   function computeBounds() {
     let minX = Infinity;
@@ -319,13 +331,15 @@ export function createMapView(canvas, opts = {}) {
       bounds = { x: -260, z: -280, w: 960, h: 660 };
       return;
     }
-    // 留白给徽章和文字，以及东部那两座跨城的场馆
-    const pad = 150;
+    // 全图尽量让街道沙盘占满画布；北侧给奥体场馆留出模型高度。
+    const sidePad = size.w < 700 ? 140 : 75;
+    const topPad = 100;
+    const bottomPad = 75;
     bounds = {
-      x: minX - pad,
-      z: minZ - pad,
-      w: maxX - minX + pad * 2,
-      h: maxZ - minZ + pad * 2,
+      x: minX - sidePad,
+      z: minZ - topPad,
+      w: maxX - minX + sidePad * 2,
+      h: maxZ - minZ + topPad + bottomPad,
     };
   }
 
@@ -404,10 +418,11 @@ export function createMapView(canvas, opts = {}) {
   function drawRoutes() {
     ctx.lineCap = 'round';
     for (const v of venues) {
-      const route = routes.get(v.id);
+      if (v.id !== activeId) continue;
+      const route = walk?.venueId === v.id ? walk.route : routes.get(v.id);
       const crossCity = v.city === '吉林市';
-      ctx.strokeStyle = crossCity ? 'rgba(150, 170, 190, 0.55)' : 'rgba(170, 200, 225, 0.7)';
-      ctx.lineWidth = Math.max(1.6, (crossCity ? 6 : 4) * scale);
+      ctx.strokeStyle = crossCity ? 'rgba(72, 128, 136, .66)' : 'rgba(70, 137, 126, .58)';
+      ctx.lineWidth = Math.max(1.6, (crossCity ? 5 : 3) * scale);
       traceRoute(route);
       ctx.stroke();
       if (crossCity) {
@@ -438,14 +453,14 @@ export function createMapView(canvas, opts = {}) {
 
   function drawVenues() {
     const r = badgeRadius();
-    const artW = Math.max(43, Math.min(62, size.w / 15));
-    const artH = artW * .69;
+    const artW = Math.max(68, Math.min(96, size.w / 11));
+    const artH = artW * .73;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.font = '700 12.5px system-ui, "Microsoft YaHei", sans-serif';
     for (const v of venues) {
       if (filter !== 'all' && v.kind !== filter) continue;
-      const p = project(v.mapPos.x, v.mapPos.z);
+      const p = markerPoint(v);
       const isActive = v.id === activeId;
       const done = visited.has(v.id);
       const medal = medals.has(v.id);
@@ -458,21 +473,20 @@ export function createMapView(canvas, opts = {}) {
         ctx.stroke();
       }
       const artX = p.x - artW / 2;
-      const artY = p.y - artH * .7;
+      const artY = p.y - artH * .87;
+      const tether = Math.hypot(p.x - p.anchor.x, p.y - p.anchor.y);
+      if (tether > 8) {
+        ctx.strokeStyle = 'rgba(62,109,108,.45)';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();ctx.moveTo(p.anchor.x,p.anchor.y);ctx.lineTo(p.x,p.y + artH * .12);ctx.stroke();
+        ctx.fillStyle = '#fff8df';ctx.beginPath();ctx.arc(p.anchor.x,p.anchor.y,3,0,7);ctx.fill();
+      }
       ctx.save();
-      ctx.shadowColor = 'rgba(37,75,114,.22)';
-      ctx.shadowBlur = 13;
-      ctx.shadowOffsetY = 5;
-      ctx.fillStyle = '#fff';
-      ctx.beginPath(); ctx.roundRect(artX - 4, artY - 4, artW + 8, artH + 8, 11); ctx.fill();
+      ctx.shadowColor='rgba(31,67,71,.28)';
+      ctx.shadowBlur=8;
+      ctx.shadowOffsetY=5;
+      drawVenueMiniature(ctx, v, artX, artY, artW, artH);
       ctx.restore();
-      ctx.save();
-      ctx.beginPath(); ctx.roundRect(artX, artY, artW, artH, 7); ctx.clip();
-      drawVenueIllustration(ctx, v, artX, artY, artW, artH);
-      ctx.restore();
-      ctx.strokeStyle = isActive ? '#ef8d7c' : '#fff';
-      ctx.lineWidth = isActive ? 3 : 2;
-      ctx.beginPath(); ctx.roundRect(artX, artY, artW, artH, 7); ctx.stroke();
 
       if (done) {
         ctx.fillStyle = '#7FE0C4';
@@ -512,12 +526,12 @@ export function createMapView(canvas, opts = {}) {
       ctx.font = '600 11px system-ui, "Microsoft YaHei", sans-serif';
       const label = v.name.replace(/^长春|^吉林/, '');
       const textW = ctx.measureText(label).width;
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+      ctx.fillStyle = 'rgba(255, 252, 236, 0.95)';
       ctx.beginPath();
-      ctx.roundRect(p.x - textW / 2 - 7, artY + artH + 6, textW + 14, 20, 10);
+      ctx.roundRect(p.x - textW / 2 - 7, artY + artH + 1, textW + 14, 20, 10);
       ctx.fill();
       ctx.fillStyle = isActive ? '#C0432B' : '#33526E';
-      ctx.fillText(label, p.x, artY + artH + 17);
+      ctx.fillText(label, p.x, artY + artH + 12);
     }
   }
 
@@ -637,7 +651,7 @@ export function createMapView(canvas, opts = {}) {
     let bestD = Infinity;
     for (const v of venues) {
       if (filter !== 'all' && v.kind !== filter) continue;
-      const p = project(v.mapPos.x, v.mapPos.z);
+      const p = markerPoint(v);
       const d = Math.hypot(p.x - sx, p.y - sy);
       if (d < reach && d < bestD) {
         best = v;

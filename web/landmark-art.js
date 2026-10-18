@@ -1,7 +1,9 @@
 // 城市地标独立插画；保留可识别的建筑或空间特征。
-export function drawLandmark(ctx,id) {
-  ctx.fillStyle='#e9f5f9';ctx.fillRect(0,0,160,110);
-  ctx.fillStyle='#daeae9';ctx.beginPath();ctx.ellipse(80,103,95,26,0,0,7);ctx.fill();
+export function drawLandmark(ctx,id,{transparent=false}={}) {
+  if(!transparent) {
+    ctx.fillStyle='#e9f5f9';ctx.fillRect(0,0,160,110);
+    ctx.fillStyle='#daeae9';ctx.beginPath();ctx.ellipse(80,103,95,26,0,0,7);ctx.fill();
+  }
   const rect=(x,y,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(x,y,w,h);};
   const roof=(x,y,w,h,c)=>{ctx.fillStyle=c;ctx.beginPath();ctx.moveTo(x,y+h);ctx.lineTo(x+w*.18,y+h*.35);ctx.lineTo(x+w*.5,y);ctx.lineTo(x+w*.82,y+h*.35);ctx.lineTo(x+w,y+h);ctx.closePath();ctx.fill();};
   const windows=(x,y,n,color='#c0e4ef')=>{for(let i=0;i<n;i++)rect(x+i*13,y,7,10,color);};
@@ -34,5 +36,5 @@ export function drawLandmark(ctx,id) {
     roof(11,27,33,22,'#7c8cba');roof(117,27,33,22,'#7c8cba');roof(58,9,45,28,'#879dc3');
     windows(41,69,6,'#f7e6b7');rect(72,76,18,23,'#5f7fa2');
   }
-  ctx.fillStyle='rgba(255,255,255,.85)';ctx.fillRect(9,99,142,4);
+  if(!transparent) { ctx.fillStyle='rgba(255,255,255,.85)';ctx.fillRect(9,99,142,4); }
 }

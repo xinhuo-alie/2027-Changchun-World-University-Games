@@ -167,3 +167,27 @@ export function drawVenueIllustration(ctx, venue, x, y, width, height) {
   else drawOutdoors(ctx, id, p);
   ctx.restore();
 }
+
+// 地图上的建筑直接立在纸雕底座上，不使用缩略图的天空背景和白色相框。
+export function drawVenueMiniature(ctx, venue, x, y, width, height) {
+  const id = typeof venue === 'string' ? venue : venue?.id;
+  const palette = palettes[id] || ['#d8e8dc', '#91b5a7', '#537c76'];
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(width / 160, height / 116);
+  ctx.fillStyle = 'rgba(41,74,69,.25)';
+  ctx.beginPath();ctx.ellipse(81,106,72,9,0,0,7);ctx.fill();
+  // 可见的正面、侧面和顶面把各场馆统一成一组微缩沙盘模型。
+  ctx.fillStyle = '#92ab9d';
+  poly(ctx, '#92ab9d', [[9,86],[80,103],[151,86],[151,99],[80,115],[9,99]]);
+  poly(ctx, '#b5c7aa', [[80,103],[151,86],[151,99],[80,115]]);
+  poly(ctx, '#eaf1d8', [[9,86],[80,69],[151,86],[80,103]]);
+  ctx.save();ctx.translate(0,-18);
+  if (typeof venue === 'object' && venue.kind === 'attraction') drawLandmark(ctx,id,{transparent:true});
+  else if (['wuhuan','speed','cityhall','provhall','olympic'].includes(id)) drawArena(ctx,id,palette);
+  else drawOutdoors(ctx,id,palette);
+  ctx.restore();
+  ctx.strokeStyle='rgba(255,255,255,.74)';ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(10,87);ctx.lineTo(80,104);ctx.lineTo(150,87);ctx.stroke();
+  ctx.restore();
+}
