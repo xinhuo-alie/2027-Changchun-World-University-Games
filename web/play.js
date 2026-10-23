@@ -1,5 +1,5 @@
 import { connectStats, recordVisit } from '/visit-client.js';
-import { keyFigureBackground } from '/avatar-face.js';
+import { keyFigureBackground, figureCutoutHasBackground } from '/avatar-face.js';
 if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 /**
  * 2D 云游览主控。
@@ -12,13 +12,15 @@ if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
  * 所有画布都是现画的（没有图片素材），所以"改一下立刻看到"是免费的。
  */
 
-import { createMapView, drawVenueIcon } from '/venues2d.js';
+import { applyMapLayout, createMapView, drawVenueIcon } from '/venues2d.js';
+import { fetchMapLayout } from '/map-layout-client.js';
 import { drawVenueIllustration } from '/venue-art.js';
 import { createMinigameHost } from '/minigames.js';
 import { createSoundscape } from '/soundscape.js';
 import { createProgressStore } from '/progress.js';
+import { createGuideUI } from '/guide-ui.js';
+import { buildPassport } from '/passport.js';
 import { createQuiz } from '/quiz.js';
-import { QUIZ_QUESTIONS } from '/quiz-questions.js';
 import {
   CREATIVE_GROUPS, CREATIVE_PRESETS, DEFAULT_CREATIVE, normalizeCreative,
   recommendCreativeForSport, applyCreativePreset, randomCreative, clearCreativeDetails,
@@ -101,6 +103,11 @@ const state = {
   goalieBest: 0,
   quizBest: 0,
   quizBadge: false,
+  guideMode: 'relaxed',
+  route: null,
+  readNotes: new Set(),
+  knowledgeSources: new Set(),
+  claimedQuests: new Set(),
   photo: null, // 见 openEditor
   pendingVenue: null,
 };
@@ -110,6 +117,15 @@ const state = {
 /* ------------------------------------------------------------------ */
 
 let progressStore = null;
+let guideUI = null;
+function currentProgress() {
+  return {
+    explored: [...state.visited], medals: [...state.medals], bestScores: state.bestScores,
+    goalieBest: state.goalieBest, quizBest: state.quizBest, quizBadge: state.quizBadge,
+    guideMode: state.guideMode, route: state.route, readNotes: [...state.readNotes],
+    knowledgeSources: [...state.knowledgeSources], claimedQuests: [...state.claimedQuests],
+  };
+}
 function loadProgress() {
   progressStore = createProgressStore({
     getItem: (key) => localStorage.getItem(key),
@@ -122,13 +138,23 @@ function loadProgress() {
   state.goalieBest = saved.goalieBest;
   state.quizBest = saved.quizBest;
   state.quizBadge = saved.quizBadge;
+  state.guideMode = saved.guideMode;
+  state.route = saved.route;
+  state.readNotes = new Set(saved.readNotes);
+  state.knowledgeSources = new Set(saved.knowledgeSources);
+  state.claimedQuests = new Set(saved.claimedQuests);
 }
 
 function saveProgress() {
-  progressStore?.save({
-    explored: [...state.visited], medals: [...state.medals], bestScores: state.bestScores,
-    goalieBest: state.goalieBest, quizBest: state.quizBest, quizBadge: state.quizBadge,
-  });
+  progressStore?.save(currentProgress());
+  guideUI?.render();
+}
+
+function setGuideProgress(patch) {
+  if (Object.hasOwn(patch, 'guideMode')) state.guideMode = patch.guideMode;
+  if (Object.hasOwn(patch, 'route')) state.route = patch.route;
+  if (Object.hasOwn(patch, 'claimedQuests')) state.claimedQuests = new Set(patch.claimedQuests || []);
+  saveProgress();
 }
 
 /* ------------------------------------------------------------------ */
@@ -243,6 +269,7 @@ function syncLookSelection() {
 }
 
 function exportPassport() {
+  const passport = buildPassport(currentProgress(), state.venues);
   const canvas = document.createElement('canvas');
   canvas.width = 1080;
   canvas.height = 1440;
@@ -273,7 +300,7 @@ function exportPassport() {
   ctx.fillText(`${state.cfg.name || '冰雪旅行者'}的冰雪分身`, 540, 1040);
   ctx.fillStyle = '#fff';
   ctx.font = 'bold 32px "Microsoft YaHei", sans-serif';
-  ctx.fillText(`已探索 ${state.visited.size} / ${state.venues.length} 个地点 · 场馆挑战奖章 ${state.medals.size} / ${state.venues.filter((place) => place.kind === 'venue').length}`, 540, 1160);
+  ctx.fillText(`已探索 ${passport.explored} / ${passport.placeTotal} 个地点 · 场馆挑战奖章 ${passport.medals} / ${passport.venueTotal}`, 540, 1160);
   for (let i = 0; i < 10; i++) {
     ctx.beginPath();
     ctx.arc(153 + i * 86, 1235, 25, 0, Math.PI * 2);
@@ -285,9 +312,9 @@ function exportPassport() {
   }
   ctx.fillStyle = '#c3e5ee';
   ctx.font = '24px "Microsoft YaHei", sans-serif';
-  ctx.fillText(state.quizBadge ? '冰雪知识徽章 · 已收入手册' : `知识快问快答 · 最佳 ${state.quizBest} / ${QUIZ_QUESTIONS.length}`, 540, 1305);
+  ctx.fillText(state.quizBadge ? '冰雪知识徽章 · 已收入手册' : `知识快问快答 · 最佳 ${state.quizBest} / 5`, 540, 1305);
   ctx.font = '22px "Microsoft YaHei", sans-serif';
-  ctx.fillText('从照片或预设角色出发，把冰雪故事带回家', 540, 1365);
+  ctx.fillText(`护照任务章 ${passport.claimed} / ${passport.questTotal} · ${new Date().toLocaleDateString('zh-CN')} · 仅本地生成`, 540, 1365);
   const url = canvas.toDataURL('image/png');
   const sheet = document.createElement('div');
   sheet.className = 'sheet';
@@ -437,7 +464,23 @@ function renderPhotoTab(body) {
       open.target = '_blank';
       open.rel = 'noopener noreferrer';
       open.textContent = '查看原图 ↗';
-      info.append(heading, hint, open);
+      const useGenerated = document.createElement('button');
+      useGenerated.className = 'opt reference-avatar-button';
+      useGenerated.type = 'button';
+      useGenerated.textContent = '使用这位角色';
+      useGenerated.addEventListener('click', async () => {
+        useGenerated.disabled = true;
+        useGenerated.textContent = '正在准备角色…';
+        try {
+          await applyGeneratedFigure(state.generatedArtworkUrl);
+          await enterTour();
+        } catch {
+          useGenerated.disabled = false;
+          useGenerated.textContent = '使用这位角色';
+          $('departureNote').textContent = '已生成的角色载入失败，请重新生成后再试。';
+        }
+      });
+      info.append(heading, hint, open, useGenerated);
       artwork.append(info);
       importCard.appendChild(artwork);
     }
@@ -736,9 +779,10 @@ async function runGenerate() {
     const job = await (await fetch(`/api/jobs/${jobId}`)).json();
     if (job.status === 'succeeded' && job.resultUrl) {
       setGenStatus('画好了，正在整理完整角色…', 0.92);
+      await applyGeneratedFigure(job.resultUrl);
       state.generatedArtworkUrl = job.resultUrl;
       try { localStorage.setItem(ARTWORK_KEY, job.resultUrl); } catch { /* private browsing */ }
-      await applyGeneratedFigure(job.resultUrl);
+      renderTabBody();
       return;
     }
     if (job.status === 'failed') throw new Error(job.error || '生成失败');
@@ -753,7 +797,8 @@ async function runGenerate() {
 }
 
 function reportGenerateError(error) {
-  setGenStatus(`生成没成功：${error.message}。请稍后重试，或换一张人物轮廓清晰的照片。`, undefined);
+  const backgroundError = /场景或地面/.test(error.message);
+  setGenStatus(`生成没成功：${error.message}。${backgroundError ? '这张图不会用于角色预览，请点击重新生成。' : '请稍后重试，或换一张人物轮廓清晰的照片。'}`, undefined);
 }
 
 /**
@@ -924,6 +969,7 @@ async function applyGeneratedFigure(url) {
   src.getContext('2d').drawImage(img, 0, 0, w, h);
   const pixels = src.getContext('2d').getImageData(0, 0, w, h);
   const cut = keyFigureBackground(pixels);
+  if (figureCutoutHasBackground(cut)) throw new Error('模型仍画出了场景或地面，无法干净抠图；请重新生成');
   let transparent = 0;
   for (let i = 3; i < cut.data.length; i += 4) if (cut.data[i] < 32) transparent++;
   if (transparent < w * h * 0.08) throw new Error('未能分离人物背景，请重新生成纯色背景角色');
@@ -1525,7 +1571,7 @@ function syncChips() {
   $('explorationProgress').textContent = `${state.visited.size} / ${state.venues.length}`;
   $('medalProgress').textContent = `${state.medals.size} / ${state.venues.filter((place) => place.kind === 'venue').length}`;
   $('quizBadgeStatus').textContent = state.quizBadge ? '已获得' : '未获得';
-  $('quizBestStatus').textContent = `最佳 ${state.quizBest} / ${QUIZ_QUESTIONS.length} · 答对 4 题可获得`;
+  $('quizBestStatus').textContent = `最佳 ${state.quizBest} / 5 · 答对 4 题可获得`;
   $('goalieBest').textContent = `最佳扑救 ${state.goalieBest} / 5`;
 }
 
@@ -1582,7 +1628,7 @@ function syncMapSidebar() {
     document.querySelector('#mapPanel .live-summary, #workshopPanel .live-summary'),
   ];
   if (extras.some(item => !item)) return;
-  if (document.body.dataset.book === 'map' && matchMedia('(min-width: 900px)').matches) {
+  if (['map', 'detail'].includes(document.body.dataset.book) && matchMedia('(min-width: 900px)').matches) {
     if (extras[0].parentElement === $('workshopPanel')) return;
     $('bookMapSide').after(...extras);
   } else {
@@ -1611,6 +1657,16 @@ function setBookChapter(chapter) {
     $('workshopPanel').querySelector('.panel-head h2').textContent = '我的旅行伙伴';
     $('faceNote').textContent = '已准备出发';
   }
+}
+
+function setMapExpanded(expanded) {
+  const wrap = document.querySelector('#mapPanel .map-wrap');
+  wrap.classList.toggle('map-expanded', expanded);
+  $('fitBtn').textContent = expanded ? '⤡' : '⤢';
+  $('fitBtn').title = expanded ? '退出全图' : '看全图';
+  $('fitBtn').setAttribute('aria-label', $('fitBtn').title);
+  $('fitBtn').setAttribute('aria-pressed', String(expanded));
+  requestAnimationFrame(() => { map.resize(); map.fit(); });
 }
 
 async function turnBookPage(label, halfway, direction = 'forward') {
@@ -1824,6 +1880,7 @@ function cancelPendingWalk() {
 
 async function openDetailPage(venue) {
   if (bookTurning) return;
+  if (document.querySelector('#mapPanel .map-wrap').classList.contains('map-expanded')) setMapExpanded(false);
   const token = ++detailOpening;
   const art = $('detailArt');
   const artCtx = art.getContext('2d');
@@ -1841,6 +1898,10 @@ async function openDetailPage(venue) {
   if (fullPageFlips) await turnBookPage('03 · 地点手记', switchChapter);
   else await softlyChangeBookPage('detail', switchChapter);
   if (token === detailOpening) $('backToMap').focus();
+  if (token === detailOpening && !state.readNotes.has(venue.id)) {
+    state.readNotes.add(venue.id);
+    saveProgress();
+  }
 }
 
 async function returnToMap() {
@@ -1966,6 +2027,7 @@ function onArrive() {
   soundscape.playSuccess();
   $('walkBar').hidden = true;
   state.visited.add(venue.id);
+  guideUI?.advanceOnArrival(venue.id);
   saveProgress();
   map.setProgress(state.visited, state.medals);
   showCard(venue);
@@ -2042,7 +2104,7 @@ function showCard(venue) {
   $('placeItinerary').textContent = venue.itinerary || '';
   $('placeDuration').textContent = venue.duration || '';
   $('placeSource').href = venue.sourceUrl;
-  $('placeSource').textContent = venue.kind === 'attraction' ? '资料来源 · 吉林省文化和旅游厅 ↗' : '资料来源 · 赛事官网 ↗';
+  $('placeSource').textContent = `资料来源 · ${venue.sourceTitle || venue.name} ↗`;
   const icon = $('venueIcon');
   const ictx = icon.getContext('2d');
   drawVenueIllustration(ictx, venue, 0, 0, icon.width, icon.height);
@@ -2121,10 +2183,10 @@ let quiz = null;
 
 function initQuiz() {
   quiz = createQuiz($('quizModal'), {
-    getSourceUrl: (id) => state.venues.find((place) => place.id === id)?.sourceUrl,
-    onFinish: ({ score, earnedBadge }) => {
+    onFinish: ({ score, earnedBadge, correctSources = [] }) => {
       state.quizBest = Math.max(state.quizBest, score);
       state.quizBadge = state.quizBadge || earnedBadge;
+      for (const id of correctSources) state.knowledgeSources.add(id);
       saveProgress();
       syncChips();
     },
@@ -2242,7 +2304,9 @@ function wireEvents() {
   $('editCharacter').addEventListener('click', () => void returnToCreator());
   $('backToMap').addEventListener('click', () => void returnToMap());
   document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && !$('bookDetail').hidden && $('mg').hidden) void returnToMap();
+    if (event.key !== 'Escape') return;
+    if (document.querySelector('#mapPanel .map-wrap').classList.contains('map-expanded')) setMapExpanded(false);
+    else if (!$('bookDetail').hidden && $('mg').hidden) void returnToMap();
   });
   $('fileInput').addEventListener('change', async (event) => {
     const file = event.target.files && event.target.files[0];
@@ -2342,14 +2406,13 @@ function wireEvents() {
   $('helpBtn').addEventListener('click', () => {
     $('helpSheet').hidden = false;
   });
-  $('passportBtn').addEventListener('click', exportPassport);
   $('helpClose').addEventListener('click', () => {
     $('helpSheet').hidden = true;
   });
 
   $('zoomIn').addEventListener('click', () => map.zoomBy(1.25));
   $('zoomOut').addEventListener('click', () => map.zoomBy(0.8));
-  $('fitBtn').addEventListener('click', () => map.fit());
+  $('fitBtn').addEventListener('click', () => setMapExpanded(!document.querySelector('#mapPanel .map-wrap').classList.contains('map-expanded')));
   $('venueClose').addEventListener('click', hideCard);
   $('venuePlay').addEventListener('click', () => playVenue(state.pendingVenue));
   $('goalieOpen').addEventListener('click', () => playVenue({
@@ -2422,11 +2485,13 @@ async function boot() {
   renderTabBody();
   refreshStageHint();
 
-  const [venuesPayload, appConfig] = await Promise.all([
+  const [venuesPayload, appConfig, mapLayout] = await Promise.all([
     fetch('/api/places').then((r) => { if (!r.ok) throw new Error('地点信息加载失败，请检查服务后刷新'); return r.json(); }),
     // 形象是纯本地的，服务端的风格配置只是"有就用"，挂了也不影响
     fetch('/api/config').then((r) => r.json()).catch(() => null),
+    fetchMapLayout().catch(() => null),
   ]);
+  if (mapLayout) applyMapLayout(mapLayout);
   state.venues = venuesPayload.places || [];
   loadProgress();
   $('mapNote').textContent = '10 座场馆 · 6 处景点';
@@ -2446,6 +2511,14 @@ async function boot() {
   $('bookDetailContent').append($('venueCard'));
   map.setCharacter(state.cfg);
   map.setProgress(state.visited, state.medals);
+  guideUI = createGuideUI({
+    places: state.venues,
+    getProgress: currentProgress,
+    setProgress: setGuideProgress,
+    onNavigate: inspectPlace,
+    onQuiz: (sourceIds) => quiz?.open($('passportBtn'), sourceIds),
+    onCard: exportPassport,
+  });
   setBookChapter('cover');
   initGame();
   initQuiz();
@@ -2462,7 +2535,10 @@ async function boot() {
     map.setCharacter(state.cfg);
     if (state.generatedArtworkUrl) {
       applyGeneratedFigure(state.generatedArtworkUrl).catch(() => {
-        setGenStatus('旧作品无法载入，请上传照片重新生成完整角色。', undefined);
+        state.generatedArtworkUrl = null;
+        try { localStorage.removeItem(ARTWORK_KEY); } catch { /* private browsing */ }
+        renderTabBody();
+        setGenStatus('旧作品带有场景或无法干净抠图，请重新生成完整角色。', undefined);
       });
     }
   });
@@ -2536,6 +2612,10 @@ window.__play = {
     medals: [...state.medals],
     stamps: [...state.medals],
     bestScores: { ...state.bestScores },
+    guideMode: state.guideMode,
+    route: state.route,
+    readNotes: [...state.readNotes],
+    claimedQuests: [...state.claimedQuests],
     face: state.cfg.face.kind,
     hat: state.cfg.parts.hat,
     coat: state.cfg.parts.coat,

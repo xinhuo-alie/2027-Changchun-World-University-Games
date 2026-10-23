@@ -4,6 +4,7 @@
  */
 
 import { drawLandmark } from './landmark-art.js';
+import { drawGeneratedLandmark } from './landmark-sprites.js';
 const palettes = {
   wuhuan: ['#a8d9f4', '#6c9fc9', '#365e91'],
   speed: ['#a2e7f5', '#5bb4d1', '#297b9e'],
@@ -150,8 +151,9 @@ export function drawVenueIllustration(ctx, venue, x, y, width, height) {
   ctx.save();
   ctx.translate(x, y);
   ctx.scale(width / 160, height / 110);
+  if(drawGeneratedLandmark(ctx,id,0,0,160,110)){ctx.restore();return;}
   if (typeof venue === 'object' && venue.kind === 'attraction') {
-    drawLandmark(ctx, id); ctx.restore(); return;
+    if(!drawGeneratedLandmark(ctx,id,0,0,160,110))drawLandmark(ctx, id); ctx.restore(); return;
   }
   const sky = ctx.createLinearGradient(0, 0, 0, 110);
   sky.addColorStop(0, p[0]); sky.addColorStop(.68, '#eaf6fd'); sky.addColorStop(1, '#fff');
@@ -175,6 +177,7 @@ export function drawVenueMiniature(ctx, venue, x, y, width, height) {
   ctx.save();
   ctx.translate(x, y);
   ctx.scale(width / 160, height / 116);
+  if(drawGeneratedLandmark(ctx,id,0,0,160,116)){ctx.restore();return;}
   ctx.fillStyle = 'rgba(41,74,69,.25)';
   ctx.beginPath();ctx.ellipse(81,106,72,9,0,0,7);ctx.fill();
   // 可见的正面、侧面和顶面把各场馆统一成一组微缩沙盘模型。
@@ -183,7 +186,9 @@ export function drawVenueMiniature(ctx, venue, x, y, width, height) {
   poly(ctx, '#b5c7aa', [[80,103],[151,86],[151,99],[80,115]]);
   poly(ctx, '#eaf1d8', [[9,86],[80,69],[151,86],[80,103]]);
   ctx.save();ctx.translate(0,-18);
-  if (typeof venue === 'object' && venue.kind === 'attraction') drawLandmark(ctx,id,{transparent:true});
+  if (typeof venue === 'object' && venue.kind === 'attraction') {
+    if(!drawGeneratedLandmark(ctx,id,0,0,160,110))drawLandmark(ctx,id,{transparent:true});
+  }
   else if (['wuhuan','speed','cityhall','provhall','olympic'].includes(id)) drawArena(ctx,id,palette);
   else drawOutdoors(ctx,id,palette);
   ctx.restore();

@@ -1,0 +1,50 @@
+import assert from 'node:assert/strict';
+import { listPlaces } from '../server/places.js';
+import { QUESTS, claimQuest, evaluateQuests, recommendQuests } from '../web/quests.js';
+import { buildPassport } from '../web/passport.js';
+import { createProgressStore } from '../web/progress.js';
+import { createQuizSession, QUIZ_QUESTIONS } from '../web/quiz-questions.js';
+
+const places = listPlaces();
+assert.equal(QUESTS.length, 6);
+assert.deepEqual([...new Set(QUESTS.map((quest) => quest.category))].sort(), ['explore', 'sport', 'story']);
+const base = { explored: [], medals: [], readNotes: [], knowledgeSources: [], claimedQuests: [], bestScores: {} };
+assert.ok(evaluateQuests(base, places).every((quest) => quest.status === 'incomplete'));
+assert.equal(recommendQuests({ ...base, guideMode: 'sport' }, places)[0].category, 'sport');
+assert.equal(recommendQuests({ ...base, guideMode: 'city' }, places)[0].category, 'story');
+const explored = { ...base, explored: ['wuhuan', 'palace', 'film'] };
+assert.equal(evaluateQuests(explored, places)[0].status, 'claimable');
+assert.equal(evaluateQuests(explored, places)[0].nextStep, null);
+const claimed = claimQuest(explored, 'explore-first', places);
+assert.deepEqual(claimed.claimedQuests, ['explore-first']);
+assert.equal(claimQuest(claimed, 'explore-first', places), claimed, 'claiming twice must not grant twice');
+assert.equal(claimQuest(base, 'explore-first', places), base, 'clicking claim cannot fake completion');
+const story = { ...base, readNotes: ['film', 'century'], knowledgeSources: ['film'] };
+assert.equal(evaluateQuests(story, places).find((quest) => quest.id === 'story-film').status, 'claimable');
+assert.equal(evaluateQuests({ ...story, knowledgeSources: [] }, places).find((quest) => quest.id === 'story-film').status, 'incomplete');
+const passport = buildPassport(claimed, places);
+assert.equal(passport.explored, 3);
+assert.equal(passport.medals, 0);
+assert.equal(passport.claimed, 1);
+assert.ok(passport.completion > 0);
+
+const storageData = new Map();
+const storage = { getItem: (key) => storageData.get(key) ?? null, setItem: (key, value) => storageData.set(key, value) };
+const store = createProgressStore(storage, places.map((place) => place.id), places.filter((place) => place.kind === 'venue').map((place) => place.id));
+store.save({ ...claimed, guideMode: 'city', route: { ids: ['palace', 'film'], completed: ['palace'], status: 'paused' }, readNotes: ['film'], knowledgeSources: ['film'] });
+const restored = store.load();
+assert.deepEqual(restored.claimedQuests, ['explore-first']);
+assert.equal(restored.route.status, 'paused');
+assert.deepEqual(restored.route.completed, ['palace']);
+assert.deepEqual(restored.readNotes, ['film']);
+assert.deepEqual(restored.knowledgeSources, ['film']);
+assert.equal(restored.guideMode, 'city');
+const focused = createQuizSession(QUIZ_QUESTIONS, () => 0.37, 5, ['film']);
+const sources = [focused.question?.sourceId];
+for (let index = 0; index < 4; index++) {
+  focused.choose(0);
+  focused.next();
+  sources.push(focused.question?.sourceId);
+}
+assert.ok(sources.includes('film'), 'a task-linked quiz round must include a related question');
+console.log('任务判定、领取去重、护照汇总、存档恢复和关联知识题检查通过');

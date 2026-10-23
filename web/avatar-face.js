@@ -288,6 +288,24 @@ export function keyFigureBackground(img) {
   return { data, width: w, height: h };
 }
 
+/** Reject outputs where the supposed transparent margin still contains a room or ground. */
+export function figureCutoutHasBackground(img) {
+  const { width: w, height: h, data } = img;
+  const opaque = (x, y) => data[(y * w + x) * 4 + 3] >= 96;
+  const inset = Math.min(2, Math.floor(Math.min(w, h) / 10));
+  const vertical = (x) => {
+    let count = 0;
+    for (let y = 0; y < h; y++) if (opaque(x, y)) count++;
+    return count / h;
+  };
+  const horizontal = (y) => {
+    let count = 0;
+    for (let x = 0; x < w; x++) if (opaque(x, y)) count++;
+    return count / w;
+  };
+  return Math.max(vertical(inset), vertical(w - 1 - inset), horizontal(inset), horizontal(h - 1 - inset)) > 0.08;
+}
+
 /**
  * 只保留最大的一块前景，其余全部清掉。
  *

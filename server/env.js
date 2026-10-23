@@ -41,6 +41,7 @@ export const RESULT_DIR = path.join(DATA_DIR, 'results');
 
 export const config = {
   port: Number(process.env.PORT || 5173),
+  mapEditorPassword: (process.env.MAP_EDITOR_PASSWORD || '').trim(),
   provider: (process.env.IMAGE_PROVIDER || 'mock').trim(),
   arkApiKey: (process.env.ARK_API_KEY || '').trim(),
   /**

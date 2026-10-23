@@ -1,0 +1,42 @@
+{
+  "slide": 3,
+  "title": "冰雪角色造型工坊",
+  "prompt": "# Codex PPT Slide Image Prompt\n\n## Canvas\n{\n  \"type\": \"16:9 full-slide PowerPoint image\",\n  \"language\": \"Chinese\",\n  \"slide_number\": 3,\n  \"render_slide_number\": false\n}\n\n## Deck Goal\n用八页图示讲清楚长春冬日漫游项目的用户体验、核心玩法和轻量技术构成。\n\n## Required Background\n{\n  \"deck_context\": {\n    \"source_summary\": \"长春冬日漫游是围绕2027冬季世界大学生运动会制作的本地互动网页。用户直接试玩或在冰雪角色造型工坊制作角色，跟随角色游览10座竞赛场馆与6处城市景点，到达后阅读地点手记，挑战不同冬季运动小游戏、收集奖章。独立大屏展示地图与实时虚拟到达统计。\",\n    \"core_claim\": \"把赛事场馆变成可探索、可挑战、可回访的城市冰雪旅程。\",\n    \"canonical_terms\": [\n      \"长春冬日漫游\",\n      \"2027大冬会\",\n      \"冰雪角色造型工坊\",\n      \"地点手记\",\n      \"场馆挑战\",\n      \"虚拟游览次数\"\n    ]\n  }\n}\n\n## Global Style\n{\n  \"name\": \"冰雪手册插画风\",\n  \"visual_direction\": \"精致的长春冰雪旅行手册，水彩和手绘线条结合，带少量版画纸纹理；有温度的卡通精美感，不使用网页式卡片堆叠或夸张科技特效。\",\n  \"color_palette\": \"暖白纸色、深海军蓝、冰蓝和蓝绿色，少量赛事珊瑚红作为强调\",\n  \"typography\": \"中文大标题清晰醒目，正文简短、字号足够大；版式像精心设计的印刷画册\",\n  \"texture_and_finish\": \"浅纸纹、手绘地图线、冬季植物与雪花点缀，保留充足留白\",\n  \"deck_consistency\": \"保持第2页样张的画风、配色、文字层次和装饰密度；每页根据内容变化构图\"\n}\n\n## Input Images\n\n- Image 1: D:\\codex_workspace\\ppt-changchun-2027\\origin_image\\slide_02.png — style-only reference from approved sample slide; match palette, illustration treatment and typography mood; do not copy layout or content\n\n\n## Slide\n{\n  \"number\": 3,\n  \"title\": \"冰雪角色造型工坊\",\n  \"role\": \"concept explanation\",\n  \"intent\": \"说明直接试玩和自由造型两条角色入口\"\n}\n\n## Text\n{\n  \"title\": \"冰雪角色造型工坊\",\n  \"key_points\": [\n    \"免照片，直接试玩\",\n    \"自由搭配冰雪造型\",\n    \"角色跟随你走进地图\"\n  ],\n  \"speaker_focus\": null\n}\n\n## Layout\n{\n  \"composition\": \"左侧大幅角色造型插画，右侧上下两条进入路径，底部汇合进入地图\"\n}\n\n## Visual Elements\n{\n  \"main_visual\": \"可爱冬季运动角色、服装配色与运动装备小样、简洁箭头\"\n}\n\n## Constraints\n[\n  \"不要画真实用户照片\",\n  \"文字保持三句短语\"\n]\n\n## Style Reference Rule\nUse Image 1 as the approved sample-slide style reference. Match its palette, typography mood, density, texture, and overall visual identity. Do not copy its exact layout unless this slide's layout explicitly asks for it.\n\n## Input Image Handling Rules\nFor any input image marked as a strict input asset, include it visibly and preserve its content. Do not redraw, replace, relabel, or invent a similar figure. Scale and crop only as needed for composition while keeping the important labels, arrows, data, and relationships recognizable.\n\n## Universal Constraints\n- The final image itself must contain the title and key points.\n- Render Chinese text exactly and legibly; avoid garbled characters.\n- Keep the confirmed deck style consistent while varying layout by slide role.\n- No watermark, unrelated logo, or extra slide number.\n",
+  "out": "slide_03.png",
+  "input_images": [
+    {
+      "path": "D:\\codex_workspace\\ppt-changchun-2027\\origin_image\\slide_02.png",
+      "role": "style-only reference from approved sample slide",
+      "fidelity": "match palette, illustration treatment and typography mood; do not copy layout or content"
+    }
+  ],
+  "requires_context_images": true,
+  "expected_backend": "built-in image tool",
+  "sample_generation_method": {
+    "backend_used": "built-in image tool",
+    "tool_name": "image_gen__imagegen",
+    "mode": "generate",
+    "prompt_source": "approved Slide 2 sample prompt in conversation",
+    "size": "16:9 landscape (tool-selected resolution)",
+    "quality": "tool default",
+    "approved_sample_path": "D:\\codex_workspace\\ppt-changchun-2027\\origin_image\\slide_02.png",
+    "input_context_preparation": "inspect approved sample image via view_image and pass it as style-only reference to imagegen",
+    "handoff_rule": "Subagents must use image_gen__imagegen in generate mode, using the approved sample as style reference; report blocker if unavailable."
+  },
+  "generation_contract": {
+    "must_use_selected_image_backend": true,
+    "must_match_sample_generation_method": true,
+    "forbidden_final_image_methods": [
+      "local drawing/rendering scripts",
+      "Pillow-generated slides",
+      "SVG/HTML/CSS/canvas screenshots",
+      "python-pptx/PptxGenJS/native PPT layout screenshots",
+      "manually composited text/image overlays"
+    ],
+    "must_return": [
+      "backend_used",
+      "selected_source",
+      "qa_note"
+    ]
+  }
+}

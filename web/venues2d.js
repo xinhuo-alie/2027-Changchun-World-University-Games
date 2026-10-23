@@ -1,18 +1,32 @@
-import { drawCityMap } from '/city-map.js';
+import { drawCityMap, getPanoramaWorldPoints, MAP_BOUNDS } from '/city-map.js';
+import { MAP_LANDMARKS, worldPointToImage } from '/map-landmarks.js';
+let defaultMapPoints = structuredClone(MAP_LANDMARKS.points);
+let defaultIconSizes = { lianhua: .9, songhuahu: .82, beidahu: .9 };
+let currentMapLayout = null;
+
+export function applyMapLayout(layout) {
+  if (!layout?.points) return;
+  for (const id of Object.keys(defaultMapPoints)) {
+    if (Array.isArray(layout.points[id])) MAP_LANDMARKS.points[id] = [...layout.points[id]];
+  }
+  defaultMapPoints = structuredClone(MAP_LANDMARKS.points);
+  defaultIconSizes = { ...(layout.iconSizes || {}) };
+  currentMapLayout = layout;
+}
 /**
  * 场馆地图（2D）：一张"示意地图"，不是导航图。
  *
  * 三条设计决定：
  *  1. **不按真实比例画**。吉林市离长春 160 公里，照实画地图上就是一片空白，
  *     点个场馆得等它走十分钟。所以距离压缩、方位保留——看得懂"谁在东北、谁在东南"就够了。
- *  2. **图标和文字不跟着缩放**。地图能缩，徽章始终是同一个屏幕尺寸，手机上字才不会糊成一团；
- *     代价是缩得很小时图标会互相压，所以缩放下限被钳住了（见 minScale）。
+ *  2. **图标跟随地图缩放**。建筑和底图共享相机比例，保持相对尺寸。
  *  3. **点击即出发**。不做寻路、不做碰撞，点哪个场馆小人就沿"路"走过去——
  *     这是云游览里最省事也最不出错的交互：用户永远知道自己在去哪。
  */
 
 import { drawCharacterAt } from '/avatar-parts.js';
 import { drawVenueMiniature } from '/venue-art.js';
+import { drawGeneratedLandmark } from '/landmark-sprites.js';
 
 
 
@@ -208,6 +222,7 @@ function fallbackGlyph(ctx, s) {
 }
 
 export function drawVenueIcon(ctx, id, size, color) {
+  if(drawGeneratedLandmark(ctx,id,-size*.55,-size*.55,size*1.1,size*1.1))return;
   const painter = glyph[id] || fallbackGlyph;
   ctx.save();
   ctx.fillStyle = color;
@@ -271,7 +286,9 @@ function buildRouteFrom(from, venue) {
  */
 export function createMapView(canvas, opts = {}) {
   const ctx = canvas.getContext('2d');
-  const venues = opts.venues || [];
+  const savedLayout = currentMapLayout;
+  const venues = (opts.venues || []).map((venue) => MAP_LANDMARKS.points[venue.id]
+    ? { ...venue, mapPos: getPanoramaWorldPoints()[venue.id] } : venue);
   const routes = new Map(venues.map((v) => [v.id, buildRoute(v)]));
   const onPick = opts.onPick || (() => {});
 
@@ -291,6 +308,10 @@ export function createMapView(canvas, opts = {}) {
   let walk = null;
   let followHero = true;
   let time = 0;
+  let calibration = false;
+  let calibrationDrag = null;
+  let calibrationSelected = null;
+  let hoverId = null;
   const snow = Array.from({ length: 42 }, (_, i) => ({
     x: ((i * 83) % 997) / 997,
     y: ((i * 137) % 991) / 991,
@@ -304,19 +325,22 @@ export function createMapView(canvas, opts = {}) {
   const project = (x, z) => ({ x: panX + x * scale, y: panY + z * scale });
   const unproject = (sx, sy) => ({ x: (sx - panX) / scale, z: (sy - panY) / scale });
   // 密集的主城场馆略微错开，建筑脚座仍通过一条细线指回实际示意位置。
-  const markerOffsets = {
-    wuhuan: [55, 0], speed: [-27, 25], cityhall: [27, 26],
-    provhall: [-16, -18], palace: [34, -25], culture: [-34, -21],
-    film: [-24, 12], sculpture: [-26, 23], nanhu: [10, 22],
-    olympic: [11, -13], jingyue: [18, 18], lianhua: [20, -8],
-  };
+  const markerOffsets = {};
+  const iconSizes = { ...defaultIconSizes };
+  let heroSize = Number.isFinite(savedLayout?.heroSize) && savedLayout.heroSize >= .5 && savedLayout.heroSize <= 2
+    ? savedLayout.heroSize : 1;
+  const iconScale = (v) => scale * (iconSizes[v.id] || 1);
   const markerPoint = (v) => {
     const anchor = project(v.mapPos.x, v.mapPos.z);
-    const [dx, dy] = markerOffsets[v.id] || [0, 0];
+    const [dx, dy] = calibration ? [0, 0] : (markerOffsets[v.id] || [0, 0]);
     return { x: anchor.x + dx, y: anchor.y + dy, anchor };
   };
 
   function computeBounds() {
+    if (venues.some(v => MAP_LANDMARKS.points[v.id])) {
+      bounds = { x: MAP_BOUNDS.x - 25, z: MAP_BOUNDS.z - 22, w: MAP_BOUNDS.w + 50, h: 820 };
+      return;
+    }
     let minX = Infinity;
     let minZ = Infinity;
     let maxX = -Infinity;
@@ -403,8 +427,7 @@ export function createMapView(canvas, opts = {}) {
 
   /* ---------------- 绘制 ---------------- */
 
-  function drawBackdrop() { drawCityMap(ctx, project, scale, size); }
-  function drawTerrain() {}
+  function drawTerrain() { drawCityMap(ctx, project, scale, size); }
 
   function traceRoute(route) {
     ctx.beginPath();
@@ -438,6 +461,7 @@ export function createMapView(canvas, opts = {}) {
   }
 
   function drawRegionLabels() {
+    if (scale > minScale * 1.4) return;
     ctx.save();
     ctx.font = '600 12px system-ui, "Microsoft YaHei", sans-serif';
     ctx.fillStyle = 'rgba(95, 125, 151, 0.85)';
@@ -449,11 +473,11 @@ export function createMapView(canvas, opts = {}) {
     ctx.restore();
   }
 
-  const badgeRadius = () => Math.max(16, Math.min(26, size.w / 30));
+  const badgeRadius = () => 24 * scale;
 
   function drawVenues() {
-    const r = badgeRadius();
-    const artW = Math.max(68, Math.min(96, size.w / 11));
+    const r = 24;
+    const artW = 100;
     const artH = artW * .73;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -461,6 +485,10 @@ export function createMapView(canvas, opts = {}) {
     for (const v of venues) {
       if (filter !== 'all' && v.kind !== filter) continue;
       const p = markerPoint(v);
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.scale(iconScale(v), iconScale(v));
+      ctx.translate(-p.x, -p.y);
       const isActive = v.id === activeId;
       const done = visited.has(v.id);
       const medal = medals.has(v.id);
@@ -472,6 +500,10 @@ export function createMapView(canvas, opts = {}) {
         ctx.arc(p.x, p.y, r * 1.5 * pulse, 0, Math.PI * 2);
         ctx.stroke();
       }
+      if (hoverId === v.id && !isActive) {
+        ctx.fillStyle='rgba(104,216,220,.19)';ctx.beginPath();ctx.ellipse(p.x,p.y+artH*.02,artW*.62,artH*.31,0,0,Math.PI*2);ctx.fill();
+        ctx.strokeStyle='rgba(63,163,173,.68)';ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(p.x,p.y+artH*.02,artW*.62,artH*.31,0,0,Math.PI*2);ctx.stroke();
+      }
       const artX = p.x - artW / 2;
       const artY = p.y - artH * .87;
       const tether = Math.hypot(p.x - p.anchor.x, p.y - p.anchor.y);
@@ -482,11 +514,19 @@ export function createMapView(canvas, opts = {}) {
         ctx.fillStyle = '#fff8df';ctx.beginPath();ctx.arc(p.anchor.x,p.anchor.y,3,0,7);ctx.fill();
       }
       ctx.save();
+      // 柔和地面投影把地标嵌入地图，避免悬浮贴纸感。
+      const ground=ctx.createRadialGradient(p.x,p.y+artH*.08,0,p.x,p.y+artH*.08,artW*.55);
+      ground.addColorStop(0,'rgba(54,91,67,.28)');ground.addColorStop(1,'rgba(54,91,67,0)');
+      ctx.fillStyle=ground;ctx.beginPath();ctx.ellipse(p.x,p.y+artH*.08,artW*.55,artH*.18,0,0,Math.PI*2);ctx.fill();
       ctx.shadowColor='rgba(31,67,71,.28)';
       ctx.shadowBlur=8;
       ctx.shadowOffsetY=5;
       drawVenueMiniature(ctx, v, artX, artY, artW, artH);
       ctx.restore();
+      // 小三角精准指向交互坐标，建筑模型作为锚点上方的视觉卡片。
+      ctx.fillStyle=done?'#63aa96':isActive?'#ef9c78':'#f5fbf3';
+      ctx.strokeStyle='rgba(48,92,95,.58)';ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(p.x-6,artY+artH-2);ctx.lineTo(p.x+6,artY+artH-2);ctx.lineTo(p.x,p.y+5);ctx.closePath();ctx.fill();ctx.stroke();
 
       if (done) {
         ctx.fillStyle = '#7FE0C4';
@@ -526,17 +566,26 @@ export function createMapView(canvas, opts = {}) {
       ctx.font = '600 11px system-ui, "Microsoft YaHei", sans-serif';
       const label = v.name.replace(/^长春|^吉林/, '');
       const textW = ctx.measureText(label).width;
-      ctx.fillStyle = 'rgba(255, 252, 236, 0.95)';
+      ctx.fillStyle = 'rgba(239, 248, 238, 0.88)';
       ctx.beginPath();
       ctx.roundRect(p.x - textW / 2 - 7, artY + artH + 1, textW + 14, 20, 10);
       ctx.fill();
       ctx.fillStyle = isActive ? '#C0432B' : '#33526E';
-      ctx.fillText(label, p.x, artY + artH + 12);
+      if (scale <= minScale * 1.3 || isActive || done) ctx.fillText(label, p.x, artY + artH + 12);
+      ctx.restore();
     }
   }
 
+  function drawCalibration() {
+    if (!calibration || !calibrationSelected) return;
+    ctx.save();ctx.font='11px system-ui, sans-serif';ctx.textAlign='center';
+    const v=venues.find(item=>item.id===calibrationSelected);
+    if(v){const p=project(v.mapPos.x,v.mapPos.z);ctx.strokeStyle='#ff3d75';ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x,p.y,18,0,Math.PI*2);ctx.moveTo(p.x-24,p.y);ctx.lineTo(p.x+24,p.y);ctx.moveTo(p.x,p.y-24);ctx.lineTo(p.x,p.y+24);ctx.stroke();ctx.fillStyle='#fff';ctx.fillText(v.name,p.x,p.y-24);}
+    ctx.restore();
+  }
+
   function heroHeight() {
-    return Math.max(78, Math.min(120, size.w / 6.8));
+    return Math.max(78, Math.min(120, size.w / 6.8)) * heroSize;
   }
 
   function drawHero() {
@@ -628,13 +677,13 @@ export function createMapView(canvas, opts = {}) {
 
   function draw() {
     ctx.clearRect(0, 0, size.w, size.h);
-    drawBackdrop();
     drawTerrain();
     drawRoutes();
     drawRegionLabels();
     drawWalkProgress();
     drawVenues();
     drawHero();
+    drawCalibration();
     drawFooter();
   }
 
@@ -646,7 +695,7 @@ export function createMapView(canvas, opts = {}) {
   let downAt = null;
 
   function pickAt(sx, sy) {
-    const reach = badgeRadius() + 30;
+    const reach = Math.max(22, badgeRadius() + 30 * scale);
     let best = null;
     let bestD = Infinity;
     for (const v of venues) {
@@ -664,6 +713,11 @@ export function createMapView(canvas, opts = {}) {
   canvas.addEventListener('pointerdown', (event) => {
     canvas.setPointerCapture(event.pointerId);
     pointers.set(event.pointerId, { x: event.offsetX, y: event.offsetY });
+    if (calibration) {
+      const hit=pickAt(event.offsetX,event.offsetY);
+      if(hit){calibrationSelected=hit.id;calibrationDrag=hit.id;panning=false;opts.onCalibrationSelect?.(hit.id);}
+    }
+    if (calibrationDrag) { downAt={x:event.offsetX,y:event.offsetY,t:performance.now()}; return; }
     if (pointers.size === 1) {
       panning = true;
       downAt = { x: event.offsetX, y: event.offsetY, t: performance.now() };
@@ -682,6 +736,15 @@ export function createMapView(canvas, opts = {}) {
     const prev = pointers.get(event.pointerId);
     if (!prev) return;
     pointers.set(event.pointerId, { x: event.offsetX, y: event.offsetY });
+    if(!panning && pointers.size===1 && !calibrationDrag){const hit=pickAt(event.offsetX,event.offsetY);const next=hit?.id||null;if(next!==hoverId){hoverId=next;canvas.style.cursor=next?'pointer':'grab';}}
+    if (calibrationDrag) {
+      const world=unproject(event.offsetX,event.offsetY);
+      const point=worldPointToImage(world);
+      MAP_LANDMARKS.points[calibrationDrag]=point.map(n=>Math.max(0,Math.min(1,n)));
+      venues.find(v=>v.id===calibrationDrag).mapPos=getPanoramaWorldPoints()[calibrationDrag];
+      opts.onCalibrationChange?.();
+      return;
+    }
     if (pointers.size === 2 && pinchStart) {
       const [a, b] = [...pointers.values()];
       const dist = Math.max(1, Math.hypot(a.x - b.x, a.y - b.y));
@@ -703,11 +766,12 @@ export function createMapView(canvas, opts = {}) {
   const endPointer = (event) => {
     const start = downAt;
     pointers.delete(event.pointerId);
+    if(calibrationDrag){calibrationDrag=null;downAt=null;return;}
     if (pointers.size < 2) pinchStart = null;
     if (pointers.size === 0) panning = false;
     if (!start) return;
     const moved = Math.hypot(event.offsetX - start.x, event.offsetY - start.y);
-    if (moved < 9 && performance.now() - start.t < 600) {
+    if (!calibration && moved < 9 && performance.now() - start.t < 600) {
       const hit = pickAt(event.offsetX, event.offsetY);
       if (hit) onPick(hit.id);
     }
@@ -835,6 +899,22 @@ export function createMapView(canvas, opts = {}) {
     setFollow(value) {
       followHero = value;
     },
+    setCalibration(value) { calibration=Boolean(value); canvas.classList.toggle('map-calibrating',calibration); },
+    setCalibrationSelected(id) { if(venues.some(v=>v.id===id)) calibrationSelected=id; },
+    getCalibrationSize(id) { return iconSizes[id] || 1; },
+    setCalibrationSize(id, value) { if(venues.some(v=>v.id===id)) iconSizes[id]=Math.max(.55,Math.min(1.5,Number(value))); },
+    getHeroSize() { return heroSize; },
+    setHeroSize(value) { if(Number.isFinite(Number(value))) heroSize=Math.max(.5,Math.min(2,Number(value))); },
+    resetCalibration() {
+      for(const v of venues) if(defaultMapPoints[v.id]) {
+        MAP_LANDMARKS.points[v.id]=[...defaultMapPoints[v.id]];
+        v.mapPos=getPanoramaWorldPoints()[v.id];
+      }
+      for(const id of Object.keys(iconSizes)) delete iconSizes[id];
+      Object.assign(iconSizes,defaultIconSizes);
+      heroSize=1;
+    },
+    exportLandmarks() { return JSON.stringify({points:MAP_LANDMARKS.points,iconSizes,heroSize},null,2); },
     zoomBy(factor) {
       const anchor = unproject(size.w / 2, size.h / 2);
       scale = Math.max(minScale, Math.min(2.6, scale * factor));

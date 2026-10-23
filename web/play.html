@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="/explore.css" />
     <link rel="stylesheet" href="/refine.css" />
     <link rel="stylesheet" href="/book.css" />
+    <link rel="stylesheet" href="/guide.css" />
   </head>
   <body data-book="cover">
     <div class="book-cover" id="bookCover" role="dialog" aria-modal="true" aria-label="长春大运会冰雪漫游手册封面">
@@ -32,7 +33,7 @@
           <div class="cover-inside" aria-hidden="true"><span>长春大运会冰雪漫游 · 扉页</span><div class="cover-inside-art"></div><strong>每场精彩，<br />都值得<br /><em>亲自出发。</em></strong><small>01 画出角色　 →　 02 走进赛场</small></div>
           </div>
         </div>
-        <div class="cover-intro"><p>从大运会赛场出发的旅行手册</p><button id="openBook" type="button">创建我的冰雪分身 <span>→</span></button><button id="coverDemo" class="cover-demo" type="button">直接试玩 · 无需照片或生图 API</button><small>创建或选择角色 → 探索地点 → 玩挑战、收集奖章</small></div>
+        <div class="cover-intro"><p>从大运会赛场出发的旅行手册</p><button id="openBook" type="button">创建我的冰雪分身 <span>→</span></button><button id="coverDemo" class="cover-demo" type="button">直接试玩 · 无需照片或生图 API</button><fieldset class="guide-goals"><legend>这次想怎么玩？可随时更改</legend><label><input type="radio" name="guideMode" value="relaxed" checked /><span>轻松漫游</span></label><label><input type="radio" name="guideMode" value="sport" /><span>运动挑战</span></label><label><input type="radio" name="guideMode" value="city" /><span>城市探索</span></label></fieldset><small>选好目标后进入地图，可以规划自己的云游路线；也可直接探索。</small></div>
         <div class="cover-event-ticket" aria-hidden="true"><div class="ticket-top"><span>2027 · CHANGCHUN</span><b>冬季大运会</b></div><strong>冰雪赛场<br />观赛路线</strong><div class="ticket-sports"><span>冰上竞技</span><span>雪上竞速</span><span>城市漫游</span></div><div class="ticket-foot"><b>10</b><span>个场馆优先探索<br />再认识长春的另一面</span><i>✳</i></div></div>
         <span class="desk-note desk-note-bottom">CHANGCHUN · A WINTER TO EXPLORE</span>
       </div>
@@ -47,7 +48,7 @@
           <a class="display-link" href="/display" target="_blank" rel="noopener">数据大屏 ↗</a>
           <button class="sound-toggle" id="musicBtn" type="button" aria-pressed="false"><span>♫</span> 开启音乐</button>
           <button class="ghost" id="helpBtn" type="button">玩法指南</button>
-          <button class="passport-button" id="passportBtn" type="button">我的纪念卡</button>
+          <button class="passport-button" id="passportBtn" type="button">我的冰雪护照</button>
         </div>
       </nav>
       <div class="hero" id="top">
@@ -142,6 +143,7 @@
           </div>
           <span class="live-state" id="statsStatus" role="status">正在连接统计…</span>
         </div>
+        <section class="guide-route-bar" id="guideRouteBar" aria-label="云游路线" aria-live="polite"></section>
         <section class="progress-summary" aria-label="我的旅行进度">
           <div><span>地点探索</span><strong id="explorationProgress">0 / 16</strong><small>角色抵达后记录</small></div>
           <div><span>场馆挑战奖章</span><strong id="medalProgress">0 / 10</strong><small>赢得场馆小游戏</small></div>
@@ -336,6 +338,8 @@
     </div>
 
     <dialog class="quiz-modal" id="quizModal" aria-labelledby="quizTitle"></dialog>
+    <dialog class="guide-dialog" id="routeDialog" aria-labelledby="routeTitle"></dialog>
+    <dialog class="guide-dialog" id="passportDialog" aria-labelledby="passportTitle"></dialog>
 
     <div class="loading" id="loading">
       <div class="loading-inner">

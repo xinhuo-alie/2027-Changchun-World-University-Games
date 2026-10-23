@@ -4,8 +4,17 @@ const labels = Object.fromEntries(Object.entries(CREATIVE_GROUPS).map(([key, opt
 
 export function buildCreativePrompt(raw = {}) {
   const creative = normalizeCreative(raw);
-  const ordered = ['style','theme','sport','outfit','hairstyle','headwear','expression','pose','palette','material','scene','composition'];
+  const ordered = ['style','theme','sport','outfit','hairstyle','headwear','expression','pose','palette','material','composition'];
   const lines = ordered.map((key) => labels[key].get(creative[key])?.prompt).filter(Boolean);
+  // Naming a cafe, rink or mountain causes image models to draw the actual place.
+  // Keep the selected mood as lighting only, without any location nouns.
+  const sceneLight = {
+    studio:'柔和中性主光', rink:'清透冰蓝反射光', mountain:'冷白日光', aurora:'青紫色轮廓光',
+    castle:'清冷折射光', changchun:'冷蓝主光与少量暖色补光', forest:'清冷绿蓝补光',
+    'crystal-palace':'清透冷色折射光', 'future-base':'洁净冷色侧光', cafe:'柔和暖色主光与冰蓝补光',
+    'candy-house':'柔和糖果色补光', podium:'柔和金色轮廓光',
+  };
+  lines.push(`场景氛围仅用于人物布光：${sceneLight[creative.scene] || sceneLight.studio}；不绘制任何场所、建筑或环境。`);
   const accessoryPrompts = creative.accessories.map((id) => labels.accessory.get(id)?.prompt).filter(Boolean);
   const effectPrompts = creative.effects.map((id) => labels.effect.get(id)?.prompt).filter(Boolean);
   if (accessoryPrompts.length) lines.push(`配饰搭配（最多三项）：${accessoryPrompts.join('；')}`);
@@ -20,4 +29,3 @@ export function buildCreativePrompt(raw = {}) {
   const result = lines.join('\n').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, ' ');
   return result.slice(0, 4200);
 }
-

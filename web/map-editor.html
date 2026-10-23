@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>地图图标编辑器 · 长春冬日漫游</title>
+  <script>if(location.port==='5173')fetch('/api/map-editor/session').then(r=>{if(r.status===404)location.replace(`http://${location.hostname}:5174/map-editor.html`)});</script>
+  <style>
+    *{box-sizing:border-box}body{margin:0;font:14px/1.5 system-ui,'Microsoft YaHei',sans-serif;color:#173b48;background:#e8f1f3}
+    header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 20px;background:#fff;border-bottom:1px solid #d3e2e5}h1{font-size:18px;margin:0}header a{color:#176e80;text-decoration:none}
+    main{display:grid;grid-template-columns:minmax(240px,280px) minmax(0,1fr);gap:16px;padding:16px;height:calc(100vh - 62px)}
+    aside{display:flex;flex-direction:column;gap:14px;padding:18px;border:1px solid #d3e2e5;border-radius:16px;background:#fff;overflow:auto}aside p{margin:0;color:#5b7881;font-size:12px}
+    label{display:flex;flex-direction:column;gap:5px;font-weight:700}select,input[type=range]{width:100%}select{padding:9px;border:1px solid #b7cbd0;border-radius:8px;background:#fff;font:inherit}
+    output{font-variant-numeric:tabular-nums;color:#176e80}button{border:1px solid #bad0d3;border-radius:9px;background:#f4f9f8;color:#1b5361;padding:9px 11px;font:inherit;cursor:pointer}button:hover{background:#e1f2ee}button.primary{background:#147f84;color:#fff;border-color:#147f84}button.primary:hover{background:#0f6a70}
+    .row{display:flex;gap:7px}.row button{flex:1}#status{min-height:20px;color:#14726c;font-size:12px}
+    .map-shell{position:relative;min-width:0;min-height:380px;border-radius:16px;overflow:hidden;background:#c7dde0;box-shadow:0 14px 30px #2a64751b}canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}canvas.map-calibrating{cursor:crosshair}
+    .zoom{position:absolute;right:12px;top:12px;display:flex;gap:5px}.zoom button{min-width:38px;background:#fff}
+    @media(max-width:760px){main{height:auto;grid-template-columns:1fr}.map-shell{height:65vh;min-height:440px}}
+  </style>
+</head>
+<body>
+  <header><h1>地图图标编辑器</h1><div class="row"><a href="/play.html">返回游览页 ↗</a><button id="logout" type="button">退出登录</button></div></header>
+  <main>
+    <aside>
+      <p>点击地图上的图标选择景点，拖动图标调整位置。地图底图、坐标和图标会同步缩放。</p>
+      <label>当前景点<select id="place"></select></label>
+      <label>图标大小 <output id="sizeValue">100%</output><input id="size" type="range" min="0.55" max="1.5" step="0.05" value="1"></label>
+      <label>初始人物大小 <output id="heroSizeValue">100%</output><input id="heroSize" type="range" min="0.5" max="2" step="0.05" value="1"></label>
+      <button class="primary" id="save" type="button">保存位置和大小</button>
+      <div class="row"><button id="reset" type="button">恢复默认</button><button id="export" type="button">复制配置</button></div>
+      <span id="status" role="status"></span>
+      <p>保存会写入后端地图配置。刷新游览页和实时展示页后生效；复制配置可用于备份。</p>
+    </aside>
+    <div class="map-shell"><canvas id="map" aria-label="可拖动景点图标的地图"></canvas><div class="zoom"><button id="zoomIn" aria-label="放大">＋</button><button id="zoomOut" aria-label="缩小">−</button><button id="fit" aria-label="全图">⤢</button></div></div>
+  </main>
+  <script type="module" src="/map-editor.js"></script>
+</body>
+</html>

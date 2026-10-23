@@ -11,3 +11,5 @@
   .display-map-wrap { min-height:0; }.screen-footer { padding-top:0; }.rank-list { display:grid; grid-template-rows:repeat(16,minmax(0,1fr)); padding-bottom:5px; }
   .rank-row { padding:4px; align-items:center; align-content:center; }.rank-bar { margin-top:4px; }.rank-name { font-size:11px; }.spotlight { overflow:auto; }
 }
+
+.display-map-wrap{background:#bfd6d9}

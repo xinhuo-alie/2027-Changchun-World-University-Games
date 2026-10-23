@@ -1,7 +1,8 @@
 import http from 'node:http';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { config, WEB_DIR, RESULT_DIR } from './env.js';
+import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
+import { config, WEB_DIR, RESULT_DIR, DATA_DIR } from './env.js';
 import { listStyles } from './styles.js';
 import { listPlaces } from './places.js';
 import { createVisitStore } from './visits.js';
@@ -24,13 +25,63 @@ const MIME = {
 
 const places = listPlaces();
 const visitStore = await createVisitStore(process.env.VISITS_FILE || path.join(RESULT_DIR, '..', 'visits.json'), places);
+const editorSessions = new Map();
+const editorAttempts = new Map();
+const editorSessionMs = 8 * 60 * 60 * 1000;
+const mapLayoutFile = path.join(DATA_DIR, 'map-layout.json');
+const placeIds = places.map(place => place.id).sort();
 
-function sendJson(res, status, payload) {
+function validateMapLayout(input) {
+  if (!input || typeof input !== 'object' || !input.points || typeof input.points !== 'object') return null;
+  if (JSON.stringify(Object.keys(input.points).sort()) !== JSON.stringify(placeIds)) return null;
+  const points = {};
+  for (const id of placeIds) {
+    const point = input.points[id];
+    if (!Array.isArray(point) || point.length !== 2 || !point.every(value => Number.isFinite(value) && value >= 0 && value <= 1)) return null;
+    points[id] = point;
+  }
+  const iconSizes = {};
+  if (input.iconSizes !== undefined) {
+    if (!input.iconSizes || typeof input.iconSizes !== 'object' || Array.isArray(input.iconSizes)) return null;
+    for (const [id, value] of Object.entries(input.iconSizes)) {
+      if (!placeIds.includes(id) || !Number.isFinite(value) || value < .55 || value > 1.5) return null;
+      iconSizes[id] = value;
+    }
+  }
+  const heroSize = input.heroSize === undefined ? 1 : input.heroSize;
+  if (!Number.isFinite(heroSize) || heroSize < .5 || heroSize > 2) return null;
+  return { points, iconSizes, heroSize };
+}
+
+async function readMapLayout() {
+  return validateMapLayout(JSON.parse(await fs.readFile(mapLayoutFile, 'utf8')));
+}
+
+function editorToken(req) {
+  const cookie = req.headers.cookie?.split(';').map(part => part.trim()).find(part => part.startsWith('map_editor_session='));
+  return cookie?.slice('map_editor_session='.length) || '';
+}
+function editorAuthenticated(req) {
+  const token = editorToken(req);
+  const expires = editorSessions.get(token);
+  if (!expires) return false;
+  if (expires < Date.now()) { editorSessions.delete(token); return false; }
+  return true;
+}
+function equalPassword(input) {
+  if (!config.mapEditorPassword || typeof input !== 'string') return false;
+  const actual = createHash('sha256').update(input).digest();
+  const expected = createHash('sha256').update(config.mapEditorPassword).digest();
+  return timingSafeEqual(actual, expected);
+}
+
+function sendJson(res, status, payload, extraHeaders = {}) {
   const body = JSON.stringify(payload);
   res.writeHead(status, {
     'Content-Type': 'application/json; charset=utf-8',
     'Content-Length': Buffer.byteLength(body),
     'Cache-Control': 'no-store',
+    ...extraHeaders,
   });
   res.end(body);
 }
@@ -88,6 +139,52 @@ const server = http.createServer(async (req, res) => {
   const { pathname } = url;
 
   try {
+    if (req.method === 'GET' && pathname === '/api/map-layout') {
+      const layout = await readMapLayout();
+      const origin = req.headers.origin;
+      const headers = /^http:\/\/(localhost|127\.0\.0\.1):5173$/.test(origin || '') ? { 'Access-Control-Allow-Origin': origin } : {};
+      return layout ? sendJson(res, 200, layout, headers) : sendJson(res, 500, { error: '地图配置无效' }, headers);
+    }
+    if (req.method === 'POST' && pathname === '/api/map-layout') {
+      if (!editorAuthenticated(req)) return sendJson(res, 401, { error: '请先登录地图编辑器' });
+      const layout = validateMapLayout(await readJsonBody(req));
+      if (!layout) return sendJson(res, 400, { error: '地图坐标或大小无效' });
+      await fs.mkdir(DATA_DIR, { recursive: true });
+      const temporary = `${mapLayoutFile}.${randomBytes(6).toString('hex')}.tmp`;
+      await fs.writeFile(temporary, `${JSON.stringify(layout, null, 2)}\n`, 'utf8');
+      await fs.rename(temporary, mapLayoutFile);
+      return sendJson(res, 200, { ok: true });
+    }
+    if (req.method === 'GET' && pathname === '/api/map-editor/session') {
+      return sendJson(res, 200, { authenticated: editorAuthenticated(req) });
+    }
+    if (req.method === 'POST' && pathname === '/api/map-editor/login') {
+      if (!config.mapEditorPassword) return sendJson(res, 503, { error: '地图编辑器密码未配置' });
+      const ip = req.socket.remoteAddress || 'unknown';
+      const recent = (editorAttempts.get(ip) || []).filter(time => Date.now() - time < 10 * 60 * 1000);
+      if (recent.length >= 5) return sendJson(res, 429, { error: '尝试次数过多，请十分钟后重试' });
+      const body = await readJsonBody(req);
+      if (!equalPassword(body.password)) {
+        recent.push(Date.now()); editorAttempts.set(ip, recent);
+        return sendJson(res, 401, { error: '密码不正确' });
+      }
+      editorAttempts.delete(ip);
+      const token = randomBytes(32).toString('hex');
+      editorSessions.set(token, Date.now() + editorSessionMs);
+      return sendJson(res, 200, { ok: true }, { 'Set-Cookie': `map_editor_session=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=28800` });
+    }
+    if (req.method === 'POST' && pathname === '/api/map-editor/logout') {
+      editorSessions.delete(editorToken(req));
+      return sendJson(res, 200, { ok: true }, { 'Set-Cookie': 'map_editor_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0' });
+    }
+    if (req.method === 'GET' && (pathname === '/map-editor.html' || pathname === '/map-editor')) {
+      const file = editorAuthenticated(req) ? 'map-editor.html' : 'map-editor-login.html';
+      if (await serveFile(res, path.join(WEB_DIR, file))) return undefined;
+      return sendJson(res, 404, { error: 'Not Found' });
+    }
+    if (req.method === 'GET' && pathname === '/map-editor.js' && !editorAuthenticated(req)) {
+      return sendJson(res, 401, { error: '请先登录地图编辑器' });
+    }
     if (req.method === 'GET' && pathname === '/api/places') {
       return sendJson(res, 200, { places });
     }

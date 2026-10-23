@@ -49,6 +49,8 @@ for (const question of QUIZ_QUESTIONS) {
   assert.ok(question.answer >= 0 && question.answer < question.options.length);
   assert.ok(question.explanation.length > 12);
   assert.ok(placeIds.has(question.sourceId), `quiz fact source ${question.sourceId} must match a current place record`);
+  assert.match(question.sourceUrl, /^https:\/\//, `quiz answer must have its own source: ${question.question}`);
+  assert.ok(question.sourceTitle.length > 3, `quiz answer must identify its source: ${question.question}`);
 }
 const quiz = createQuizSession(QUIZ_QUESTIONS, Math.random, QUIZ_QUESTIONS.length);
 assert.equal(quiz.choose(-1), null, 'invalid answer indices must be ignored');

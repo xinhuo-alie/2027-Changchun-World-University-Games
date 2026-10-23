@@ -1,0 +1,75 @@
+.guide-goals { display:flex; flex-wrap:wrap; gap:6px; max-width:340px; margin:15px auto 8px; padding:0; border:0; text-align:left; }
+.guide-goals legend { width:100%; margin-bottom:5px; color:#6c6f65; font-size:11px; font-weight:800; }
+.guide-goals label { position:relative; flex:1 1 98px; cursor:pointer; }
+.guide-goals input { position:absolute; width:1px; height:1px; opacity:0; }
+.guide-goals span { display:grid; place-items:center; min-height:38px; padding:4px 8px; border:1px solid #c3d2c7; border-radius:8px 3px 8px 3px; background:#faf7ed; color:#345965; font-size:11px; font-weight:800; white-space:nowrap; }
+.guide-goals input:checked+span { border-color:#397b83; background:#deefea; color:#174f5e; box-shadow:inset 0 0 0 1px #397b83; }
+.guide-goals input:focus-visible+span { outline:3px solid #e6a56e; outline-offset:2px; }
+
+.guide-route-bar { display:flex; align-items:center; gap:9px; min-width:0; margin:0 0 8px; padding:9px 12px; border:1px solid #bfd1c5; border-radius:9px 3px 9px 3px; background:#f3f6eb; }
+body[data-book="creator"] .guide-route-bar,body[data-book="cover"] .guide-route-bar { display:none; }
+.guide-route-copy { display:flex; flex:1; min-width:0; flex-direction:column; gap:2px; }
+.guide-route-copy strong { overflow:hidden; color:#215566; font-size:12px; white-space:nowrap; text-overflow:ellipsis; }
+.guide-route-copy small { overflow:hidden; color:#657d78; font-size:10px; white-space:nowrap; text-overflow:ellipsis; }
+.guide-route-bar button { flex:0 0 auto; min-height:36px; padding:5px 10px; font-size:11px; }
+
+.guide-dialog { width:min(790px,calc(100vw - 20px)); max-width:none; max-height:calc(100dvh - 20px); margin:auto; padding:clamp(18px,3vw,30px); overflow:auto; border:1px solid #cbbda5; border-radius:15px 4px 15px 4px; color:#254d58; background:#fffaf0; box-shadow:0 24px 70px #102d3e78; }
+.guide-dialog::backdrop { background:#112f41bd; backdrop-filter:blur(3px); }
+.guide-dialog-head { display:flex; align-items:flex-start; justify-content:space-between; gap:14px; }
+.guide-dialog h2 { margin:3px 0 12px; font-size:clamp(23px,4vw,32px); line-height:1.28; }
+.guide-dialog h3 { margin:22px 0 10px; color:#22566a; font-size:16px; }
+.guide-dialog h4 { margin:6px 0; font-size:14px; }
+.guide-kicker { margin:0; color:#b16d4d; font-size:10px; font-weight:850; letter-spacing:.12em; }
+.guide-note { margin:4px 0 14px; color:#677d7a; font-size:12px; line-height:1.65; }
+.guide-dialog button { min-height:42px; border:1px solid #a9c2b7; border-radius:9px 3px 9px 3px; padding:8px 13px; background:#f5f3e9; color:#245565; font:inherit; font-size:12px; font-weight:800; cursor:pointer; }
+.guide-dialog button:hover:not(:disabled) { background:#e8f2e9; }
+.guide-dialog button:focus-visible,.guide-route-bar button:focus-visible { outline:3px solid #e6a56e; outline-offset:2px; }
+.guide-dialog button:disabled { opacity:.45; cursor:default; }
+.guide-dialog .guide-primary,.guide-route-bar .guide-primary { border-color:#286574; color:#fffaf0; background:#286574; }
+.guide-dialog .guide-primary:hover:not(:disabled),.guide-route-bar .guide-primary:hover:not(:disabled) { background:#1d5362; }
+.guide-dialog .guide-danger { color:#8a5045; border-color:#d9bab0; background:#fff7f0; }
+.guide-dialog .guide-close { min-height:38px; }
+.guide-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin:14px 0; }
+.guide-field { display:flex; flex-direction:column; gap:5px; min-width:0; color:#456767; font-size:11px; font-weight:800; }
+.guide-field select { width:100%; min-height:42px; border:1px solid #c5d1c6; border-radius:8px; padding:7px 9px; background:#fffef9; color:#234f5e; font:inherit; }
+.guide-actions { display:flex; flex-wrap:wrap; gap:8px; margin:14px 0; }
+.guide-empty { padding:24px 12px; border:1px dashed #c5d1c6; color:#657f7b; text-align:center; }
+.guide-route-summary { color:#386576; font-size:12px; font-weight:800; }
+.guide-stop-list { display:grid; gap:8px; margin:10px 0 0; padding:0; list-style:none; }
+.guide-stop { display:flex; align-items:center; gap:12px; min-width:0; padding:10px 12px; border:1px solid #d5ddcf; border-radius:10px 3px 10px 3px; background:#fffef8; }
+.guide-stop.is-current { border-color:#5caaa8; background:#eff8f3; }
+.guide-stop.is-done { opacity:.68; }
+.guide-stop-main { flex:1; min-width:0; }
+.guide-stop-main b { color:#245666; font-size:13px; }
+.guide-stop-main small { display:block; margin:3px 0; color:#6a837e; font-size:10px; }
+.guide-stop-main p { margin:0; color:#8c755e; font-size:11px; }
+.guide-stop-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; align-items:center; gap:4px; max-width:48%; }
+.guide-dialog .guide-mini { min-height:32px; padding:4px 7px; font-size:10px; }
+.guide-stop-actions .guide-field { width:130px; }
+.guide-stop-actions .guide-field select { min-height:32px; font-size:10px; }
+.guide-passport-metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; margin:12px 0; }
+.guide-passport-metrics div { padding:12px 8px; border:1px solid #d7dfcf; border-radius:10px 3px 10px 3px; background:#f4f5e9; text-align:center; }
+.guide-passport-metrics strong { display:block; color:#255e67; font-size:19px; }
+.guide-passport-metrics span { color:#68817b; font-size:10px; }
+.guide-next-quest { margin:8px 0 13px; padding:10px 12px; border-left:3px solid #d19a67; color:#255c66; background:#f5f2e5; font-size:12px; font-weight:800; }
+.guide-stamp-grid { display:flex; flex-wrap:wrap; gap:6px; }
+.guide-stamp { padding:6px 8px; border:1px dashed #d4d1bf; border-radius:8px; color:#8a938c; background:#faf9f1; font-size:10px; }
+.guide-stamp.is-earned { border-color:#8bb5a5; color:#2b6a6b; background:#eaf5ea; font-weight:800; }
+.guide-passport-route { display:flex; align-items:center; flex-wrap:wrap; gap:9px; margin:15px 0; padding:10px; border:1px solid #c4d8cb; background:#f0f6ed; font-size:12px; }
+.guide-passport-route span { flex:1; }
+.guide-quest-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+.guide-quest { min-width:0; padding:12px; border:1px solid #d5dece; border-radius:10px 3px 10px 3px; background:#fffefa; }
+.guide-quest small { color:#a86c4f; font-size:10px; font-weight:800; }
+.guide-quest p { min-height:34px; margin:3px 0 8px; color:#657d7b; font-size:11px; line-height:1.5; }
+.guide-quest-state { display:block; margin-bottom:8px; color:#326a72; font-size:11px; font-weight:800; }
+.guide-quest button { width:100%; text-align:left; }
+@media(max-width:700px) {
+  .guide-route-bar { flex-wrap:wrap; }
+  .guide-route-copy { flex-basis:100%; }
+  .guide-dialog { padding:18px 14px; }
+  .guide-fields,.guide-quest-list { grid-template-columns:minmax(0,1fr); }
+  .guide-passport-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .guide-stop { align-items:stretch; flex-direction:column; }
+  .guide-stop-actions { max-width:none; justify-content:flex-start; }
+}
+@media(prefers-reduced-motion:reduce) { .guide-dialog::backdrop { backdrop-filter:none; } }

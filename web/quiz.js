@@ -10,6 +10,14 @@ const node = (tag, className, text) => {
 export function createQuiz(root, options = {}) {
   let opener = null;
   let session = null;
+  let correctSources = new Set();
+  let focusSources = [];
+
+  function startRound() {
+    correctSources = new Set();
+    session = createQuizSession(options.questions || QUIZ_QUESTIONS, Math.random, options.roundSize || 5, focusSources);
+    renderQuestion();
+  }
 
   function close() {
     if (root.open) root.close();
@@ -31,7 +39,7 @@ export function createQuiz(root, options = {}) {
     start.type = 'button';
     const back = node('button', 'quiz-secondary', '返回地图');
     back.type = 'button';
-    start.addEventListener('click', () => { session = createQuizSession(options.questions || QUIZ_QUESTIONS, Math.random, options.roundSize || 5); renderQuestion(); });
+    start.addEventListener('click', startRound);
     back.addEventListener('click', close);
     actions.append(start, back);
     panel.append(eyebrow, title, copy, actions);
@@ -53,7 +61,7 @@ export function createQuiz(root, options = {}) {
     const actions = node('div', 'quiz-actions');
     const replay = node('button', 'quiz-primary', '再答一轮');
     replay.type = 'button';
-    replay.addEventListener('click', () => { session = createQuizSession(options.questions || QUIZ_QUESTIONS, Math.random, options.roundSize || 5); renderQuestion(); });
+    replay.addEventListener('click', startRound);
     const back = node('button', 'quiz-secondary', '返回地图');
     back.type = 'button'; back.addEventListener('click', close);
     actions.append(replay, back);
@@ -87,14 +95,14 @@ export function createQuiz(root, options = {}) {
       button.addEventListener('click', () => {
         const result = session.choose(optionIndex);
         if (!result) return;
+        if (result.correct && question.sourceId) correctSources.add(question.sourceId);
         for (const item of answers.querySelectorAll('button')) item.disabled = true;
         button.classList.add(result.correct ? 'is-correct' : 'is-wrong');
         answers.querySelectorAll('button')[question.answer]?.classList.add('is-correct');
         feedback.textContent = `${result.correct ? '答对了。' : `正确答案：${question.options[question.answer]}。`}${result.explanation}`;
-        const sourceUrl = options.getSourceUrl?.(question.sourceId);
-        if (sourceUrl) {
-          const link = node('a', 'quiz-source', '查看地点资料 ↗');
-          link.href = sourceUrl; link.target = '_blank'; link.rel = 'noopener noreferrer';
+        if (question.sourceUrl) {
+          const link = node('a', 'quiz-source', `查看答题资料：${question.sourceTitle} ↗`);
+          link.href = question.sourceUrl; link.target = '_blank'; link.rel = 'noopener noreferrer';
           feedback.append(' ', link);
         }
         next.hidden = false;
@@ -108,7 +116,7 @@ export function createQuiz(root, options = {}) {
       const hasNext = session.next();
       if (!hasNext) {
         const { score: finalScore, total: finalTotal } = session.state;
-        options.onFinish?.({ score: finalScore, total: finalTotal, earnedBadge: finalScore >= 4 });
+        options.onFinish?.({ score: finalScore, total: finalTotal, earnedBadge: finalScore >= 4, correctSources: [...correctSources] });
         renderResult();
       } else renderQuestion();
     });
@@ -124,8 +132,9 @@ export function createQuiz(root, options = {}) {
   root.addEventListener('cancel', onCancel);
 
   return {
-    open(trigger) {
+    open(trigger, preferredSources = []) {
       opener = trigger || document.activeElement;
+      focusSources = Array.isArray(preferredSources) ? preferredSources : [];
       if (!root.open) root.showModal();
       renderIntro();
     },

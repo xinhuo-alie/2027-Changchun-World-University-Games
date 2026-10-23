@@ -1,4 +1,5 @@
-import { createMapView } from '/venues2d.js';
+import { applyMapLayout, createMapView } from '/venues2d.js';
+import { fetchMapLayout } from '/map-layout-client.js';
 import { drawVenueIllustration } from '/venue-art.js';
 import { connectStats } from '/visit-client.js';
 const $ = id => document.getElementById(id);
@@ -43,6 +44,7 @@ function update(data) {
 async function boot(){
   const response=await fetch('/api/places');if(!response.ok) throw new Error('地点加载失败');
   places=(await response.json()).places;
+  try { applyMapLayout(await fetchMapLayout()); } catch { /* map defaults stay available */ }
   map=createMapView($('displayMap'),{venues:places,onPick:select,heroVisible:false});map.fit();
   select(places[0].id);connectStats(update,text=>$('connection').textContent=text);
   $('zoomIn').onclick=()=>map.zoomBy(1.2);$('zoomOut').onclick=()=>map.zoomBy(1/1.2);$('fit').onclick=()=>map.fit();

@@ -1,0 +1,316 @@
+{
+  "run_status": "slides_recorded",
+  "deck_name": "ppt-changchun-2027",
+  "selected_backend": "built-in image tool",
+  "sample_generation_method": {
+    "backend_used": "built-in image tool",
+    "tool_name": "image_gen__imagegen",
+    "mode": "generate",
+    "prompt_source": "approved Slide 2 sample prompt in conversation",
+    "size": "16:9 landscape (tool-selected resolution)",
+    "quality": "tool default",
+    "approved_sample_path": "D:\\codex_workspace\\ppt-changchun-2027\\origin_image\\slide_02.png",
+    "input_context_preparation": "inspect approved sample image via view_image and pass it as style-only reference to imagegen",
+    "handoff_rule": "Subagents must use image_gen__imagegen in generate mode, using the approved sample as style reference; report blocker if unavailable."
+  },
+  "max_concurrent_slides": 3,
+  "slides": [
+    {
+      "slide_id": "slide_01",
+      "number": 1,
+      "title": "长春冬日漫游",
+      "job": "prompts/slide_01.json",
+      "out": "origin_image/slide_01.png",
+      "input_images": [
+        {
+          "path": "D:\\codex_workspace\\ppt-changchun-2027\\origin_image\\slide_02.png",
+          "role": "style-only reference from approved sample slide",
+          "fidelity": "match palette, illustration treatment and typography mood; do not copy layout or content"
+        }
+      ],
+      "requires_context_images": true,
+      "status": "recorded",
+      "dispatch": {
+        "agent_id": "/root/slide_01",
+        "agent_nickname": null,
+        "prompt": "prompts/slide_01.json",
+        "prompt_sha256": "a4f6a405a6a1962a6067d4d18d111a77ec1dd3a4b3579bcd1fbea01464c83e8b",
+        "dispatched_at": "2026-10-19T03:04:07Z"
+      },
+      "result": {
+        "agent_id": "/root/slide_01",
+        "backend_used": "built-in image tool",
+        "selected_source": "C:\\Users\\贺嘉诺\\.codex\\generated_images\\01a1521d-8cd9-7413-b7e3-394271c37e27\\exec-7b87a49e-920e-4391-a8a3-399ff25ca08c.png",
+        "selected_source_sha256": "7e61110eb47338b3a5213a98ae90a4272b99e4607727ac512bbddf5c8d4217aa",
+        "final_image": "origin_image/slide_01.png",
+        "final_image_sha256": "7e61110eb47338b3a5213a98ae90a4272b99e4607727ac512bbddf5c8d4217aa",
+        "expected_backend": "built-in image tool",
+        "expected_backend_labels": [
+          "built-in image tool",
+          "image_gen__imagegen"
+        ],
+        "sample_generation_method_matched": true,
+        "qa_note": "封面标题与副标题清晰，冰雪手册画风一致。",
+        "recorded_at": "2026-10-19T03:07:22Z"
+      },
+      "blocker": null
+    },
+    {
+      "slide_id": "slide_02",
+      "number": 2,
+      "title": "一趟可以亲自走完的冰雪旅程",
+      "job": "prompts/slide_02.json",
+      "out": "origin_image/slide_02.png",
+      "input_images": [],
+      "requires_context_images": false,
+      "status": "accepted",
+      "dispatch": null,
+      "result": {
+        "final_image": "origin_image/slide_02.png",
+        "accepted_sample": true
+      },
+      "blocker": null
+    },
+    {
+      "slide_id": "slide_03",
+      "number": 3,
+      "title": "冰雪角色造型工坊",
+      "job": "prompts/slide_03.json",
+      "out": "origin_image/slide_03.png",
+      "input_images": [
+        {
+          "path": "D:\\codex_workspace\\ppt-changchun-2027\\origin_image\\slide_02.png",
+          "role": "style-only reference from approved sample slide",
+          "fidelity": "match palette, illustration treatment and typography mood; do not copy layout or content"
+        }
+      ],
+      "requires_context_images": true,
+      "status": "recorded",
+      "dispatch": {
+        "agent_id": "/root/slide_03",
+        "agent_nickname": null,
+        "prompt": "prompts/slide_03.json",
+        "prompt_sha256": "9bb50a60a3b5a1f6db946e4b56375da99a36151f797ad6f2051113ed39d380c5",
+        "dispatched_at": "2026-10-19T03:04:08Z"
+      },
+      "result": {
+        "agent_id": "/root/slide_03",
+        "backend_used": "built-in image tool",
+        "selected_source": "C:\\Users\\贺嘉诺\\.codex\\generated_images\\01a1521d-9c07-7151-bff2-767243d2e5e9\\exec-6a46d523-711f-4f91-a7c5-1b789dd9efce.png",
+        "selected_source_sha256": "4a0c1ff0f069aec2242e6c974cc231011c0dcfb60beaa8209a6184e2e6cecd6d",
+        "final_image": "origin_image/slide_03.png",
+        "final_image_sha256": "4a0c1ff0f069aec2242e6c974cc231011c0dcfb60beaa8209a6184e2e6cecd6d",
+        "expected_backend": "built-in image tool",
+        "expected_backend_labels": [
+          "built-in image tool",
+          "image_gen__imagegen"
+        ],
+        "sample_generation_method_matched": true,
+        "qa_note": "角色工坊文字准确、流程清晰。",
+        "recorded_at": "2026-10-19T03:07:22Z"
+      },
+      "blocker": null
+    },
+    {
+      "slide_id": "slide_04",
+      "number": 4,
+      "title": "跟着角色走进长春",
+      "job": "prompts/slide_04.json",
+      "out": "origin_image/slide_04.png",
+      "input_images": [
+        {
+          "path": "D:\\codex_workspace\\ppt-changchun-2027\\origin_image\\slide_02.png",
+          "role": "style-only reference from approved sample slide",
+          "fidelity": "match palette, illustration treatment and typography mood; do not copy layout or content"
+        }
+      ],
+      "requires_context_images": true,
+      "status": "recorded",
+      "dispatch": {
+        "agent_id": "/root/slide_04",
+        "agent_nickname": null,
+        "prompt": "prompts/slide_04.json",
+        "prompt_sha256": "ee3d8a2267e8730923a81aecf447ddfdeaeb3bacf90c12c8d5c70810574f41f1",
+        "dispatched_at": "2026-10-19T03:04:08Z"
+      },
+      "result": {
+        "agent_id": "/root/slide_04",
+        "backend_used": "built-in image tool",
+        "selected_source": "C:\\Users\\贺嘉诺\\.codex\\generated_images\\01a1521d-ae00-79f2-b117-3f00c0b8709f\\exec-4ab99fa6-2960-46df-ab5e-c5f818d6ad9a.png",
+        "selected_source_sha256": "b393b70957c94a1bc8c76b03d11be04a40882cc981d98e1c7998375e0ea59ffa",
+        "final_image": "origin_image/slide_04.png",
+        "final_image_sha256": "b393b70957c94a1bc8c76b03d11be04a40882cc981d98e1c7998375e0ea59ffa",
+        "expected_backend": "built-in image tool",
+        "expected_backend_labels": [
+          "built-in image tool",
+          "image_gen__imagegen"
+        ],
+        "sample_generation_method_matched": true,
+        "qa_note": "地图页文字准确，示意城市地图符合内容。",
+        "recorded_at": "2026-10-19T03:07:23Z"
+      },
+      "blocker": null
+    },
+    {
+      "slide_id": "slide_05",
+      "number": 5,
+      "title": "每一站，都有不同的冰雪挑战",
+      "job": "prompts/slide_05.json",
+      "out": "origin_image/slide_05.png",
+      "input_images": [
+        {
+          "path": "D:\\codex_workspace\\ppt-changchun-2027\\origin_image\\slide_02.png",
+          "role": "style-only reference from approved sample slide",
+          "fidelity": "match palette, illustration treatment and typography mood; do not copy layout or content"
+        }
+      ],
+      "requires_context_images": true,
+      "status": "recorded",
+      "dispatch": {
+        "agent_id": "/root/slide_05",
+        "agent_nickname": null,
+        "prompt": "prompts/slide_05.json",
+        "prompt_sha256": "ed7e6f43457dff990bb9d65f171a824b43525be2c8d460405bc23495c60a79b4",
+        "dispatched_at": "2026-10-19T03:07:46Z"
+      },
+      "result": {
+        "agent_id": "/root/slide_05",
+        "backend_used": "built-in image tool",
+        "selected_source": "C:\\Users\\贺嘉诺\\.codex\\generated_images\\01a15220-e792-7532-8954-ade2320d3024\\exec-3b87cb82-d66a-4dab-b957-3ee1de6d2290.png",
+        "selected_source_sha256": "48598e3e535d709064f059d3f52bd8b550f9ce6ec76c4f06a0a8cc27ee1df73f",
+        "final_image": "origin_image/slide_05.png",
+        "final_image_sha256": "48598e3e535d709064f059d3f52bd8b550f9ce6ec76c4f06a0a8cc27ee1df73f",
+        "expected_backend": "built-in image tool",
+        "expected_backend_labels": [
+          "built-in image tool",
+          "image_gen__imagegen"
+        ],
+        "sample_generation_method_matched": true,
+        "qa_note": "八项玩法及标题清晰，运动图解各有区别。",
+        "recorded_at": "2026-10-19T03:17:52Z"
+      },
+      "blocker": null
+    },
+    {
+      "slide_id": "slide_06",
+      "number": 6,
+      "title": "游览足迹，实时点亮",
+      "job": "prompts/slide_06.json",
+      "out": "origin_image/slide_06.png",
+      "input_images": [
+        {
+          "path": "D:\\codex_workspace\\ppt-changchun-2027\\origin_image\\slide_02.png",
+          "role": "style-only reference from approved sample slide",
+          "fidelity": "match palette, illustration treatment and typography mood; do not copy layout or content"
+        }
+      ],
+      "requires_context_images": true,
+      "status": "recorded",
+      "dispatch": {
+        "agent_id": "/root/slide_06",
+        "agent_nickname": null,
+        "prompt": "prompts/slide_06.json",
+        "prompt_sha256": "43bd5fcc4c8e79f6554b75cdc55dc0d568f4fd0a95780cd8c538dd95d8d62403",
+        "dispatched_at": "2026-10-19T03:07:47Z"
+      },
+      "result": {
+        "agent_id": "/root/slide_06",
+        "backend_used": "built-in image tool",
+        "selected_source": "C:\\Users\\贺嘉诺\\.codex\\generated_images\\01a15220-f8e2-7350-941d-c82eaa04f4bc\\exec-6019510e-841a-46c5-84b0-a781aa174a53.png",
+        "selected_source_sha256": "349d1371dddfc3ba91c5efca9b5d64cadc73334099398232ba01164a30129189",
+        "final_image": "origin_image/slide_06.png",
+        "final_image_sha256": "349d1371dddfc3ba91c5efca9b5d64cadc73334099398232ba01164a30129189",
+        "expected_backend": "built-in image tool",
+        "expected_backend_labels": [
+          "built-in image tool",
+          "image_gen__imagegen"
+        ],
+        "sample_generation_method_matched": true,
+        "qa_note": "虚拟到达统计与大屏同步机制表达清楚，无虚构数字。",
+        "recorded_at": "2026-10-19T03:17:53Z"
+      },
+      "blocker": null
+    },
+    {
+      "slide_id": "slide_07",
+      "number": 7,
+      "title": "轻量架构，开箱可玩",
+      "job": "prompts/slide_07.json",
+      "out": "origin_image/slide_07.png",
+      "input_images": [
+        {
+          "path": "D:\\codex_workspace\\ppt-changchun-2027\\origin_image\\slide_02.png",
+          "role": "style-only reference from approved sample slide",
+          "fidelity": "match palette, illustration treatment and typography mood; do not copy layout or content"
+        }
+      ],
+      "requires_context_images": true,
+      "status": "recorded",
+      "dispatch": {
+        "agent_id": "/root/slide_07",
+        "agent_nickname": null,
+        "prompt": "prompts/slide_07.json",
+        "prompt_sha256": "2c5fff3d39a4c7b73d6a187d4feb6ff064de4ae4a845106cbcb884eb5d99f1b6",
+        "dispatched_at": "2026-10-19T03:07:48Z"
+      },
+      "result": {
+        "agent_id": "/root/slide_07",
+        "backend_used": "built-in image tool",
+        "selected_source": "C:\\Users\\贺嘉诺\\.codex\\generated_images\\01a15221-095f-7641-a099-1bd16bcbc79e\\exec-1fed9fe5-3022-42bf-8334-b093ba64bbd4.png",
+        "selected_source_sha256": "9511e0a8557905d93ff188cee14450dd29a10e74d734a0db6e578fa0340b1d90",
+        "final_image": "origin_image/slide_07.png",
+        "final_image_sha256": "9511e0a8557905d93ff188cee14450dd29a10e74d734a0db6e578fa0340b1d90",
+        "expected_backend": "built-in image tool",
+        "expected_backend_labels": [
+          "built-in image tool",
+          "image_gen__imagegen"
+        ],
+        "sample_generation_method_matched": true,
+        "qa_note": "架构层次与可选生图支线清楚，中文主要标签可读。",
+        "recorded_at": "2026-10-19T03:09:54Z"
+      },
+      "blocker": null
+    },
+    {
+      "slide_id": "slide_08",
+      "number": 8,
+      "title": "让大冬会成为可探索的城市记忆",
+      "job": "prompts/slide_08.json",
+      "out": "origin_image/slide_08.png",
+      "input_images": [
+        {
+          "path": "D:\\codex_workspace\\ppt-changchun-2027\\origin_image\\slide_02.png",
+          "role": "style-only reference from approved sample slide",
+          "fidelity": "match palette, illustration treatment and typography mood; do not copy layout or content"
+        }
+      ],
+      "requires_context_images": true,
+      "status": "recorded",
+      "dispatch": {
+        "agent_id": "/root/slide_08",
+        "agent_nickname": null,
+        "prompt": "prompts/slide_08.json",
+        "prompt_sha256": "074b4f7a05adf5a48cdde013868ff862e6ad8f73c6b294da9f54e94204871975",
+        "dispatched_at": "2026-10-19T03:20:17Z"
+      },
+      "result": {
+        "agent_id": "/root/slide_08",
+        "backend_used": "built-in image tool",
+        "selected_source": "C:\\Users\\贺嘉诺\\.codex\\generated_images\\01a1522b-6c61-72f0-8a42-cfb7afac01f2\\exec-120a8eaa-1466-480d-8d77-6b517d4aae23.png",
+        "selected_source_sha256": "a428ee247f8635e73a23302d06a7963a695c2b91d1e23f4939a9728c3cc54ae5",
+        "final_image": "origin_image/slide_08.png",
+        "final_image_sha256": "a428ee247f8635e73a23302d06a7963a695c2b91d1e23f4939a9728c3cc54ae5",
+        "expected_backend": "built-in image tool",
+        "expected_backend_labels": [
+          "built-in image tool",
+          "image_gen__imagegen"
+        ],
+        "sample_generation_method_matched": true,
+        "qa_note": "标题与三枚收束印章清晰，画风一致。",
+        "recorded_at": "2026-10-19T03:23:25Z"
+      },
+      "blocker": null
+    }
+  ],
+  "updated_at": "2026-10-19T03:23:25Z"
+}

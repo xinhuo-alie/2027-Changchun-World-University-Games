@@ -25,6 +25,9 @@ assert.deepEqual(restored.bestScores, { wuhuan: 18 });
 assert.equal(restored.goalieBest, 5, 'goalie best scores must stay within the five-shot range');
 assert.equal(restored.quizBest, 5, 'quiz records must stay within the five-question score range');
 assert.equal(restored.quizBadge, true);
+assert.equal(restored.guideMode, 'relaxed', 'existing v2 saves receive safe guide defaults');
+assert.equal(restored.route, null);
+assert.deepEqual(restored.claimedQuests, []);
 
 const unavailable = createProgressStore({
   getItem(key) { if (key === LEGACY_PROGRESS_KEY) return JSON.stringify({ visited: ['film'], stamps: ['wuhuan'] }); throw new Error('storage denied'); },

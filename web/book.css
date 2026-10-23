@@ -101,13 +101,13 @@ body[data-book="creator"] .chapter-item[data-chapter="creator"] b,body[data-book
 .book-map-side h3 { color:#214758; font-size:clamp(30px,3.4vw,46px); line-height:1.19; margin:12px 0; letter-spacing:-.045em; }
 .book-map-side > p:not(.book-side-kicker) { color:#667f79; max-width:31ch; font-size:13px; line-height:1.9; }
 .book-map-side button { margin-top:12px; padding:8px 0; }
-body[data-book="map"] .split { --book-gutter:31%; grid-template-columns:minmax(240px,31fr) minmax(0,69fr); }
-body[data-book="map"] #workshopPanel .creator-controls-column,body[data-book="map"] #workshopPanel .enter-tour,body[data-book="map"] #workshopPanel .departure-note { display:none; }
-body[data-book="map"] #workshopPanel .stage { min-height:300px; }
-body[data-book="map"] #workshopPanel .stage-hint { display:none; }
-body[data-book="map"] #workshopPanel .name-field { font-size:11px; }
-body[data-book="map"] .book-map-side { display:block; }
-body[data-book="map"] .map-wrap { height:clamp(630px,69vh,900px); }
+body:is([data-book="map"],[data-book="detail"]) .split { --book-gutter:31%; grid-template-columns:minmax(240px,31fr) minmax(0,69fr); }
+body:is([data-book="map"],[data-book="detail"]) #workshopPanel .creator-controls-column,body:is([data-book="map"],[data-book="detail"]) #workshopPanel .enter-tour,body:is([data-book="map"],[data-book="detail"]) #workshopPanel .departure-note { display:none; }
+body:is([data-book="map"],[data-book="detail"]) #workshopPanel .stage { min-height:300px; }
+body:is([data-book="map"],[data-book="detail"]) #workshopPanel .stage-hint { display:none; }
+body:is([data-book="map"],[data-book="detail"]) #workshopPanel .name-field { font-size:11px; }
+body:is([data-book="map"],[data-book="detail"]) .book-map-side { display:block; }
+body:is([data-book="map"],[data-book="detail"]) .map-wrap { height:clamp(630px,69vh,900px); }
 
 .book-map-preview { position:relative; z-index:1; inset:auto; width:100%; height:clamp(240px,22vw,290px); min-height:0; margin:0 0 12px; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; padding:clamp(22px,3vw,38px); color:#f8edce; background:#1f5363 url('/assets/winter-city-panorama.svg') center bottom / cover no-repeat; border:3px solid #dfd3b8; box-shadow:inset 0 0 0 6px #1f5363,inset 0 0 0 7px #ffffff5b; pointer-events:none; }
 .book-map-preview::after { content:''; position:absolute; inset:0; background:linear-gradient(0deg,transparent 20%,#173f50c9 75%); pointer-events:none; }
@@ -123,7 +123,7 @@ body[data-book="creator"] #mapPanel .map-wrap { display:none; }
 body[data-book="creator"] #mapPanel .explore-tools { display:none; }
 body[data-book="creator"] #mapPanel .live-summary,body[data-book="creator"] #mapPanel .stats-caption,body[data-book="creator"] #mapPanel .chips { display:none; }
 body[data-book="creator"] #mapPanel .progress-summary,body[data-book="creator"] #mapPanel .bonus-challenges { display:none; }
-body[data-book="map"] .book-map-preview { display:none; }
+body:is([data-book="map"],[data-book="detail"]) .book-map-preview { display:none; }
 .progress-summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin:0 0 15px; }
 .progress-summary > div { display:grid; grid-template-columns:1fr auto; gap:3px 8px; padding:12px 14px; border:1px solid #d8dfcf; border-radius:12px 3px 12px 3px; background:#f7f4e9; }
 .progress-summary span { color:#66796c; font-size:11px; font-weight:750; }
@@ -243,7 +243,7 @@ body[data-book="creator"] .book-contents { display:block; }
 }
 @media(min-width:900px) and (max-width:1099px) {
   .split { grid-template-columns:minmax(310px,42fr) minmax(0,58fr); gap:18px; }
-  body[data-book="map"] .split { grid-template-columns:minmax(245px,34fr) minmax(0,66fr); }
+  body:is([data-book="map"],[data-book="detail"]) .split { grid-template-columns:minmax(245px,34fr) minmax(0,66fr); }
   .split > .panel { padding:18px; }
   .stage { min-height:290px; }
   .workshop-presets { grid-template-columns:repeat(2,minmax(0,1fr)); }
@@ -291,7 +291,7 @@ body[data-book="creator"] .book-contents { display:block; }
   body[data-book="creator"] .contents-row { min-width:0; padding:7px 0; }
   body[data-book="creator"] .contents-row small { font-size:8px; }
 
-  body[data-book="map"] {
+  body:is([data-book="map"],[data-book="detail"]) {
     display:flex;
     flex-direction:column;
     width:100%;
@@ -299,94 +299,94 @@ body[data-book="creator"] .book-contents { display:block; }
     min-height:0;
     overflow:hidden;
   }
-  body[data-book="map"] > .top,
-  body[data-book="map"] > .book-chapter-bar { flex:0 0 auto; }
-  body[data-book="map"] .book-chapter-bar { min-height:60px; margin-top:10px; }
-  body[data-book="map"] > .split {
+  body:is([data-book="map"],[data-book="detail"]) > .top,
+  body:is([data-book="map"],[data-book="detail"]) > .book-chapter-bar { flex:0 0 auto; }
+  body:is([data-book="map"],[data-book="detail"]) .book-chapter-bar { min-height:60px; margin-top:10px; }
+  body:is([data-book="map"],[data-book="detail"]) > .split {
     flex:1 1 auto;
     min-height:0;
     align-items:stretch;
     margin-bottom:14px;
   }
-  body[data-book="map"] .split > .panel { min-height:0; overflow:hidden; }
-  body[data-book="map"] #workshopPanel { overflow:auto; overscroll-behavior:contain; }
-  body[data-book="map"] #workshopPanel .progress-summary {
+  body:is([data-book="map"],[data-book="detail"]) .split > .panel { min-height:0; overflow:hidden; }
+  body:is([data-book="map"],[data-book="detail"]) #workshopPanel { overflow:auto; overscroll-behavior:contain; }
+  body:is([data-book="map"],[data-book="detail"]) #workshopPanel .progress-summary {
     grid-template-columns:1fr;
     gap:5px;
     margin:8px 0;
   }
-  body[data-book="map"] #workshopPanel .progress-summary > div {
+  body:is([data-book="map"],[data-book="detail"]) #workshopPanel .progress-summary > div {
     grid-template-columns:minmax(0,1fr) auto;
     min-height:38px;
     padding:5px 8px;
   }
-  body[data-book="map"] #workshopPanel .progress-summary strong { grid-column:2; grid-row:1 / span 2; }
-  body[data-book="map"] #workshopPanel .bonus-challenges {
+  body:is([data-book="map"],[data-book="detail"]) #workshopPanel .progress-summary strong { grid-column:2; grid-row:1 / span 2; }
+  body:is([data-book="map"],[data-book="detail"]) #workshopPanel .bonus-challenges {
     grid-template-columns:repeat(2,minmax(0,1fr));
     gap:5px;
     margin:0 0 8px;
   }
-  body[data-book="map"] #workshopPanel .bonus-challenges > div { grid-column:1 / -1; }
-  body[data-book="map"] #workshopPanel .bonus-challenges button { min-width:0; }
-  body[data-book="map"] #workshopPanel .live-summary {
+  body:is([data-book="map"],[data-book="detail"]) #workshopPanel .bonus-challenges > div { grid-column:1 / -1; }
+  body:is([data-book="map"],[data-book="detail"]) #workshopPanel .bonus-challenges button { min-width:0; }
+  body:is([data-book="map"],[data-book="detail"]) #workshopPanel .live-summary {
     display:grid;
     grid-template-columns:repeat(3,minmax(0,1fr));
     gap:5px;
     margin-top:6px;
   }
-  body[data-book="map"] #workshopPanel .live-summary a { grid-column:1 / -1; margin:0; }
-  body[data-book="map"] #mapPanel {
+  body:is([data-book="map"],[data-book="detail"]) #workshopPanel .live-summary a { grid-column:1 / -1; margin:0; }
+  body:is([data-book="map"],[data-book="detail"]) #mapPanel {
     position:relative;
     display:flex;
     flex-direction:column;
     min-height:0;
   }
-  body[data-book="map"] #mapPanel > .panel-head { flex:0 0 auto; margin-bottom:4px; padding-bottom:7px; }
-  body[data-book="map"] #mapPanel > .panel-head h2 { font-size:18px; }
-  body[data-book="map"] #mapPanel .explore-tools { flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:3px 0 6px; }
-  body[data-book="map"] #mapPanel .map-wrap {
+  body:is([data-book="map"],[data-book="detail"]) #mapPanel > .panel-head { flex:0 0 auto; margin-bottom:4px; padding-bottom:7px; }
+  body:is([data-book="map"],[data-book="detail"]) #mapPanel > .panel-head h2 { font-size:18px; }
+  body:is([data-book="map"],[data-book="detail"]) #mapPanel .explore-tools { flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:3px 0 6px; }
+  body:is([data-book="map"],[data-book="detail"]) #mapPanel .map-wrap {
     flex:1 1 0%;
     min-height:180px;
     height:auto;
   }
-  body[data-book="map"] .progress-summary { flex:0 0 auto; gap:6px; margin:0 0 6px; }
-  body[data-book="map"] .progress-summary > div { min-height:43px; padding:5px 8px; }
-  body[data-book="map"] .progress-summary strong { font-size:16px; }
-  body[data-book="map"] .bonus-challenges { flex:0 0 auto; grid-template-columns:minmax(0,1.1fr) repeat(2,minmax(0,1fr)); align-items:stretch; gap:7px; margin:0 0 7px; padding:6px 8px; }
-  body[data-book="map"] .bonus-challenges > div { grid-column:auto; align-self:center; }
-  body[data-book="map"] .bonus-challenges h3 { font-size:13px; }
-  body[data-book="map"] .bonus-challenges button { min-height:46px; padding:5px 7px; gap:2px; }
-  body[data-book="map"] .bonus-challenges button b { font-size:12px; }
-  body[data-book="map"] .bonus-challenges button small,
-  body[data-book="map"] .bonus-challenges button span { font-size:9px; }
-  body[data-book="map"] .live-summary { flex:0 0 auto; gap:14px; padding:6px 2px 2px; }
-  body[data-book="map"] .live-summary b { font-size:18px; }
-  body[data-book="map"] .live-summary small,
-  body[data-book="map"] .live-summary a { font-size:9px; }
-  body[data-book="map"] .stats-caption { flex:0 0 auto; margin:2px 0 4px; overflow:hidden; font-size:8px; line-height:1.25; text-overflow:ellipsis; white-space:nowrap; }
-  body[data-book="map"] .chips { flex:0 0 auto; max-height:none; min-height:34px; overflow-x:auto; overflow-y:hidden; padding:3px 1px 9px; scrollbar-width:thin; scrollbar-color:#89aaa2 #e7e9dc; }
-  body[data-book="map"] .chips::-webkit-scrollbar { display:block; height:8px; }
-  body[data-book="map"] .chips::-webkit-scrollbar-track { border-radius:8px; background:#e7e9dc; }
-  body[data-book="map"] .chips::-webkit-scrollbar-thumb { border:2px solid #e7e9dc; border-radius:8px; background:#89aaa2; }
-  body[data-book="map"] .chips .chip { min-height:25px; padding:4px 7px; font-size:9px; }
+  body:is([data-book="map"],[data-book="detail"]) .progress-summary { flex:0 0 auto; gap:6px; margin:0 0 6px; }
+  body:is([data-book="map"],[data-book="detail"]) .progress-summary > div { min-height:43px; padding:5px 8px; }
+  body:is([data-book="map"],[data-book="detail"]) .progress-summary strong { font-size:16px; }
+  body:is([data-book="map"],[data-book="detail"]) .bonus-challenges { flex:0 0 auto; grid-template-columns:minmax(0,1.1fr) repeat(2,minmax(0,1fr)); align-items:stretch; gap:7px; margin:0 0 7px; padding:6px 8px; }
+  body:is([data-book="map"],[data-book="detail"]) .bonus-challenges > div { grid-column:auto; align-self:center; }
+  body:is([data-book="map"],[data-book="detail"]) .bonus-challenges h3 { font-size:13px; }
+  body:is([data-book="map"],[data-book="detail"]) .bonus-challenges button { min-height:46px; padding:5px 7px; gap:2px; }
+  body:is([data-book="map"],[data-book="detail"]) .bonus-challenges button b { font-size:12px; }
+  body:is([data-book="map"],[data-book="detail"]) .bonus-challenges button small,
+  body:is([data-book="map"],[data-book="detail"]) .bonus-challenges button span { font-size:9px; }
+  body:is([data-book="map"],[data-book="detail"]) .live-summary { flex:0 0 auto; gap:14px; padding:6px 2px 2px; }
+  body:is([data-book="map"],[data-book="detail"]) .live-summary b { font-size:18px; }
+  body:is([data-book="map"],[data-book="detail"]) .live-summary small,
+  body:is([data-book="map"],[data-book="detail"]) .live-summary a { font-size:9px; }
+  body:is([data-book="map"],[data-book="detail"]) .stats-caption { flex:0 0 auto; margin:2px 0 4px; overflow:hidden; font-size:8px; line-height:1.25; text-overflow:ellipsis; white-space:nowrap; }
+  body:is([data-book="map"],[data-book="detail"]) .chips { flex:0 0 auto; max-height:none; min-height:34px; overflow-x:auto; overflow-y:hidden; padding:3px 1px 9px; scrollbar-width:thin; scrollbar-color:#89aaa2 #e7e9dc; }
+  body:is([data-book="map"],[data-book="detail"]) .chips::-webkit-scrollbar { display:block; height:8px; }
+  body:is([data-book="map"],[data-book="detail"]) .chips::-webkit-scrollbar-track { border-radius:8px; background:#e7e9dc; }
+  body:is([data-book="map"],[data-book="detail"]) .chips::-webkit-scrollbar-thumb { border:2px solid #e7e9dc; border-radius:8px; background:#89aaa2; }
+  body:is([data-book="map"],[data-book="detail"]) .chips .chip { min-height:25px; padding:4px 7px; font-size:9px; }
 }
 @media(min-width:900px) and (max-height:680px) {
   body[data-book="creator"] .book-chapter-bar { min-height:50px; }
   body[data-book="creator"] .book-map-preview { height:160px; margin-bottom:8px; padding:18px; }
   body[data-book="creator"] .contents-heading { padding-bottom:8px; }
   body[data-book="creator"] .contents-row { padding:4px 0; }
-  body[data-book="map"] .book-chapter-bar { min-height:50px; }
-  body[data-book="map"] #mapPanel > .panel-head { margin-bottom:4px; }
-  body[data-book="map"] .progress-summary { gap:5px; margin-bottom:5px; }
-  body[data-book="map"] .progress-summary > div { padding:5px 7px; }
-  body[data-book="map"] .bonus-challenges { padding:5px 7px; margin-bottom:5px; }
-  body[data-book="map"] .bonus-challenges button { min-height:43px; padding:5px 7px; }
-  body[data-book="map"] .live-summary { padding-top:5px; }
-  body[data-book="map"] #mapPanel .map-wrap { min-height:145px; }
-  body[data-book="map"] .chips { min-height:31px; padding-bottom:7px; }
+  body:is([data-book="map"],[data-book="detail"]) .book-chapter-bar { min-height:50px; }
+  body:is([data-book="map"],[data-book="detail"]) #mapPanel > .panel-head { margin-bottom:4px; }
+  body:is([data-book="map"],[data-book="detail"]) .progress-summary { gap:5px; margin-bottom:5px; }
+  body:is([data-book="map"],[data-book="detail"]) .progress-summary > div { padding:5px 7px; }
+  body:is([data-book="map"],[data-book="detail"]) .bonus-challenges { padding:5px 7px; margin-bottom:5px; }
+  body:is([data-book="map"],[data-book="detail"]) .bonus-challenges button { min-height:43px; padding:5px 7px; }
+  body:is([data-book="map"],[data-book="detail"]) .live-summary { padding-top:5px; }
+  body:is([data-book="map"],[data-book="detail"]) #mapPanel .map-wrap { min-height:145px; }
+  body:is([data-book="map"],[data-book="detail"]) .chips { min-height:31px; padding-bottom:7px; }
 }
 @media(max-width:899px) {
-  .split,body[data-book="map"] .split { display:grid; width:min(760px,calc(100% - 32px)); grid-template-columns:minmax(0,1fr); gap:16px; margin-bottom:32px; }
+  .split,body:is([data-book="map"],[data-book="detail"]) .split { display:grid; width:min(760px,calc(100% - 32px)); grid-template-columns:minmax(0,1fr); gap:16px; margin-bottom:32px; }
   .split::before { display:none; }
   .split > .panel { min-height:0; padding:clamp(16px,3vw,24px); border:1px solid #cfc5b2; border-radius:5px; }
   body[data-book="creator"] #mapPanel { min-height:0; }
@@ -405,7 +405,7 @@ body[data-book="creator"] .book-contents { display:block; }
   .book-chapter-bar { width:calc(100% - 20px); min-height:62px; margin-top:10px; padding:0 10px; gap:8px; overflow:auto; }
   .book-back-cover { font-size:10px; }.chapter-item { font-size:10px; }.chapter-item b { width:23px; height:23px; margin-right:2px; font-size:12px; }
   .page-flip-toggle { font-size:10px; padding:6px; }
-  .split,body[data-book="map"] .split { width:calc(100% - 20px); gap:12px; margin-bottom:24px; }
+  .split,body:is([data-book="map"],[data-book="detail"]) .split { width:calc(100% - 20px); gap:12px; margin-bottom:24px; }
   .split > .panel { min-height:0; padding:14px; }
   body[data-book="creator"] #mapPanel { min-height:0; }
   body[data-book="creator"] #mapPanel .explore-tools,body[data-book="creator"] #mapPanel .live-summary,body[data-book="creator"] #mapPanel .stats-caption,body[data-book="creator"] #mapPanel .chips { display:none; }
@@ -413,12 +413,12 @@ body[data-book="creator"] .book-contents { display:block; }
   .book-map-preview { height:220px; min-height:0; margin:0 0 12px; padding:22px; background-size:cover; }
   .book-contents { padding:0 2px 12px; }
   .contents-list { grid-template-columns:1fr; }
-  body[data-book="map"] #workshopPanel .stage { min-height:230px; }
-  body[data-book="map"] #workshopPanel .creator-layout { max-width:290px; }
-  body[data-book="map"] #workshopPanel .book-map-side { padding:6px 0 0; }
-  body[data-book="map"] #workshopPanel .book-map-side h3 { font-size:25px; }
-  body[data-book="map"] #workshopPanel .book-map-side p:not(.book-side-kicker) { display:none; }
-  body[data-book="map"] #mapPanel { border-top:0; }
+  body:is([data-book="map"],[data-book="detail"]) #workshopPanel .stage { min-height:230px; }
+  body:is([data-book="map"],[data-book="detail"]) #workshopPanel .creator-layout { max-width:290px; }
+  body:is([data-book="map"],[data-book="detail"]) #workshopPanel .book-map-side { padding:6px 0 0; }
+  body:is([data-book="map"],[data-book="detail"]) #workshopPanel .book-map-side h3 { font-size:25px; }
+  body:is([data-book="map"],[data-book="detail"]) #workshopPanel .book-map-side p:not(.book-side-kicker) { display:none; }
+  body:is([data-book="map"],[data-book="detail"]) #mapPanel { border-top:0; }
   .book-detail { padding:10px; }
   .book-detail-spread { display:block; height:calc(100dvh - 20px); min-height:0; overflow:auto; }
   .book-detail-spread::after { display:none; }
@@ -439,6 +439,20 @@ body[data-book="creator"] .book-contents { display:block; }
   .book-flip-page strong,.book-flip-face strong { font-size:clamp(18px,4vw,26px); }
   .book-flip-page p { font-size:11px; }
 }
+
+/* The full-map control expands the actual interactive canvas to the viewport. */
+body #mapPanel .map-wrap.map-expanded {
+  position:fixed;
+  inset:0;
+  z-index:50;
+  width:100vw;
+  height:100dvh;
+  min-height:0;
+  margin:0;
+  border:0;
+  border-radius:0;
+}
+body .map-wrap.map-expanded .map-actions { top:20px; right:20px; }
 @media(prefers-reduced-motion:reduce) {
   .cover-intro button,.chapter-item { transition:none; }
   .cover-intro button:hover { transform:none; }

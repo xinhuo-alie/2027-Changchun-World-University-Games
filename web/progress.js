@@ -1,5 +1,7 @@
 export const LEGACY_PROGRESS_KEY = 'cc2027:progress';
 export const PROGRESS_KEY = 'cc2027:progress:v2';
+import { GUIDE_MODES, normalizeRoute } from './itinerary.js';
+import { QUESTS } from './quests.js';
 
 function strings(value) {
   return Array.isArray(value) ? value.filter((item) => typeof item === 'string') : [];
@@ -19,6 +21,7 @@ function cleanScores(value, allowed) {
 export function normalizeProgress(raw, placeIds, venueIds) {
   const places = new Set(placeIds);
   const venues = new Set(venueIds);
+  const questIds = new Set(QUESTS.map((quest) => quest.id));
   return {
     version: 2,
     explored: cleanIds(raw?.explored, places),
@@ -27,6 +30,11 @@ export function normalizeProgress(raw, placeIds, venueIds) {
     goalieBest: Number.isFinite(raw?.goalieBest) && raw.goalieBest >= 0 ? Math.min(5, Math.floor(raw.goalieBest)) : 0,
     quizBest: Number.isFinite(raw?.quizBest) && raw.quizBest >= 0 ? Math.min(5, Math.floor(raw.quizBest)) : 0,
     quizBadge: raw?.quizBadge === true,
+    guideMode: Object.hasOwn(GUIDE_MODES, raw?.guideMode) ? raw.guideMode : 'relaxed',
+    route: normalizeRoute(raw?.route, places),
+    readNotes: cleanIds(raw?.readNotes, places),
+    knowledgeSources: cleanIds(raw?.knowledgeSources, places),
+    claimedQuests: cleanIds(raw?.claimedQuests, questIds),
   };
 }
 
