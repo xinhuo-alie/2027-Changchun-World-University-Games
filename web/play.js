@@ -1,4 +1,5 @@
 import { connectStats, recordVisit } from '/visit-client.js';
+import { createShowcaseParticipation } from '/showcase-presence-client.js';
 import { keyFigureBackground, figureCutoutHasBackground } from '/avatar-face.js';
 if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 /**
@@ -19,12 +20,18 @@ import { createMinigameHost } from '/minigames.js';
 import { createSoundscape } from '/soundscape.js';
 import { createProgressStore } from '/progress.js';
 import { createGuideUI } from '/guide-ui.js';
+import { createMascotGuide } from '/mascot-guide.js';
 import { buildPassport } from '/passport.js';
 import { createQuiz } from '/quiz.js';
 import {
-  CREATIVE_GROUPS, CREATIVE_PRESETS, DEFAULT_CREATIVE, normalizeCreative,
-  recommendCreativeForSport, applyCreativePreset, randomCreative, clearCreativeDetails,
+  CREATIVE_GROUPS, CREATIVE_GENDER_OPTIONS, CREATIVE_PRESETS, DEFAULT_CREATIVE, normalizeCreative,
+  recommendCreativeForSport, applyCreativePreset, clearCreativeDetails,
 } from '/creative-config.js';
+import { randomizeCreative, getVariationSummary, createRandomSeed } from '/avatar-randomizer.js';
+import { SECRET_AVATARS, drawSecret, applySecretCreative } from '/secret-avatars.js';
+import { getSecretCollection, collectSecret } from '/secret-collection.js';
+import { createPlaceGallery } from '/place-gallery.js';
+import { journeyForPlace } from '/journey-flow.js';
 import {
   defaultConfig,
   presetConfig,
@@ -57,11 +64,23 @@ import {
 } from '/avatar.js';
 
 const $ = (id) => document.getElementById(id);
+let activeGalleryVenue = null;
+const placeGallery = createPlaceGallery($('placeGallery'), () => {
+  $('detailArt').hidden = false;
+  const art = $('detailArt');
+  const context = art.getContext('2d');
+  context.clearRect(0, 0, art.width, art.height);
+  if (activeGalleryVenue) drawVenueIllustration(context, activeGalleryVenue, 0, 0, art.width, art.height);
+  $('detailArtCaption').textContent = '实景照片暂时无法加载，先看这幅地点手绘插画。';
+});
 // 编辑工作区的边长。取 640 而不是 384：全身照里脸只占画面一成多，
 // 工作区分辨率太低，抠出来的脸放大到 256 就糊了。泛洪在 640² 上仍是几十毫秒级。
 const EDITOR_SIZE = 640;
 const CREATIVE_KEY = 'cc2027:creative';
 const ARTWORK_KEY = 'cc2027:last-artwork';
+const GENERATION_INTENT_KEY = 'cc2027:secret-generation-intent:v1';
+const BONUS_STICKER_KEY='cc2027:attraction-stickers:v1';
+function loadBonusStickers(){try{const values=JSON.parse(localStorage.getItem(BONUS_STICKER_KEY)||'[]');return new Set(Array.isArray(values)?values.filter(id=>['palace','film','mountainmall','nanhu','culture','century'].includes(id)):[])}catch{return new Set()}}
 function loadArtworkUrl() {
   try {
     const url = localStorage.getItem(ARTWORK_KEY);
@@ -82,6 +101,7 @@ let tourEntered = false;
 let entering = null;
 let visitPending = false;
 let liveStats = null;
+let showcasePresence;
 
 const state = {
   cfg: applyLook(defaultConfig(), LOOKS[0]),
@@ -91,14 +111,18 @@ const state = {
   providerId: null,
   styleId: 'avatar',
   creative: loadCreative(),
-  workshopOpen: { presets: false, base: true, personality: false, visual: false, custom: false },
+  workshopOpen: { advanced: false, presets: false, base: false, personality: false, visual: false, custom: false },
   workshopGroupOpen: { style: true },
   workshopMessage: '',
+  randomLocks: [],
+  workshopVariationReady: false,
+  pendingGeneration: (()=>{try{const value=JSON.parse(localStorage.getItem(GENERATION_INTENT_KEY)||'null');return value?.creative&&Number.isFinite(value.seed)?value:null;}catch{return null;}})(),
   generatedArtworkUrl: loadArtworkUrl(),
   tab: 'photo',
   activeId: null,
   visited: new Set(),
   medals: new Set(),
+  bonusStickers: loadBonusStickers(),
   bestScores: {},
   goalieBest: 0,
   quizBest: 0,
@@ -106,6 +130,7 @@ const state = {
   guideMode: 'relaxed',
   route: null,
   readNotes: new Set(),
+  observedPlaces: new Set(),
   knowledgeSources: new Set(),
   claimedQuests: new Set(),
   photo: null, // 见 openEditor
@@ -118,11 +143,12 @@ const state = {
 
 let progressStore = null;
 let guideUI = null;
+let mascotGuide = null;
 function currentProgress() {
   return {
     explored: [...state.visited], medals: [...state.medals], bestScores: state.bestScores,
     goalieBest: state.goalieBest, quizBest: state.quizBest, quizBadge: state.quizBadge,
-    guideMode: state.guideMode, route: state.route, readNotes: [...state.readNotes],
+    guideMode: state.guideMode, route: state.route, readNotes: [...state.readNotes], observedPlaces: [...state.observedPlaces],
     knowledgeSources: [...state.knowledgeSources], claimedQuests: [...state.claimedQuests],
   };
 }
@@ -141,6 +167,7 @@ function loadProgress() {
   state.guideMode = saved.guideMode;
   state.route = saved.route;
   state.readNotes = new Set(saved.readNotes);
+  state.observedPlaces = new Set(saved.observedPlaces);
   state.knowledgeSources = new Set(saved.knowledgeSources);
   state.claimedQuests = new Set(saved.claimedQuests);
 }
@@ -148,6 +175,10 @@ function loadProgress() {
 function saveProgress() {
   progressStore?.save(currentProgress());
   guideUI?.render();
+  if (state.pendingVenue) {
+    renderDetailJourney(state.pendingVenue);
+    if (!$('journeyContinue').hidden) renderJourneyContinue(state.pendingVenue);
+  }
 }
 
 function setGuideProgress(patch) {
@@ -213,7 +244,7 @@ function drawStage(t) {
   }
   // 底部留出名字输入条的高度，不然小人的脚会被压在输入框底下
   // 留出上方空间：AI 头像的头发会往外冒一点，贴到画面顶端会被切平
-  drawCharacter(stageCtx, state.cfg, { x: 0, y: -h * 0.14, w, h: h * 1.05 }, { t, moving: false });
+  drawCharacter(stageCtx, state.cfg, { x: w * 0.08, y: h * 0.02, w: w * 0.84, h: h * 0.80 }, { t, moving: false });
 }
 
 function drawHero(t) {
@@ -509,7 +540,7 @@ function renderGenerationControls(body, has) {
     select.addEventListener('change', () => { state.providerId = select.value; });
     label.append(title,select);generation.append(label);
   }
-  const gen = document.createElement('button');
+    const gen = document.createElement('button');
   gen.className = 'primary wide';
   gen.type = 'button';
   gen.disabled = !has;
@@ -563,6 +594,7 @@ async function useReferenceCharacter(button) {
     state.cfg.name = state.cfg.name || '雪道伙伴';
     $('nameInput').value = state.cfg.name;
     tourEntered = false;
+    showcasePresence?.tourEnded();
     map?.setHeroVisible(false);
     applyChange();
     $('departureNote').textContent = '已使用风格参考人物，无需照片或生图 API。点击「带我去游览」即可出发。';
@@ -590,12 +622,52 @@ async function createReferenceFigure() {
 function renderCreativeControls(body) {
   const identity = document.createElement('div');
   identity.className = 'identity-promise';
-  identity.innerHTML = '<span>i</span><div><b>关于照片</b><small>提示词会要求模型参考脸型、发型和眼镜等特征。生成效果会因照片与模型而变化。</small></div>';
+  identity.innerHTML = '<span>i</span><div><b>关于照片</b><small>提示词会参考脸部辨识特征；角色性别以这里的选择为准。生成效果会因照片与模型而变化。</small></div>';
   body.appendChild(identity);
   const heading = document.createElement('div');
   heading.className = 'workshop-heading';
-  heading.innerHTML = '<div><span class="workshop-kicker">YOUR WINTER AVATAR</span><h3>冰雪角色造型工坊</h3><p>搭配你的冰雪角色，确认后再生成作品。</p></div>';
+  heading.innerHTML = '<div><span class="workshop-kicker">YOUR AVATAR</span><h3>角色造型工坊</h3><p>选画风、主题和角色类型，其他细节每次生成都会惊喜变化。</p></div>';
   body.appendChild(heading);
+
+  const quick = document.createElement('div'); quick.className = 'workshop-quick-picks';
+  for (const [key,label] of [['style','基础画风'],['theme','角色主题'],['sport','角色类型']]) {
+    const wrapper=document.createElement('label'); wrapper.className='workshop-quick-pick';
+    const caption=document.createElement('span'); caption.textContent=label;
+    const select=document.createElement('select'); select.setAttribute('aria-label',label);
+    for(const item of CREATIVE_GROUPS[key]){ const option=document.createElement('option'); option.value=item.id; option.textContent=item.label; select.appendChild(option); }
+    select.value=state.creative[key];
+    select.addEventListener('change',()=>{ state.creative[key]=select.value; if(key==='theme') state.creative.vibe=select.value; state.workshopVariationReady=false; saveCreative(); renderTabBody(); });
+    wrapper.append(caption,select); quick.appendChild(wrapper);
+  }
+  body.appendChild(quick);
+  const genderField = document.createElement('fieldset'); genderField.className = 'workshop-gender';
+  const genderLegend = document.createElement('legend'); genderLegend.textContent = '角色性别';
+  const genderOptions = document.createElement('div'); genderOptions.className = 'workshop-gender-options';
+  for (const item of CREATIVE_GENDER_OPTIONS) {
+    const label = document.createElement('label');
+    const input = document.createElement('input'); input.type = 'radio'; input.name = 'creativeGender'; input.value = item.id;
+    input.checked = state.creative.gender === item.id;
+    input.addEventListener('change', () => {
+      state.creative.gender = item.id;
+      state.workshopVariationReady = false;
+      state.pendingGeneration = null;
+      try { localStorage.removeItem(GENERATION_INTENT_KEY); } catch { /* optional persistence */ }
+      saveCreative(); renderTabBody();
+    });
+    const text = document.createElement('span'); text.textContent = item.label;
+    label.append(input, text); genderOptions.appendChild(label);
+  }
+  const genderNote = document.createElement('small'); genderNote.textContent = '随机会在生成前确定为男或女，并写入明确限制。';
+  genderField.append(genderLegend, genderOptions, genderNote); body.appendChild(genderField);
+  const primaryActions=document.createElement('div'); primaryActions.className='workshop-actions workshop-primary-actions';
+  const surprise=document.createElement('button'); surprise.type='button'; surprise.className='workshop-action workshop-surprise'; surprise.textContent='🎲 随机一套惊喜细节';
+  surprise.addEventListener('click',()=>{const before=state.creative;state.creative=randomizeCreative(before,{mode:'details-only',lockKeys:[...new Set(['style','theme','sport',...state.randomLocks])],seed:createDesignSeed()});state.workshopVariationReady=true;state.workshopMessage=getVariationSummary(before,state.creative);saveCreative();renderTabBody();});
+  primaryActions.appendChild(surprise); body.appendChild(primaryActions);
+  const quickSummary=document.createElement('p'); quickSummary.className='workshop-quick-summary';
+  const outfitLabel=CREATIVE_GROUPS.outfit.find((item)=>item.id===state.creative.outfit)?.label;
+  const companionLabels=state.creative.accessories.map((id)=>CREATIVE_GROUPS.accessory.find((item)=>item.id===id)?.label).filter(Boolean);
+  quickSummary.textContent=state.workshopVariationReady&&state.creative.metadata?.randomSeed?`${state.workshopMessage||'本次随机'}${[outfitLabel,...companionLabels].filter(Boolean).length?` · ${[outfitLabel,...companionLabels].filter(Boolean).join('、')}`:''}`:'每次抽取都会换一组发型、服装、配饰、动作和配色；灵感号可复现本次搭配';
+  body.appendChild(quickSummary);
 
   const presetSection = document.createElement('details');
   presetSection.className = 'workshop-section workshop-presets-section';
@@ -612,35 +684,44 @@ function renderCreativeControls(body) {
     button.dataset.workshopFocus = `preset:${preset.id}`;
     button.className = 'workshop-preset';
     button.innerHTML = `<b>${escapeHtml(preset.label)}</b><small>${escapeHtml(preset.description)}</small>`;
-    button.addEventListener('click', () => { state.creative = applyCreativePreset(preset.id); saveCreative(); renderTabBody(); });
+    button.addEventListener('click', () => { state.creative = applyCreativePreset(preset.id, { gender:state.creative.gender }); state.workshopVariationReady=false; saveCreative(); renderTabBody(); });
     presets.appendChild(button);
   }
   presetSection.append(presetSummary, presets);
-  body.appendChild(presetSection);
+  const advanced=document.createElement('details'); advanced.className='workshop-section workshop-advanced'; advanced.open=Boolean(state.workshopOpen.advanced);
+  advanced.addEventListener('toggle',()=>{state.workshopOpen.advanced=advanced.open;});
+  const advancedSummary=document.createElement('summary'); advancedSummary.innerHTML='<span><b>更多造型选项</b><small>预设、自定义和细节控制</small></span><i aria-hidden="true">⌄</i>';
+  advanced.appendChild(advancedSummary); advanced.appendChild(presetSection);
 
   const actions = document.createElement('div');
   actions.className = 'workshop-actions';
   const actionButton = (label, fn, className = '') => {
     const button = document.createElement('button'); button.type = 'button'; button.className = `workshop-action ${className}`;
     button.dataset.workshopFocus = `action:${actions.childElementCount}`;
-    button.textContent = label; button.addEventListener('click', () => { fn(); saveCreative(); renderTabBody(); }); actions.appendChild(button);
+    button.textContent = label; button.addEventListener('click', () => { fn(); state.workshopVariationReady=false; saveCreative(); renderTabBody(); }); actions.appendChild(button);
   };
-  actionButton('🎲 随机搭配', () => { state.creative = randomCreative(); });
+  const locks = document.createElement('details'); locks.className='workshop-random-locks';
+  const lockTitle=document.createElement('summary'); lockTitle.textContent='锁定随机选项'; locks.append(lockTitle);
+  for(const [key,label] of [['style','画风'],['sport','运动'],['theme','主题'],['outfit','服装'],['pose','动作'],['palette','配色']]){
+    const option=document.createElement('label'); const input=document.createElement('input'); input.type='checkbox'; input.checked=state.randomLocks.includes(key);
+    input.addEventListener('change',()=>{state.randomLocks=input.checked?[...new Set([...state.randomLocks,key])]:state.randomLocks.filter(x=>x!==key);}); option.append(input,document.createTextNode(label)); locks.append(option);
+  }
+  actions.append(locks);
   actionButton('恢复默认', () => { state.creative = normalizeCreative(DEFAULT_CREATIVE); });
   actionButton('清空可选细节', () => { state.creative = clearCreativeDetails(state.creative); });
-  body.appendChild(actions);
+  advanced.appendChild(actions);
 
   const selected = summarizeCreative(state.creative);
   const summary = document.createElement('div'); summary.className = 'workshop-summary';
   summary.innerHTML = `<b>当前搭配</b><p>${escapeHtml(selected.join(' · '))}</p><small>左侧预览展示当前角色；这些造型选项会在你点击生成后应用到作品，不会提前伪装成已渲染效果。</small>`;
   const summaryText = summary.querySelector('p');
-  body.appendChild(summary);
+  advanced.appendChild(summary);
 
   const status = document.createElement('p'); status.className = 'workshop-status'; status.setAttribute('role', 'status'); status.textContent = state.workshopMessage || '';
-  body.appendChild(status);
+  advanced.appendChild(status);
 
   const sections = [
-    { id:'base', title:'基础造型', note:'画风、主题、运动与服装', groups:['style','theme','sport','outfit'] },
+    { id:'base', title:'服装与基础造型', note:'服装和角色轮廓', groups:['outfit'] },
     { id:'personality', title:'个性细节', note:'发型、装饰、表情与动作', groups:['hairstyle','headwear','accessory','expression','pose'] },
     { id:'visual', title:'视觉效果', note:'场景氛围、配色、材质与镜头', groups:['scene','palette','material','effect','composition'] },
   ];
@@ -649,7 +730,7 @@ function renderCreativeControls(body) {
     details.addEventListener('toggle', () => { state.workshopOpen[section.id] = details.open; });
     const summaryEl = document.createElement('summary'); summaryEl.innerHTML = `<span><b>${section.title}</b><small>${section.note}</small></span><i aria-hidden="true">⌄</i>`; details.appendChild(summaryEl);
     for (const key of section.groups) renderCreativeOptionGroup(details, key);
-    body.appendChild(details);
+    advanced.appendChild(details);
   }
 
   const customSection = document.createElement('details'); customSection.className = 'workshop-section'; customSection.open = Boolean(state.workshopOpen.custom);
@@ -659,19 +740,26 @@ function renderCreativeControls(body) {
   const title = document.createElement('span'); title.innerHTML = '<b>写下你想加入的细节</b><small>如银白短款羽绒服、袖口雪花刺绣、透明冰晶背包。</small>';
   const textarea = document.createElement('textarea'); textarea.maxLength = 240; textarea.rows = 3; textarea.placeholder = '银白色短款羽绒服，袖口有蓝色雪花刺绣，背着透明冰晶小背包'; textarea.value = state.creative.details;
   textarea.addEventListener('input', () => {
+    state.workshopVariationReady=false;
     state.creative.details = textarea.value.slice(0,240); saveCreative();
     count.textContent = `还可输入 ${240 - state.creative.details.length} 字`;
     const current = summarizeCreative(state.creative); summaryText.textContent = current.join(' · ');
   });
   const count = document.createElement('small'); count.className = 'creative-count'; count.textContent = `还可输入 ${240 - textarea.value.length} 字`;
-  custom.append(title, textarea, count); customSection.appendChild(custom); body.appendChild(customSection);
+  custom.append(title, textarea, count); customSection.appendChild(custom); advanced.appendChild(customSection);
+  body.appendChild(advanced);
+}
+
+function createDesignSeed() {
+  return createRandomSeed();
 }
 
 function escapeHtml(value) { return String(value).replace(/[&<>"']/g, (char) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[char]); }
 
 function summarizeCreative(creative) {
   const labels = [];
-  for (const key of ['style','theme','sport','outfit','hairstyle','headwear','expression','pose','scene','palette','material','composition']) {
+  for (const key of ['gender','style','theme','sport','outfit','hairstyle','headwear','expression','pose','scene','palette','material','composition']) {
+    if (key === 'gender') { labels.push(CREATIVE_GENDER_OPTIONS.find((option) => option.id === creative.gender)?.label || '随机'); continue; }
     const item = CREATIVE_GROUPS[key].find((option) => option.id === creative[key]); if (item) labels.push(item.label);
   }
   for (const key of ['accessory','effect']) for (const id of creative[key === 'accessory' ? 'accessories' : 'effects']) {
@@ -689,7 +777,7 @@ function renderCreativeOptionGroup(parent, key) {
   block.open = Boolean(state.workshopGroupOpen[key]);
   block.addEventListener('toggle', () => { state.workshopGroupOpen[key] = block.open; });
   const head = document.createElement('summary'); head.className = 'workshop-option-head';
-  const label = ({ style:'艺术风格',theme:'角色主题',sport:'冰雪运动',outfit:'服装',hairstyle:'发型',headwear:'头部装饰',accessory:'配饰',expression:'表情',pose:'动作与姿势',scene:'场景氛围',palette:'主色调',material:'材质质感',effect:'特效与氛围',composition:'镜头与构图' })[key];
+  const label = ({ style:'艺术风格',theme:'角色主题',sport:'角色类型',outfit:'服装',hairstyle:'发型',headwear:'头部装饰',accessory:'配饰',expression:'表情',pose:'动作与姿势',scene:'场景氛围',palette:'主色调',material:'材质质感',effect:'特效与氛围',composition:'镜头与构图' })[key];
   const chosenOptions = selectedIds.map((id) => options.find((item) => item.id === id)?.label).filter(Boolean);
   const selectionSummary = multi
     ? `已选 ${selectedIds.filter((id) => id !== 'none').length}/${key === 'accessory' ? 3 : 2}${chosenOptions.length ? ` · ${chosenOptions.join('、')}` : ''}`
@@ -706,9 +794,11 @@ function renderCreativeOptionGroup(parent, key) {
     button.addEventListener('click', () => {
       state.workshopMessage = '';
       if (!multi) {
+        state.workshopVariationReady=false;
         if (key === 'sport') state.creative = recommendCreativeForSport(state.creative, option.id);
         else state.creative[key] = option.id;
       } else {
+        state.workshopVariationReady=false;
         const field = key === 'accessory' ? 'accessories' : 'effects';
         let values = [...state.creative[field]];
         if (option.id === 'none') values = chosen ? [] : ['none'];
@@ -744,6 +834,16 @@ async function startGenerate() {
   if (state.generating) return;
   state.generating = true;
   try {
+    if (!state.pendingGeneration) {
+      const collection=getSecretCollection();
+      const secret=drawSecret({excludedIds:collection.items.map((item)=>item.id)});
+      const seed=state.workshopVariationReady&&state.creative.metadata?.randomSeed?state.creative.metadata.randomSeed:createDesignSeed();
+      const base=state.workshopVariationReady&&state.creative.metadata?.randomSeed?normalizeCreative(state.creative):randomizeCreative(state.creative,{mode:'details-only',lockKeys:[...new Set(['style','theme','sport',...state.randomLocks])],seed});
+      state.workshopVariationReady=false;
+      state.creative=base; saveCreative();
+      state.pendingGeneration={seed,secretId:secret?.id||null,creative:secret?applySecretCreative(base,secret):normalizeCreative({...base,metadata:{...(base.metadata||{}),randomSeed:seed}})};
+      try{localStorage.setItem(GENERATION_INTENT_KEY,JSON.stringify({seed,secretId:state.pendingGeneration.secretId,creative:state.pendingGeneration.creative}));}catch{/* optional persistence */}
+    }
     await runGenerate();
   } finally {
     state.generating = false;
@@ -753,7 +853,7 @@ async function startGenerate() {
 async function runGenerate() {
   if (!photo.source) return;
   const selectedOutfit = { parts: { ...state.cfg.parts }, colors: { ...state.cfg.colors } };
-  const requestedCreative = { ...state.creative };
+  const requestedCreative = { ...state.pendingGeneration.creative };
   const requestedProvider = state.providerId;
   setGenStatus('正在压缩照片…', 0.06);
   const image = await downscaleToDataUrl(photo.source, 1024, 'image/jpeg', 0.92);
@@ -782,7 +882,17 @@ async function runGenerate() {
       await applyGeneratedFigure(job.resultUrl);
       state.generatedArtworkUrl = job.resultUrl;
       try { localStorage.setItem(ARTWORK_KEY, job.resultUrl); } catch { /* private browsing */ }
+      if(state.pendingGeneration?.secretId){
+        const secret=SECRET_AVATARS.find(x=>x.id===state.pendingGeneration.secretId);
+        if(secret){
+          const alreadyOwned=getSecretCollection().items.some((item)=>item.id===secret.id);
+          collectSecret(secret,{artworkUrl:job.resultUrl,seed:state.pendingGeneration.seed});
+          if(!alreadyOwned){state.discoveredSecret=secret; mascotGuide?.notify('secret_unlocked',{title:secret.title}); showSecretReveal(secret,job.resultUrl);}
+        }
+      }
+      state.pendingGeneration=null; try{localStorage.removeItem(GENERATION_INTENT_KEY);}catch{/* optional persistence */}
       renderTabBody();
+      mascotGuide?.notify('avatar');
       return;
     }
     if (job.status === 'failed') throw new Error(job.error || '生成失败');
@@ -799,6 +909,26 @@ async function runGenerate() {
 function reportGenerateError(error) {
   const backgroundError = /场景或地面/.test(error.message);
   setGenStatus(`生成没成功：${error.message}。${backgroundError ? '这张图不会用于角色预览，请点击重新生成。' : '请稍后重试，或换一张人物轮廓清晰的照片。'}`, undefined);
+  mascotGuide?.notify('avatar_generate_failed', {}, { force: true });
+}
+
+function showSecretReveal(secret, artworkUrl = state.generatedArtworkUrl) {
+  const existing=document.getElementById('secretReveal'); existing?.remove();
+  const dialog=document.createElement('dialog'); dialog.id='secretReveal'; dialog.className='secret-reveal';
+  if(/^\/data\/results\/[a-f0-9-]+\.(png|jpe?g|webp)$/i.test(artworkUrl||'')){
+    const artwork=document.createElement('img'); artwork.src=artworkUrl; artwork.alt=`${secret.title}角色作品`; dialog.append(artwork);
+  }
+  const title=document.createElement('h2'); title.textContent=`雪域彩蛋揭晓 · ${secret.title}`;
+  const copy=document.createElement('p'); copy.textContent=secret.tagline;
+  const actions=document.createElement('div'); actions.className='secret-reveal-actions';
+  const keep=document.createElement('button'); keep.type='button'; keep.textContent='打开珍藏图鉴'; keep.addEventListener('click',()=>{dialog.close();openPassportCollection();});
+  const close=document.createElement('button'); close.type='button'; close.textContent='继续体验'; close.addEventListener('click',()=>dialog.close());
+  actions.append(keep,close); dialog.append(title,copy,actions); document.body.append(dialog); dialog.addEventListener('close',()=>dialog.remove(),{once:true}); dialog.showModal();
+}
+
+function openPassportCollection() {
+  guideUI?.openPassport();
+  window.setTimeout(()=>document.getElementById('secretCollection')?.scrollIntoView({behavior:'smooth',block:'center'}),0);
 }
 
 /**
@@ -1007,6 +1137,7 @@ function finishGeneratedFigure(canvas, transparentBackground) {
   state.cfg.face = defaultConfig().face;
   state.cfg.figure = { canvas, outfitKey: outfitKey(state.cfg) };
   tourEntered = false;
+  showcasePresence?.tourEnded();
   map?.setHeroVisible(false);
   $('departureNote').textContent = '角色已准备好！点击「带我去游览」，跃入右侧赛事地图。';
   applyChange();
@@ -1622,30 +1753,40 @@ function syncPageFlipToggle() {
 }
 
 function syncMapSidebar() {
-  const extras = [
-    document.querySelector('#mapPanel .progress-summary, #workshopPanel .progress-summary'),
-    document.querySelector('#mapPanel .bonus-challenges, #workshopPanel .bonus-challenges'),
-    document.querySelector('#mapPanel .live-summary, #workshopPanel .live-summary'),
+  const info = $('mapSidebarInfo');
+  const selectors = [
+    '#mapPanel > .panel-head', '#mapPanel > .explore-tools', '#mapPanel > #mascotGuideMap',
+    '#mapPanel > #mascotPlaceCard', '#mapPanel > #guideRouteBar', '#mapPanel > #journeyContinue', '#mapPanel > .progress-summary',
+    '#mapPanel > .bonus-challenges', '#mapPanel > .live-summary', '#mapPanel > .stats-caption', '#mapPanel > .chips',
   ];
-  if (extras.some(item => !item)) return;
-  if (['map', 'detail'].includes(document.body.dataset.book) && matchMedia('(min-width: 900px)').matches) {
-    if (extras[0].parentElement === $('workshopPanel')) return;
-    $('bookMapSide').after(...extras);
+  const shouldMove = document.body.dataset.book === 'map' && matchMedia('(min-width: 900px)').matches;
+  if (shouldMove) {
+    for (const selector of selectors) {
+      const element = document.querySelector(selector);
+      if (!element || info.contains(element)) continue;
+      const anchor = document.createComment('map-sidebar-position');
+      element.before(anchor);
+      element._mapSidebarAnchor = anchor;
+      info.append(element);
+    }
   } else {
-    if (extras[0].parentElement === $('mapPanel')) return;
-    document.querySelector('#mapPanel .map-wrap').before(...extras.slice(0, 2));
-    document.querySelector('#mapPanel .stats-caption').before(extras[2]);
+    for (const element of [...info.children]) {
+      const anchor = element._mapSidebarAnchor;
+      if (anchor?.parentNode) anchor.replaceWith(element);
+      delete element._mapSidebarAnchor;
+    }
   }
 }
 
 function setBookChapter(chapter) {
   document.body.dataset.book = chapter;
+  mascotGuide?.setChapter(chapter);
   syncMapSidebar();
   const blocked = chapter === 'cover' || chapter === 'detail';
   $('bookSpread').inert = blocked;
   $('bookChapterBar').inert = blocked;
   document.querySelector('.top').inert = blocked;
-  for (const selector of ['#mapPanel .explore-tools','#mapPanel .map-wrap','.live-summary','#mapPanel .chips']) {
+  for (const selector of ['#mapPanel .explore-tools','#mapSidebarInfo .explore-tools','#mapPanel .map-wrap','.live-summary','#mapPanel .chips','#mapSidebarInfo .chips']) {
     const element = document.querySelector(selector);
     if (element) element.inert = chapter === 'creator';
   }
@@ -1679,13 +1820,13 @@ async function turnBookPage(label, halfway, direction = 'forward') {
   const current = document.body.dataset.book;
   const names = { creator:'01 · 我的角色', map:'02 · 赛事地图', detail:'03 · 地点手记' };
   layer.dataset.direction = direction;
-  $('bookFlipFrom').textContent = names[current] || '长春大运会冰雪漫游';
+  $('bookFlipFrom').textContent = names[current] || '长春 2027 大冬会冰雪漫游';
   $('bookFlipFromNumber').textContent = current === 'detail' ? '03 / PLACE NOTES' : current === 'map' ? '02 / CITY MAP' : '01 / CHARACTER';
   $('bookFlipLabel').textContent = label;
   $('bookFlipToNumber').textContent = label.startsWith('03') ? '03 / PLACE NOTES' : label.startsWith('02') ? '02 / CITY MAP' : '01 / CHARACTER';
-  $('bookFlipLeafTitle').textContent = names[current] || '长春大运会冰雪漫游';
+  $('bookFlipLeafTitle').textContent = names[current] || '长春 2027 大冬会冰雪漫游';
   $('bookFlipLeafNumber').textContent = $('bookFlipFromNumber').textContent;
-  $('bookFlipCaption').textContent = label.startsWith('03') ? '抵达之后，读一页关于赛场与城市的故事。' : label.startsWith('02') ? '让角色走进冰雪赛场，继续这段大运会旅程。' : '重新整理你的旅行伙伴，再一起出发。';
+  $('bookFlipCaption').textContent = label.startsWith('03') ? '抵达之后，读一页关于赛场与城市的故事。' : label.startsWith('02') ? '让角色走进冰雪赛场，继续这段大冬会旅程。' : '重新整理你的旅行伙伴，再一起出发。';
   layer.hidden = false;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const oldPage = current === 'detail' ? document.querySelector('.book-detail-spread') : $('bookSpread');
@@ -1822,7 +1963,10 @@ async function openBook() {
 
 async function startDemo() {
   const button = $('coverDemo');
+  const heroButton = $('heroDemo');
+  if (button.disabled || heroButton.disabled) return;
   button.disabled = true;
+  heroButton.disabled = true;
   try {
     const demo = defaultConfig();
     demo.name = state.cfg.name || '雪道伙伴';
@@ -1831,9 +1975,11 @@ async function startDemo() {
     $('nameInput').value = demo.name;
     applyChange();
     tourEntered = false;
+    showcasePresence?.tourEnded();
     map.setHeroVisible(false);
     refreshStageHint();
     renderTabBody();
+    mascotGuide?.notify('avatar');
     $('departureNote').textContent = '已选用本地预设角色，无需照片或生图服务。';
     if (!$('bookCover').hidden) await openBook();
     const entered = await enterTour();
@@ -1842,6 +1988,7 @@ async function startDemo() {
     $('departureNote').textContent = '试玩角色没有加载成功，请刷新页面后重试。';
   } finally {
     button.disabled = false;
+    heroButton.disabled = false;
   }
 }
 
@@ -1850,6 +1997,7 @@ function showCover() {
   cancelPendingWalk();
   hideCard();
   tourEntered = false;
+  showcasePresence?.tourEnded();
   map?.setHeroVisible(false);
   setBookChapter('cover');
   $('bookCover').hidden = false;
@@ -1862,6 +2010,7 @@ async function returnToCreator() {
   cancelPendingWalk();
   const switchChapter = () => {
     tourEntered = false;
+    showcasePresence?.tourEnded();
     setBookChapter('creator');
     map?.resize();
     $('workshopPanel').scrollIntoView({ behavior:'instant', block:'start' });
@@ -1878,15 +2027,120 @@ function cancelPendingWalk() {
   $('walkBar').hidden = true;
 }
 
+function journeyButton(label, action, primary = false) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.textContent = label;
+  button.className = primary ? 'journey-primary' : 'journey-secondary';
+  button.addEventListener('click', action);
+  return button;
+}
+
+async function followJourney(action, trigger) {
+  if (!action) return;
+  if (action.type === 'game') { playVenue(state.pendingVenue); return; }
+  if (action.type === 'observe') {
+    if ($('bookDetail').hidden && state.pendingVenue) {
+      $('venueCard').hidden = false;
+      await openDetailPage(state.pendingVenue);
+    }
+    $('detailJourney').querySelector('.detail-journey-observation button')?.focus();
+    $('detailJourney').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'center' });
+    return;
+  }
+  if (action.type === 'quiz') { quiz?.open(trigger || $('quizOpen'), action.ids); return; }
+  if (action.type === 'passport') { guideUI?.openPassport(); return; }
+  if (action.type === 'place') {
+    if (!$('bookDetail').hidden) await returnToMap();
+    inspectPlace(action.id);
+  }
+}
+
+function renderDetailJourney(venue) {
+  const root = $('detailJourney');
+  if (!root || !venue) return;
+  const plan = journeyForPlace(venue, currentProgress(), state.venues);
+  root.replaceChildren();
+  const kicker = document.createElement('small');
+  kicker.textContent = '吉冰吉雪 · 这一站怎么玩';
+  const heading = document.createElement('h3');
+  heading.textContent = `${venue.name}的游览清单`;
+  const steps = document.createElement('ol');
+  const read = document.createElement('li');
+  read.textContent = `${state.readNotes.has(venue.id) ? '✓' : '○'} 阅读手记与趣味卡${state.readNotes.has(venue.id) ? ' · 已记录' : ''}`;
+  const observe = document.createElement('li');
+  observe.textContent = `${state.observedPlaces.has(venue.id) ? '✓' : '○'} ${state.observedPlaces.has(venue.id) ? '观察发现已记录' : '对照照片或插画完成观察发现'}`;
+  const activity = document.createElement('li');
+  activity.textContent = venue.game ? `${state.medals.has(venue.id) ? '✓' : '○'} ${state.medals.has(venue.id) ? '挑战奖章已收入护照' : '参加场馆挑战，赢取奖章'}` :
+    `${plan.quizNeeded ? '○ 完成相关知识题，推进故事任务' : '• 可在地图参加冰雪知识问答'}`;
+  const next = document.createElement('li');
+  next.textContent = `→ ${plan.next.reason}`;
+  steps.append(read, observe, activity, next);
+  root.append(kicker, heading, steps);
+  const observation = document.createElement('div');
+  observation.className = 'detail-journey-observation';
+  const prompt = document.createElement('p');
+  prompt.textContent = `观察提示：${venue.fieldNote || '从照片或场馆插画中找一个让你印象深刻的细节。'}`;
+  observation.append(prompt);
+  if (!state.observedPlaces.has(venue.id)) observation.append(journeyButton('我发现了这个细节', () => {
+    state.observedPlaces.add(venue.id);
+    saveProgress();
+    mascotGuide?.checkQuests();
+  }));
+  else {
+    const done = document.createElement('small');
+    done.textContent = '✓ 发现已记入本机手册';
+    observation.append(done);
+  }
+  root.append(observation);
+  const visibleQuest = plan.claimableQuest || plan.localQuest;
+  if (visibleQuest) {
+    const quest = document.createElement('p');
+    quest.className = 'detail-journey-quest';
+    quest.textContent = `${visibleQuest.status === 'claimable' ? '可领取任务' : '关联任务'}「${visibleQuest.title}」 · ${visibleQuest.done} / ${visibleQuest.total}${visibleQuest.status === 'claimable' ? ' · 可领取' : ''}`;
+    root.append(quest);
+  }
+  const actions = document.createElement('div');
+  actions.className = 'journey-actions';
+  actions.append(journeyButton(plan.next.label, event => void followJourney(plan.next, event.currentTarget), true));
+  actions.append(journeyButton('查看任务护照', () => guideUI?.openPassport()));
+  root.append(actions);
+}
+
+function renderJourneyContinue(venue) {
+  const root = $('journeyContinue');
+  if (!root || !venue) return;
+  const plan = journeyForPlace(venue, currentProgress(), state.venues);
+  root.replaceChildren();
+  const copy = document.createElement('div');
+  const label = document.createElement('small');
+  label.textContent = `已读完 ${venue.name} · 接下来`;
+  const reason = document.createElement('strong');
+  reason.textContent = plan.next.reason;
+  copy.append(label, reason);
+  root.append(copy, journeyButton(plan.next.label, event => void followJourney(plan.next, event.currentTarget), true),
+    journeyButton('查看任务', () => guideUI?.openPassport()));
+  root.hidden = false;
+}
+
 async function openDetailPage(venue) {
   if (bookTurning) return;
   if (document.querySelector('#mapPanel .map-wrap').classList.contains('map-expanded')) setMapExpanded(false);
   const token = ++detailOpening;
   const art = $('detailArt');
+  activeGalleryVenue = venue;
+  const hasGallery = placeGallery.render(venue);
+  art.hidden = hasGallery;
+  $('detailArtCaption').textContent = hasGallery
+    ? '翻看照片，发现地标的另一面。'
+    : '开放许可的实景图仍在整理，先用原创场馆插画认识这里。';
   const artCtx = art.getContext('2d');
-  artCtx.clearRect(0,0,art.width,art.height);
-  drawVenueIllustration(artCtx, venue, 0, 0, art.width, art.height);
+  if (!hasGallery) {
+    artCtx.clearRect(0,0,art.width,art.height);
+    drawVenueIllustration(artCtx, venue, 0, 0, art.width, art.height);
+  }
   $('detailName').textContent = venue.name;
+  mascotGuide?.placeNote(venue);
   $('detailKind').textContent = venue.kind === 'attraction' ? '城市景点 · 地点手记' : '冰雪场馆 · 地点手记';
   $('detailNumber').textContent = `地点 ${String(state.venues.findIndex(item => item.id === venue.id) + 1).padStart(2,'0')} / ${state.venues.length}`;
   const switchChapter = () => {
@@ -1902,6 +2156,7 @@ async function openDetailPage(venue) {
     state.readNotes.add(venue.id);
     saveProgress();
   }
+  if (token === detailOpening) renderDetailJourney(venue);
 }
 
 async function returnToMap() {
@@ -1910,11 +2165,13 @@ async function returnToMap() {
   const switchChapter = () => {
     $('bookDetail').hidden = true;
     $('venueCard').hidden = true;
+    $('mascotPlaceCard').hidden = true;
     setBookChapter('map');
     map?.resize();
   };
   if (fullPageFlips) await turnBookPage('02 · 赛事地图', switchChapter, 'back');
   else await softlyChangeBookPage('map', switchChapter);
+  if (state.pendingVenue) renderJourneyContinue(state.pendingVenue);
   $('mapPanel').focus({ preventScroll:true });
 }
 
@@ -1964,6 +2221,7 @@ async function animateTourJump(from) {
       ], { duration, easing:'ease-in-out', fill:'forwards' });
       await Promise.all([flight.finished,shadowFlight.finished]);
       tourEntered = true; map.setHeroVisible(true); soundscape.playSuccess();
+      showcasePresence?.tourReady();
       const ring = document.createElement('span');ring.className='map-landing-ring';ring.style.left=`${landing.x}px`;ring.style.top=`${landing.y}px`;
       mapCanvas.parentElement.append(ring);setTimeout(()=>ring.remove(),800);
       $('departureNote').textContent = '落地成功！点击右侧地标，角色到达后为你展开介绍。';
@@ -2000,6 +2258,7 @@ function enterTour() {
 function startWalk(venueId) {
   if (!state.venues.some(v => v.id === venueId)) return;
   if (entering || bookTurning) return;
+  $('journeyContinue').hidden = true;
   hideCard();
   if (!tourEntered) {
     if (state.cfg.figure?.canvas) { void enterTour().then(ok => { if(ok) startWalk(venueId); }); }
@@ -2011,6 +2270,7 @@ function startWalk(venueId) {
   visitPending = true;
   soundscape.playTravel();
   state.activeId = venueId;
+  showcasePresence?.update('traveling', { targetPlaceId: venueId });
   walkVenueId = venueId;
   map.setActive(venueId);
   hideCard();
@@ -2023,14 +2283,20 @@ function startWalk(venueId) {
 function onArrive() {
   const venue = state.venues.find((v) => v.id === walkVenueId);
   if (!venue) return;
+  const firstArrival = !state.visited.has(venue.id);
+  showcasePresence?.update('reading', { currentPlaceId: venue.id, targetPlaceId: null });
   if (visitPending) { recordVisit(venue.id); visitPending = false; }
   soundscape.playSuccess();
   $('walkBar').hidden = true;
   state.visited.add(venue.id);
+  const exploredCount = state.visited.size;
   guideUI?.advanceOnArrival(venue.id);
   saveProgress();
   map.setProgress(state.visited, state.medals);
-  showCard(venue);
+  showCard(venue, firstArrival);
+  if (exploredCount === state.venues.length) mascotGuide?.notify('all_places_explored');
+  else if (exploredCount > 0 && exploredCount % 4 === 0) mascotGuide?.notify('explore_milestone');
+  mascotGuide?.checkQuests();
   syncChips();
 }
 
@@ -2084,7 +2350,7 @@ function drawVenueArchitecture(ctx, venue) {
   ctx.restore();
 }
 
-function showCard(venue) {
+function showCard(venue, firstArrival = !state.visited.has(venue.id)) {
   $('venueTitle').textContent = venue.name;
   $('venueCity').textContent = `${venue.city} · ${venue.kind === 'attraction' ? '城市景点' : '冰雪场馆'}`;
   const tags = $('venueSport');
@@ -2097,6 +2363,8 @@ function showCard(venue) {
   $('venueAddr').textContent = `📍 ${venue.address}`;
   $('venueTeaser').textContent = venue.teaser || `来到${venue.name}，认识${venue.sports[0]}的魅力。`;
   $('venueDesc').textContent = venue.desc;
+  $('placeStory').textContent = venue.story || venue.desc;
+  $('placeFieldNote').textContent = `${venue.fieldNote || '留意一个细节，把它收进你的旅行记忆。'}${venue.kind==='attraction'&&state.bonusStickers.has(venue.id)?' ✦ 城市彩蛋贴纸已解锁，记入这页手记。':''}`;
   $('placeCount').textContent = (liveStats?.places.find(p => p.id === venue.id)?.count || 0).toLocaleString();
   const list = $('placeHighlights'); list.replaceChildren();
   for (const text of venue.highlights || []) { const li = document.createElement('li'); li.textContent = text; list.append(li); }
@@ -2109,13 +2377,14 @@ function showCard(venue) {
   const ictx = icon.getContext('2d');
   drawVenueIllustration(ictx, venue, 0, 0, icon.width, icon.height);
   $('venuePlay').hidden = !venue.game;
-  $('venuePlay').textContent = state.medals.has(venue.id) ? '再挑战一次' : '开始场馆挑战';
+  $('venuePlay').textContent = venue.kind==='attraction'?(state.bonusStickers.has(venue.id)?'再玩城市彩蛋':'玩城市彩蛋'):state.medals.has(venue.id) ? '再挑战一次' : '开始场馆挑战';
   $('venueProgress').textContent = venue.kind === 'venue'
     ? (state.medals.has(venue.id) ? '已探索 · 挑战奖章已获得' : '已探索 · 赢得挑战可收集奖章')
-    : '已探索 · 城市景点手记';
+    : (state.bonusStickers.has(venue.id)?'已探索 · 城市彩蛋贴纸已收录':'已探索 · 完成城市彩蛋可解锁纪念贴纸');
   $('venuePersonalBest').textContent = venue.kind === 'venue' && state.bestScores[venue.id] !== undefined
-    ? `个人最佳：${state.bestScores[venue.id]}` : '';
+    ? `个人最佳：${state.bestScores[venue.id]}` : venue.kind==='attraction'&&state.bonusStickers.has(venue.id)?'✦ 地点纪念贴纸已收入手记':'';
   $('venueCard').hidden = false;
+  mascotGuide?.showArrival(venue, firstArrival);
   state.pendingVenue = venue;
   if (document.body.dataset.book === 'map') void openDetailPage(venue);
 }
@@ -2125,6 +2394,7 @@ function hideCard() {
   $('bookDetail').hidden = true;
   if (document.body.dataset.book === 'detail') setBookChapter('map');
   $('venueCard').hidden = true;
+  if (tourEntered && !host?.isOpen?.()) showcasePresence?.update('roaming', { targetPlaceId: null });
 }
 
 /* ------------------------------------------------------------------ */
@@ -2183,11 +2453,13 @@ let quiz = null;
 
 function initQuiz() {
   quiz = createQuiz($('quizModal'), {
-    onFinish: ({ score, earnedBadge, correctSources = [] }) => {
+    onFinish: ({ score, total, earnedBadge, correctSources = [] }) => {
+      mascotGuide?.quizFinish({ score, total });
       state.quizBest = Math.max(state.quizBest, score);
       state.quizBadge = state.quizBadge || earnedBadge;
       for (const id of correctSources) state.knowledgeSources.add(id);
       saveProgress();
+      mascotGuide?.checkQuests();
       syncChips();
     },
   });
@@ -2195,13 +2467,16 @@ function initQuiz() {
 
 function initGame() {
   host = createMinigameHost({
-    onStart: () => soundscape.setMode('game'),
-    onStop: () => soundscape.setMode('world'),
+    onStart: () => { soundscape.setMode('game'); },
+    onRoundStart: (venue) => { showcasePresence?.startGame(venue?.game?.title || venue?.name); },
+    onStop: () => { soundscape.setMode('world'); showcasePresence?.endGame(); },
     // 用 getter 而不是直接传 cfg：形象是可以整体替换的（模板脸/清空重做），
     // 传对象会拿到旧的那份，游戏里就还是上一张脸
     getAvatar: () => state.cfg,
     onFinish: (won, result, venue) => {
+      showcasePresence?.finishGame(result?.score);
       if (!venue) return;
+      mascotGuide?.gameFinish(won, venue, result);
       if (venue.id === 'bonus-goalie') {
         state.goalieBest = Math.max(state.goalieBest, Math.floor(result.score || 0));
         result.rewardText = `本局扑救 ${result.score} 次；最佳纪录 ${state.goalieBest} / 5。`;
@@ -2218,14 +2493,18 @@ function initGame() {
         $('venueProgress').textContent = '已探索 · 挑战奖章已获得';
         $('venuePersonalBest').textContent = `个人最佳：${state.bestScores[venue.id]}`;
         soundscape.playSuccess();
-        if (firstMedal) celebrateStamp(venue);
+      if (firstMedal) { celebrateStamp(venue); mascotGuide?.notify('medal', { place: venue.name }); }
       } else if (venue.kind === 'venue') {
         if (Number.isFinite(result.score)) state.bestScores[venue.id] = Math.max(state.bestScores[venue.id] || 0, Math.floor(result.score));
         result.rewardText = `再试一次，${venue.name}的挑战奖章还等着你。`;
         if (state.bestScores[venue.id] !== undefined) $('venuePersonalBest').textContent = `个人最佳：${state.bestScores[venue.id]}`;
         saveProgress();
+      } else if (venue.kind === 'attraction') {
+        if(won){state.bonusStickers.add(venue.id);try{localStorage.setItem(BONUS_STICKER_KEY,JSON.stringify([...state.bonusStickers]))}catch{};result.rewardText=`城市彩蛋完成，${venue.name}纪念贴纸已收入地点手记。`;if(state.pendingVenue?.id===venue.id){$('venuePlay').textContent='再玩城市彩蛋';$('venueProgress').textContent='已探索 · 城市彩蛋贴纸已收录';$('venuePersonalBest').textContent='✦ 地点纪念贴纸已收入手记';}}
+        else result.rewardText='再观察一次线索；完成后会解锁这处地点的纪念贴纸。';
       }
       soundscape.setMode('world');
+      mascotGuide?.checkQuests();
       void result;
     },
   });
@@ -2233,7 +2512,28 @@ function initGame() {
 
 function playVenue(venue) {
   if (!venue || !venue.game || !host) return;
+  if (venue.id !== 'bonus-goalie') state.pendingVenue = venue;
+  mascotGuide?.gameStart(venue);
   host.start(venue);
+}
+
+function initShowcaseParticipation() {
+  showcasePresence = createShowcaseParticipation({
+    getState: () => ({
+      tourEntered,
+      currentPlaceId: state.activeId || null,
+      targetPlaceId: map?.walkInfo ? state.activeId || null : null,
+      position: map?.heroPosition || null,
+      displayName: state.cfg.name || $('nameInput')?.value || '',
+    }),
+    getAvatar: () => state.cfg.figure?.canvas || null,
+  });
+  const optIn = $('showcaseOptIn');
+  if (optIn) {
+    optIn.checked = showcasePresence.isParticipationEnabled();
+    showcasePresence.setParticipation(optIn.checked);
+    optIn.addEventListener('change', (event) => showcasePresence.setParticipation(event.currentTarget.checked));
+  }
 }
 
 function celebrateStamp(venue) {
@@ -2300,6 +2600,7 @@ function wireEvents() {
   });
   $('openBook').addEventListener('click', () => void openBook());
   $('coverDemo').addEventListener('click', () => void startDemo());
+  $('heroDemo').addEventListener('click', () => void startDemo());
   $('backToCover').addEventListener('click', showCover);
   $('editCharacter').addEventListener('click', () => void returnToCreator());
   $('backToMap').addEventListener('click', () => void returnToMap());
@@ -2508,17 +2809,26 @@ async function boot() {
   renderBookContents();
   buildChips();
   map = createMapView(mapCanvas, { venues: state.venues, onPick: inspectPlace, heroVisible: false });
+  initShowcaseParticipation();
   $('bookDetailContent').append($('venueCard'));
   map.setCharacter(state.cfg);
   map.setProgress(state.visited, state.medals);
-  guideUI = createGuideUI({
-    places: state.venues,
-    getProgress: currentProgress,
-    setProgress: setGuideProgress,
-    onNavigate: inspectPlace,
-    onQuiz: (sourceIds) => quiz?.open($('passportBtn'), sourceIds),
-    onCard: exportPassport,
-  });
+  mascotGuide = createMascotGuide({ mount: document.getElementById('mascotGuideMap'), getProgress: currentProgress,
+    getPlaces: () => state.venues, onAction: (action) => {
+      if (action.type === 'open_workshop') { if (!document.getElementById('bookCover').hidden) void openBook(); else void returnToCreator(); }
+      else if (action.type === 'enter_tour') { if (!state.cfg.figure?.canvas) void startDemo(); else void enterTour(); }
+      else if (action.type === 'open_passport') guideUI?.openPassport();
+      else if (action.type === 'open_route') guideUI?.openRoute();
+      else if (action.type === 'open_place_note' && action.placeId) inspectPlace(action.placeId);
+      else if (action.type === 'start_current_game') playVenue(state.pendingVenue);
+      else if (action.type === 'randomize_avatar') $('workshopPanel').scrollIntoView({ behavior:'smooth', block:'start' });
+      else if (action.type === 'open_secret_collection') openPassportCollection();
+    } });
+  mascotGuide.initialCover();
+  guideUI = createGuideUI({ places: state.venues, getProgress: currentProgress, setProgress: setGuideProgress,
+    onNavigate: inspectPlace, onQuiz: (sourceIds) => quiz?.open($('passportBtn'), sourceIds), onCard: exportPassport,
+    onRouteChange: (route) => mascotGuide?.routeChanged(route), onPassportOpen: () => mascotGuide?.passportOpen(),
+    onQuestClaimed: (questId) => mascotGuide?.questClaimed(questId) });
   setBookChapter('cover');
   initGame();
   initQuiz();
@@ -2615,6 +2925,7 @@ window.__play = {
     guideMode: state.guideMode,
     route: state.route,
     readNotes: [...state.readNotes],
+    observedPlaces: [...state.observedPlaces],
     claimedQuests: [...state.claimedQuests],
     face: state.cfg.face.kind,
     hat: state.cfg.parts.hat,

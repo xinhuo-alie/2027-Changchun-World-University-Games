@@ -1,0 +1,41 @@
+.place-gallery { position:relative; display:flex; height:65%; min-height:220px; flex-direction:column; margin-top:2%; overflow:hidden; border:8px solid #fff8e8; background:#e4efec; box-shadow:0 9px 24px #3e6c6e24; }
+.place-gallery[hidden] { display:none; }
+.place-gallery-stage { position:relative; flex:1; min-height:0; }
+.place-gallery-figure { position:relative; width:100%; height:100%; margin:0; overflow:hidden; background:#d2e1de; }
+.place-gallery-image { width:100%; height:100%; display:block; object-fit:contain; background:#d2e1de; }
+.place-gallery-figure:fullscreen { display:grid; place-items:center; background:#102c39; }
+.place-gallery-figure:fullscreen .place-gallery-image { object-fit:contain; }
+.place-gallery-expand { position:absolute; top:10px; right:10px; z-index:2; width:33px; height:33px; border:1px solid #ffffffa8; border-radius:50%; color:#164151; background:#ffffffe3; font-size:20px; cursor:pointer; }
+.place-gallery-shade { flex:none; max-height:64px; overflow:auto; padding:8px 10px 2px; color:#315d69; background:#f4f7ef; }
+.place-gallery-shade strong { display:block; margin-bottom:2px; font-size:12px; }
+.place-gallery-shade p { margin:0; font-size:10px; line-height:1.4; }
+.place-gallery-controls { position:absolute; inset:50% 11px auto; z-index:1; display:flex; align-items:center; justify-content:space-between; transform:translateY(-50%); pointer-events:none; }
+.place-gallery-controls button { width:38px; height:42px; border:1px solid #ffffffb5; border-radius:22px; color:#123c50; background:#ffffffdb; box-shadow:0 4px 12px #123c5020; font:700 28px/1 sans-serif; cursor:pointer; pointer-events:auto; }
+.place-gallery-controls button:hover { background:white; transform:scale(1.05); }
+.place-gallery-counter { margin-inline:auto; padding:4px 9px; border-radius:20px; color:white; background:#102c396b; font-size:11px; font-weight:800; pointer-events:none; }
+.place-gallery-seek { display:flex; flex:none; align-items:end; gap:12px; padding:8px 9px 0; color:#315d69; font-size:10px; font-weight:800; }
+.place-gallery-seek label { display:grid; flex:1; gap:3px; min-width:0; }
+.place-gallery-seek input { width:100%; height:18px; margin:0; appearance:none; background:transparent; cursor:pointer; touch-action:none; }
+.place-gallery-seek input::-webkit-slider-runnable-track { height:6px; border-radius:8px; background:linear-gradient(90deg,#ef9b66 var(--gallery-progress),#b9d0cc var(--gallery-progress)); }
+.place-gallery-seek input::-moz-range-track { height:6px; border-radius:8px; background:#b9d0cc; }
+.place-gallery-seek input::-moz-range-progress { height:6px; border-radius:8px; background:#ef9b66; }
+.place-gallery-seek input::-webkit-slider-thumb { width:16px; height:16px; margin-top:-5px; appearance:none; border:3px solid #fff8e8; border-radius:50%; background:#c76d43; box-shadow:0 1px 5px #24434b55; }
+.place-gallery-seek input::-moz-range-thumb { width:12px; height:12px; border:3px solid #fff8e8; border-radius:50%; background:#c76d43; box-shadow:0 1px 5px #24434b55; }
+.place-gallery-seek input:focus-visible { outline:2px solid #295c77; outline-offset:2px; }
+.place-gallery-seek input:disabled { opacity:.55; cursor:default; }
+.place-gallery-seek span { flex:none; min-width:37px; padding-bottom:2px; text-align:right; }
+.place-gallery-footer { display:flex; flex:none; align-items:center; justify-content:space-between; gap:10px; padding:7px 9px 0; }
+.place-gallery-credit { min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+.place-gallery-credit,.place-gallery-license { color:#315d69; font-size:10px; line-height:1.35; text-decoration:underline; text-underline-offset:2px; }
+.place-gallery-license { flex:none; }
+.book-detail-art #detailArt[hidden] { display:none; }
+.book-detail-art .detail-art-caption { padding-top:12px; }
+.place-story { padding:12px 14px; border-radius:14px; background:#eef5ed; }
+.place-story p { margin:0; color:#365760; font-size:13px; line-height:1.8; }
+.place-story small { display:block; margin-top:8px; color:#9a6b42; font-size:11px; line-height:1.6; }
+@media(max-width:900px) {
+  .book-detail-art:has(.place-gallery:not([hidden])) { height:min(72dvh,620px); min-height:440px; }
+  .place-gallery { height:calc(100% - 112px); min-height:300px; margin-top:9px; }
+  .place-gallery-shade { padding:6px 8px 0; }
+  .place-gallery-shade p { font-size:10px; }
+}

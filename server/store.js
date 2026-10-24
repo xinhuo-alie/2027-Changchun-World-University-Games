@@ -90,6 +90,7 @@ async function runJob(id) {
       locale: promptLocaleFor(provider.id),
       purpose: job.purpose,
       extra: job.purpose === 'figurine' ? describeFigurineSelection(job._creative, job._outfit) : '',
+      creative: job.purpose === 'figurine' ? job._creative : undefined,
     });
 
     const output = await provider.generate({

@@ -312,7 +312,7 @@ body { background: #f4efe4; }
 .stage {
   border:3px solid #e0e9df;
   border-radius:17px 5px 17px 5px;
-  background:#eaf2e9 url('/assets/winter-stage.svg') center bottom / cover no-repeat;
+  background:#eaf2e9 url('/assets/winter-avatar-backdrop.png') center / cover no-repeat;
   box-shadow:inset 0 0 0 1px #a4c6be, 0 4px 12px #2a52601a;
 }
 .stage::before {

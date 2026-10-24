@@ -33,6 +33,7 @@ export function normalizeProgress(raw, placeIds, venueIds) {
     guideMode: Object.hasOwn(GUIDE_MODES, raw?.guideMode) ? raw.guideMode : 'relaxed',
     route: normalizeRoute(raw?.route, places),
     readNotes: cleanIds(raw?.readNotes, places),
+    observedPlaces: cleanIds(raw?.observedPlaces, places),
     knowledgeSources: cleanIds(raw?.knowledgeSources, places),
     claimedQuests: cleanIds(raw?.claimedQuests, questIds),
   };

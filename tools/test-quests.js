@@ -4,9 +4,10 @@ import { QUESTS, claimQuest, evaluateQuests, recommendQuests } from '../web/ques
 import { buildPassport } from '../web/passport.js';
 import { createProgressStore } from '../web/progress.js';
 import { createQuizSession, QUIZ_QUESTIONS } from '../web/quiz-questions.js';
+import { journeyForPlace } from '../web/journey-flow.js';
 
 const places = listPlaces();
-assert.equal(QUESTS.length, 6);
+assert.equal(QUESTS.length, 8);
 assert.deepEqual([...new Set(QUESTS.map((quest) => quest.category))].sort(), ['explore', 'sport', 'story']);
 const base = { explored: [], medals: [], readNotes: [], knowledgeSources: [], claimedQuests: [], bestScores: {} };
 assert.ok(evaluateQuests(base, places).every((quest) => quest.status === 'incomplete'));
@@ -15,6 +16,9 @@ assert.equal(recommendQuests({ ...base, guideMode: 'city' }, places)[0].category
 const explored = { ...base, explored: ['wuhuan', 'palace', 'film'] };
 assert.equal(evaluateQuests(explored, places)[0].status, 'claimable');
 assert.equal(evaluateQuests(explored, places)[0].nextStep, null);
+const wuhuanJourney = journeyForPlace(places.find((place) => place.id === 'wuhuan'), explored, places);
+assert.equal(wuhuanJourney.claimableQuest?.id, 'explore-first', 'the place card and its claim action must describe the same quest');
+assert.match(wuhuanJourney.next.label, /赛场遇见城市/);
 const claimed = claimQuest(explored, 'explore-first', places);
 assert.deepEqual(claimed.claimedQuests, ['explore-first']);
 assert.equal(claimQuest(claimed, 'explore-first', places), claimed, 'claiming twice must not grant twice');

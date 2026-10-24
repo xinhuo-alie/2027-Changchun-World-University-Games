@@ -1,5 +1,6 @@
 import { drawCityMap, getPanoramaWorldPoints, MAP_BOUNDS } from '/city-map.js';
 import { MAP_LANDMARKS, worldPointToImage } from '/map-landmarks.js';
+import { createMapEffects } from '/map-effects.js';
 let defaultMapPoints = structuredClone(MAP_LANDMARKS.points);
 let defaultIconSizes = { lianhua: .9, songhuahu: .82, beidahu: .9 };
 let currentMapLayout = null;
@@ -285,6 +286,7 @@ function buildRouteFrom(from, venue) {
  * @param {{venues: Array, onPick?: (venueId: string) => void}} opts
  */
 export function createMapView(canvas, opts = {}) {
+  const effects = createMapEffects(canvas);
   const ctx = canvas.getContext('2d');
   const savedLayout = currentMapLayout;
   const venues = (opts.venues || []).map((venue) => MAP_LANDMARKS.points[venue.id]
@@ -492,6 +494,10 @@ export function createMapView(canvas, opts = {}) {
       const isActive = v.id === activeId;
       const done = visited.has(v.id);
       const medal = medals.has(v.id);
+      ctx.save();
+      ctx.fillStyle = 'rgba(30,65,78,.13)';
+      ctx.beginPath(); ctx.ellipse(p.x + 3, p.y + 12, 31, 9, -.12, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
       if (isActive) {
         const pulse = 1 + Math.sin(time * 3.4) * 0.12;
         ctx.strokeStyle = 'rgba(255, 143, 122, 0.75)';
@@ -678,6 +684,7 @@ export function createMapView(canvas, opts = {}) {
   function draw() {
     ctx.clearRect(0, 0, size.w, size.h);
     drawTerrain();
+    effects.draw(ctx);
     drawRoutes();
     drawRegionLabels();
     drawWalkProgress();
@@ -875,6 +882,9 @@ export function createMapView(canvas, opts = {}) {
     hero,
     get walking() {
       return Boolean(walk);
+    },
+    get heroPosition() {
+      return { ...hero.pos };
     },
     get walkInfo() {
       return walk ? { venueId: walk.venueId, progress: walk.traveled / walk.total } : null;

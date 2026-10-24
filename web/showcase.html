@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#173b50" />
+  <meta name="description" content="长春 2027 大冬会冰雪漫游现场：城市地图、冰雪小游戏、旅行任务与冬日故事。" />
+  <title>冰雪漫游现场 · 长春 2027</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/winter-mark.svg" />
+  <link rel="stylesheet" href="/showcase.css" />
+</head>
+<body>
+  <a class="skip-link" href="#showcaseMain">跳到大屏内容</a>
+  <header class="showcase-header">
+    <a class="showcase-brand" href="/" aria-label="返回长春 2027 冰雪漫游首页">
+      <span class="brand-seal">长春<br />2027</span>
+      <span class="brand-name">冰雪漫游<small>WINTER GAMES · CITY STORIES</small></span>
+    </a>
+    <div class="header-title"><span>长春 · 吉林双城冬日现场</span><h1>冰雪一起玩</h1></div>
+    <div class="header-tools">
+      <span class="live-status"><i></i><b id="connection">连接中</b></span>
+      <time id="clock" aria-label="北京时间"></time>
+      <button id="fullscreen" class="screen-button" type="button">进入全屏 <span>⤢</span></button>
+    </div>
+  </header>
+
+  <main id="showcaseMain" class="showcase-layout">
+    <section class="map-feature" aria-labelledby="mapHeadline">
+      <div class="map-intro">
+        <div><p class="eyebrow">THE CITY IS YOUR PLAYGROUND</p><h2 id="mapHeadline">一张地图，逛赛场、玩挑战、发现长春。</h2></div>
+        <div class="map-count"><b id="placeCount">16</b><span>个探索地点<br />长春 × 吉林</span></div>
+      </div>
+      <div class="map-stage">
+        <canvas id="showcaseMap" aria-label="长春和吉林的冰雪场馆与城市探索地图"></canvas>
+        <canvas id="travelerLayer" aria-hidden="true"></canvas>
+        <div class="map-stamp"><span>现场地图</span><strong>CHANGCHUN<br />+ JILIN</strong></div>
+        <div class="map-legend"><span><i class="legend-venue"></i>冰雪场馆</span><span><i class="legend-city"></i>城市发现</span><span class="traveler-legend" id="onlineMapLabel">在线旅人 0 位 · 地图实时同步</span></div>
+        <div class="map-controls" aria-label="地图缩放"><button id="zoomIn" type="button" aria-label="放大地图">＋</button><button id="zoomOut" type="button" aria-label="缩小地图">−</button><button id="fitMap" type="button" aria-label="显示全图">全图</button></div>
+      </div>
+      <div class="map-caption"><span id="mapCaption">点选地图地点，听吉冰和吉雪讲一段冬日故事。</span><span>位置为游览示意 · 不用于导航</span></div>
+      <div class="arrival-strip"><span class="arrival-light"></span><b>刚刚发生</b><span id="latestArrival">等候第一位旅行者出发</span><time id="arrivalTime"></time></div>
+    </section>
+
+    <aside class="experience-rail" aria-label="冰雪漫游精彩内容">
+      <section class="game-feature" aria-labelledby="gameTitle">
+        <div class="panel-topline"><span><i class="live-dot"></i>多人挑战直播</span><span class="demo-tag" id="gameLiveTag">等待玩家加入</span></div>
+        <div class="live-game-screen"><img id="gameScene" alt="玩家正在进行的小游戏实时画面" hidden /><div id="gameEmpty" class="game-empty"><span>❄</span><b>第一位挑战者即将登场</b><small>加入现场大屏的玩家开始游戏后，这里会同步实时画面</small></div></div>
+        <div class="game-copy"><div><p id="gameCategory" class="eyebrow">LIVE · REAL PLAYERS</p><h2 id="gameTitle">等待挑战开始</h2><p id="gameSubtitle">加入现场的游客会出现在地图与实时挑战中。</p></div><span id="gameBadge" class="game-badge">❄</span></div>
+        <div class="game-dots" id="gameDots" aria-label="正在挑战的在线玩家"></div>
+      </section>
+
+      <section class="discovery-feature" aria-label="任务、城市故事、知识问答与角色收藏">
+        <div class="discovery-tabs" role="tablist" aria-label="精彩内容切换">
+          <button type="button" role="tab" data-panel="quest" aria-selected="true">任务</button>
+          <button type="button" role="tab" data-panel="story" aria-selected="false">城市故事</button>
+          <button type="button" role="tab" data-panel="quiz" aria-selected="false">快问快答</button>
+          <button type="button" role="tab" data-panel="characters" aria-selected="false">角色收藏</button>
+        </div>
+        <div id="discoveryPanel" class="discovery-panel" role="tabpanel" aria-live="polite"></div>
+        <button id="cycleToggle" class="cycle-toggle" type="button" aria-pressed="true">自动轮播中 · 暂停</button>
+      </section>
+    </aside>
+  </main>
+
+  <footer class="showcase-footer">
+    <div class="showcase-metrics" aria-label="实时云游统计">
+      <div><span>累计到达</span><b id="totalVisits">0</b><small>次地点到达</small></div>
+      <div><span>在线游客</span><b id="onlineCount">0</b><small>位实时参与</small></div>
+      <div><span>今天出发</span><b id="todayVisits">0</b><small>人次</small></div>
+      <div><span>已点亮</span><b id="exploredCount">0</b><small>处探索地点</small></div>
+      <div class="feature-fact"><span>今天的城市彩蛋</span><b id="footerFact">每一处地点，都有自己的故事。</b></div>
+    </div>
+    <div class="footer-meta"><span>长春 2027 冬日漫游计划</span><span>角色、游戏与任务都在 <a href="/">互动手册</a> 里等你</span><a class="backstage-link" href="/display">后台数据 ↗</a></div>
+  </footer>
+  <script type="module" src="/showcase.js"></script>
+</body>
+</html>

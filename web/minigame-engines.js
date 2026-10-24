@@ -35,6 +35,15 @@ export const CANDY = {
   snow: '#FFFFFF',
 };
 
+/** Rounded, layered pine silhouettes read as a snowy forest instead of flat triangles. */
+export function drawPine(ctx,x,base,size,color='#4f9287') {
+  ctx.save();ctx.translate(x,base);ctx.fillStyle='rgba(34,75,82,.16)';ctx.beginPath();ctx.ellipse(0,2,size*.42,size*.075,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#80644b';ctx.beginPath();ctx.roundRect(-size*.045,-size*.15,size*.09,size*.17,size*.035);ctx.fill();
+  const tiers=[{y:-.19,w:.29,h:.37},{y:-.39,w:.40,h:.40},{y:-.60,w:.50,h:.40}];
+  tiers.forEach((tier,index)=>{const g=ctx.createLinearGradient(-size*tier.w,0,size*tier.w,0);g.addColorStop(0,index===0?'#6ba89b':color);g.addColorStop(.56,index===0?'#83b9a9':'#3f8178');g.addColorStop(1,index===0?'#5d9b8f':'#34766f');ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(0,size*(tier.y-tier.h));ctx.bezierCurveTo(size*tier.w*.22,size*(tier.y-tier.h*.72),size*tier.w*.52,size*(tier.y-tier.h*.22),size*tier.w,size*(tier.y+.03));ctx.quadraticCurveTo(size*tier.w*.56,size*(tier.y+.02),0,size*(tier.y+.19));ctx.quadraticCurveTo(-size*tier.w*.56,size*(tier.y+.02),-size*tier.w,size*(tier.y+.03));ctx.bezierCurveTo(-size*tier.w*.52,size*(tier.y-tier.h*.22),-size*tier.w*.22,size*(tier.y-tier.h*.72),0,size*(tier.y-tier.h));ctx.fill();ctx.strokeStyle='rgba(255,255,255,.82)';ctx.lineWidth=Math.max(1,size*.035);ctx.lineCap='round';ctx.beginPath();ctx.moveTo(-size*tier.w*.76,size*(tier.y-.02));ctx.quadraticCurveTo(0,size*(tier.y+.035),size*tier.w*.76,size*(tier.y-.02));ctx.stroke();});
+  ctx.restore();
+}
+
 /* ---------------- 共用画法 ---------------- */
 
 /** 渐变天空 + 圆润远景山，所有引擎都用它打底 */
@@ -86,12 +95,10 @@ export function bgScene(ctx, w, h, opts = {}) {
     ctx.restore();
   } else if (forestVenues.includes(opts.venueId)) {
     const horizon = h * 0.55;
-    ctx.fillStyle = 'rgba(45, 111, 108, 0.32)';
     for (let i = 0; i < 11; i += 1) {
       const x = (i / 10) * w;
       const size = h * (0.10 + (i % 3) * 0.025);
-      ctx.beginPath(); ctx.moveTo(x, horizon + size * 0.8); ctx.lineTo(x + size * 0.42, horizon - size); ctx.lineTo(x + size * 0.84, horizon + size * 0.8); ctx.fill();
-      ctx.fillStyle = i % 2 ? 'rgba(255,255,255,.62)' : 'rgba(76, 145, 128, .36)';
+      drawPine(ctx,x,horizon+size*.7,size,i%2?'#548f85':'#3e7e78');
     }
     ctx.strokeStyle = 'rgba(255,255,255,.76)'; ctx.lineWidth = 3;
     ctx.beginPath(); ctx.moveTo(w * 0.08, horizon + h * 0.1); ctx.quadraticCurveTo(w * 0.5, horizon - h * 0.05, w * 0.92, horizon + h * 0.08); ctx.stroke();
@@ -183,15 +190,7 @@ export function obstacle(ctx, x, y, s, kind) {
     ctx.fill();
     ctx.stroke();
   } else if (kind === 1) {
-    ctx.fillStyle = '#7A5A3C';
-    ctx.fillRect(-s * 0.16, s * 0.05, s * 0.32, s * 0.4);
-    ctx.fillStyle = '#5FC9A6';
-    ctx.beginPath();
-    ctx.moveTo(-s * 0.9, s * 0.15);
-    ctx.quadraticCurveTo(0, -s * 1.5, s * 0.9, s * 0.15);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
+    drawPine(ctx,0,s*.36,s*1.22,'#5aa995');
   } else {
     ctx.fillStyle = '#FFFFFF';
     ctx.beginPath();

@@ -1,6 +1,23 @@
 node_modules/
 .env
 
+# 本地演示文稿和办公室套件导出文件（不要上传到 GitHub）
+*.ppt
+*.pptx
+*.pptm
+*.pps
+*.ppsx
+*.pot
+*.potx
+*.odp
+
+# 本地素材包和临时检查副本
+/changchun-jibing-jixue-all-images.zip
+/jibing-jixue-guide-pack.zip
+/stage6-changchun-minigame-upgrade-pack.zip
+/.mascot-images-inspect/
+/.mascot-pack-inspect/
+
 # 运行时产物
 data/results/
 data/uploads/
@@ -17,6 +34,8 @@ data/generated/
 data/characters/
 data/visits.json
 data/visits.json.tmp
+data/game-results.json
+data/game-results.json.*.tmp
 data/server.*.log
 data/preview-explore*.png
 data/figure-*.rgba
@@ -32,3 +51,10 @@ data/figure-*.jpg
 /docs/samples/
 /web/assets/user-photo.jpg
 /web/assets/avatar.jpg
+
+# 用户主动公开到现场大屏的角色图像
+data/showcase-avatars/
+
+# 大体积地点图库暂存于本机，待确认后再上传
+/data/place-gallery.json
+/web/assets/places/

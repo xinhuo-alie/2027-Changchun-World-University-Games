@@ -1,4 +1,4 @@
-import { buildCreativePrompt } from '../web/creative-prompt.js';
+import { buildCreativePrompt, resolveCreativeGender } from '../web/creative-prompt.js';
 
 /**
  * ★ 这个文件是整个项目的核心资产。
@@ -238,9 +238,15 @@ export function listStyles() {
  * 拼装最终提示词。
  * locale 用于不同模型的语言偏好：国内模型用 zh，海外模型用 en。
  */
-export function buildPrompt({ styleId, locale = 'zh', extra = '', purpose } = {}) {
+export function buildPrompt({ styleId, locale = 'zh', extra = '', purpose, creative } = {}) {
   const style = getStyle(styleId);
   if (purpose === 'figurine') {
+    const gender = creative ? resolveCreativeGender(creative) : null;
+    const genderCheck = gender === 'male'
+      ? (locale === 'zh' ? '最终性别检查：角色整体必须呈现为男性；若参考照片或其他描述与此冲突，以男性选项为准，同时尽量保留可辨认的脸部身份特征。不得生成女性角色。' : 'Final gender check: the character must read as male. If the reference photo or any other description conflicts, follow the male selection while preserving recognisable facial identity where possible. Do not generate a female character.')
+      : gender === 'female'
+        ? (locale === 'zh' ? '最终性别检查：角色整体必须呈现为女性；若参考照片或其他描述与此冲突，以女性选项为准，同时尽量保留可辨认的脸部身份特征。不得生成男性角色。' : 'Final gender check: the character must read as female. If the reference photo or any other description conflicts, follow the female selection while preserving recognisable facial identity where possible. Do not generate a male character.')
+        : '';
     return [
       locale === 'zh'
         ? '以照片中的人为唯一身份参考，准确保留脸型、五官布局、眼距、鼻嘴形状、年龄感和眼镜等可辨认的面部特征；不能变成另一张通用娃娃脸。照片中的服装、颜色、动作和场景不作为造型模板，除非用户明确选择保留；人物面部身份必须保持。'
@@ -251,6 +257,7 @@ export function buildPrompt({ styleId, locale = 'zh', extra = '', purpose } = {}
       extra,
       FIGURINE_COMPOSITION[locale],
       locale === 'zh' ? '最终检查：角色的脸必须仍然像上传照片中的本人，五官完整清晰；脸部、服装和身体必须统一采用用户所选画风，不把真人照片直接贴到角色上。' : 'Final check: the face must remain recognisably the person in the uploaded photo, with clear features; render the face, outfit and body consistently in the selected art style rather than pasting a photograph onto the character.',
+      genderCheck,
       locale === 'zh' ? `避免出现：${NEGATIVE.zh}` : `Avoid: ${NEGATIVE.en}`,
     ].filter(Boolean).join('\n');
   }

@@ -6,6 +6,9 @@ import { config, WEB_DIR, RESULT_DIR, DATA_DIR } from './env.js';
 import { listStyles } from './styles.js';
 import { listPlaces } from './places.js';
 import { createVisitStore } from './visits.js';
+import { createShowcasePresence } from './showcase-presence.js';
+import { createLeaderboardStore } from './leaderboards.js';
+import { createOnlineRace } from './online-race.js';
 import { providerStatus, listProviders } from './providers/index.js';
 import { createJob, getJob, queueSnapshot } from './store.js';
 import { parseDataUrl } from './http.js';
@@ -25,8 +28,12 @@ const MIME = {
 
 const places = listPlaces();
 const visitStore = await createVisitStore(process.env.VISITS_FILE || path.join(RESULT_DIR, '..', 'visits.json'), places);
+const leaderboardStore = await createLeaderboardStore(path.join(DATA_DIR, 'game-results.json'));
+const onlineRace = createOnlineRace();
+const showcase = createShowcasePresence({ directory: path.join(DATA_DIR, 'showcase-avatars'), places });
 const editorSessions = new Map();
 const editorAttempts = new Map();
+const gameResultAttempts = new Map();
 const editorSessionMs = 8 * 60 * 60 * 1000;
 const mapLayoutFile = path.join(DATA_DIR, 'map-layout.json');
 const placeIds = places.map(place => place.id).sort();
@@ -86,13 +93,13 @@ function sendJson(res, status, payload, extraHeaders = {}) {
   res.end(body);
 }
 
-async function readJsonBody(req) {
+async function readJsonBody(req, maxBytes = config.maxUploadBytes * 1.6) {
   const chunks = [];
   let size = 0;
   for await (const chunk of req) {
     size += chunk.length;
-    if (size > config.maxUploadBytes * 1.6) {
-      throw new Error('请求体过大，请压缩图片后重试');
+    if (size > maxBytes) {
+      throw Object.assign(new Error('请求体过大，请压缩图片后重试'), { status: 413 });
     }
     chunks.push(chunk);
   }
@@ -103,6 +110,17 @@ async function readJsonBody(req) {
   } catch {
     throw new Error('请求体不是合法 JSON');
   }
+}
+
+async function readBinaryBody(req, maxBytes) {
+  const chunks = [];
+  let size = 0;
+  for await (const chunk of req) {
+    size += chunk.length;
+    if (size > maxBytes) throw Object.assign(new Error('挑战画面过大'), { status: 413 });
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks);
 }
 
 async function serveFile(res, filePath) {
@@ -188,6 +206,34 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && pathname === '/api/places') {
       return sendJson(res, 200, { places });
     }
+    if (req.method === 'POST' && pathname === '/api/online-race/rooms') {
+      const body=await readJsonBody(req, 4096);
+      if(body.action==='create')return sendJson(res,201,onlineRace.create(body.name));
+      if(body.action==='join'){
+        const joined=onlineRace.join(body.roomCode,body.name,body.playerToken);
+        if(joined.error)return sendJson(res,joined.status,{error:joined.error});
+        return sendJson(res,200,{roomCode:joined.room.code,playerToken:joined.player.token,slot:joined.slot,phase:joined.room.phase});
+      }
+      return sendJson(res,400,{error:'房间操作无效'});
+    }
+    if (req.method === 'GET' && pathname === '/api/leaderboards') {
+      const limit = Math.max(1, Math.min(50, Number(url.searchParams.get('limit') || 20)));
+      if (url.searchParams.get('view') === 'overall') return sendJson(res, 200, leaderboardStore.overall({ period: url.searchParams.get('period') || 'all-time', limit, playerId: url.searchParams.get('playerId') || '' }));
+      return sendJson(res, 200, leaderboardStore.list({ gameId: url.searchParams.get('gameId'), mode: url.searchParams.get('mode') || 'ranked-solo', period: url.searchParams.get('period') || 'all-time', limit, playerId: url.searchParams.get('playerId') || '' }));
+    }
+    if (req.method === 'GET' && pathname === '/api/game-history') {
+      const limit = Math.max(1, Math.min(20, Number(url.searchParams.get('limit') || 20)));
+      return sendJson(res, 200, { ok: true, entries: leaderboardStore.history({ playerId: url.searchParams.get('playerId'), gameId: url.searchParams.get('gameId') || undefined, limit }) });
+    }
+    if (req.method === 'POST' && pathname === '/api/game-results') {
+      const ip = req.socket.remoteAddress || 'unknown';
+      const now = Date.now();
+      const recent = (gameResultAttempts.get(ip) || []).filter(time => now - time < 10 * 60 * 1000);
+      if (recent.length >= 30) return sendJson(res, 429, { error: '提交频率过高，请稍后再试' });
+      recent.push(now); gameResultAttempts.set(ip, recent);
+      try { return sendJson(res, 201, await leaderboardStore.submit(await readJsonBody(req, 16 * 1024))); }
+      catch (error) { if (error.status) return sendJson(res, error.status, { error: error.message }); throw error; }
+    }
     if (req.method === 'GET' && pathname === '/api/visits') {
       return sendJson(res, 200, visitStore.snapshot());
     }
@@ -205,6 +251,48 @@ const server = http.createServer(async (req, res) => {
       const pulse = setInterval(() => send(visitStore.snapshot()), 20000);
       pulse.unref();
       res.on('close', () => { clearInterval(pulse); unsubscribe(); });
+      return;
+    }
+    if (req.method === 'GET' && pathname === '/api/showcase/players') {
+      return sendJson(res, 200, showcase.snapshot());
+    }
+    if (req.method === 'GET' && pathname === '/api/showcase/stream') {
+      res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache, no-transform', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
+      res.flushHeaders();
+      const send = data => res.write(`event: players\ndata: ${JSON.stringify(data)}\n\n`);
+      send(showcase.snapshot());
+      const unsubscribe = showcase.subscribe(send);
+      const pulse = setInterval(() => send(showcase.snapshot()), 10000);
+      pulse.unref();
+      res.on('close', () => { clearInterval(pulse); unsubscribe(); });
+      return;
+    }
+    if (req.method === 'POST' && pathname === '/api/showcase/session') {
+      try { return sendJson(res, 200, await showcase.join(await readJsonBody(req, 1024 * 1024))); }
+      catch (error) { if (error.status) return sendJson(res, error.status, { error: error.message }); throw error; }
+    }
+    if (req.method === 'POST' && pathname === '/api/showcase/session/leave') {
+      try { return sendJson(res, 200, { ok: true, left: await showcase.leave((await readJsonBody(req, 1024)).sessionId) }); }
+      catch (error) { if (error.status) return sendJson(res, error.status, { error: error.message }); throw error; }
+    }
+    if (req.method === 'POST' && pathname === '/api/showcase/frame') {
+      try {
+        const body = req.headers['content-type'] === 'image/webp'
+          ? { sessionId: req.headers['x-showcase-session'], frame: await readBinaryBody(req, 220 * 1024) }
+          : await readJsonBody(req, 512 * 1024);
+        return sendJson(res, 200, await showcase.updateFrame(body));
+      }
+      catch (error) { if (error.status) return sendJson(res, error.status, { error: error.message }); throw error; }
+    }
+    if (req.method === 'GET' && pathname === '/api/showcase/frame-demand') {
+      return sendJson(res, 200, { needed: showcase.needsFrame(req.headers['x-showcase-session']) });
+    }
+    const frameMatch = /^\/api\/showcase\/players\/([a-f0-9-]{36})\/frame$/.exec(pathname);
+    if (req.method === 'GET' && frameMatch) {
+      const frame = showcase.getFrame(frameMatch[1]);
+      if (!frame) return sendJson(res, 404, { error: '当前没有可用的实时挑战画面' });
+      res.writeHead(200, { 'Content-Type': 'image/webp', 'Content-Length': frame.data.length, 'Cache-Control': 'no-store', 'X-Frame-Updated-At': String(frame.updatedAt) });
+      res.end(frame.data);
       return;
     }
     if (req.method === 'GET' && pathname === '/api/config') {
@@ -246,6 +334,13 @@ const server = http.createServer(async (req, res) => {
       if (filePath && (await serveFile(res, filePath))) return undefined;
       return sendJson(res, 404, { error: '文件不存在' });
     }
+    if (req.method === 'GET' && pathname.startsWith('/data/showcase-avatars/')) {
+      const name = pathname.slice('/data/showcase-avatars/'.length);
+      if (!/^[a-f0-9-]{36}\.png$/.test(name)) return sendJson(res, 404, { error: '文件不存在' });
+      const filePath = safeJoin(path.join(DATA_DIR, 'showcase-avatars'), `/${name}`);
+      if (filePath && (await serveFile(res, filePath))) return undefined;
+      return sendJson(res, 404, { error: '文件不存在' });
+    }
 
     if (req.method === 'GET') {
       const rel = pathname === '/' ? '/play.html' : pathname;
@@ -268,6 +363,10 @@ const server = http.createServer(async (req, res) => {
 });
 
 await fs.mkdir(RESULT_DIR, { recursive: true });
+await fs.mkdir(path.join(DATA_DIR, 'showcase-avatars'), { recursive: true });
+
+server.on('close', () => showcase.close());
+server.on('upgrade',(req,socket,head)=>onlineRace.upgrade(req,socket,head));
 
 server.listen(config.port, () => {
   const status = providerStatus();

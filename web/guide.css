@@ -12,6 +12,27 @@ body[data-book="creator"] .guide-route-bar,body[data-book="cover"] .guide-route-
 .guide-route-copy strong { overflow:hidden; color:#215566; font-size:12px; white-space:nowrap; text-overflow:ellipsis; }
 .guide-route-copy small { overflow:hidden; color:#657d78; font-size:10px; white-space:nowrap; text-overflow:ellipsis; }
 .guide-route-bar button { flex:0 0 auto; min-height:36px; padding:5px 10px; font-size:11px; }
+.journey-continue { display:flex; align-items:center; gap:8px; margin:0 0 8px; padding:10px 12px; border:1px solid #b7d3ca; border-radius:10px 3px 10px 3px; background:#eaf5ef; }
+.journey-continue[hidden] { display:none; }
+.journey-continue > div { display:grid; flex:1; min-width:0; gap:3px; }
+.journey-continue small { color:#9a654b; font-size:10px; font-weight:800; }
+.journey-continue strong { color:#245769; font-size:11px; line-height:1.4; }
+.journey-continue button,.journey-actions button { min-height:38px; padding:7px 11px; border:1px solid #a9c8bd; border-radius:8px 3px 8px 3px; color:#275969; background:#fffdf6; font:inherit; font-size:11px; font-weight:800; cursor:pointer; }
+.journey-continue .journey-primary,.journey-actions .journey-primary { border-color:#286574; color:#fffaf0; background:#286574; }
+.journey-continue button:focus-visible,.journey-actions button:focus-visible { outline:3px solid #e6a56e; outline-offset:2px; }
+body[data-book="map"] #mapSidebarInfo .journey-continue { flex-wrap:wrap; margin:0; padding:7px; }
+body[data-book="map"] #mapSidebarInfo .journey-continue > div { flex-basis:100%; }
+body[data-book="map"] #mapSidebarInfo .journey-continue button { min-height:30px; padding:4px 7px; font-size:9px; }
+.detail-journey { margin:14px 0 17px; padding:15px; border:1px solid #c7d9ca; border-radius:12px 4px 12px 4px; background:#f1f7ed; }
+.detail-journey > small { color:#aa704e; font-size:10px; font-weight:850; letter-spacing:.08em; }
+.detail-journey h3 { margin:5px 0 9px; color:#245968; font-size:18px; }
+.detail-journey ol { display:grid; gap:6px; margin:0; padding:0; list-style:none; }
+.detail-journey li { color:#486c6d; font-size:12px; line-height:1.5; }
+.detail-journey-observation { margin-top:11px; padding:10px; border-left:3px solid #6caeaa; background:#fffdf6; }
+.detail-journey-observation p { margin:0 0 8px; color:#375f64; font-size:11px; line-height:1.6; }
+.detail-journey-observation small { color:#28766c; font-size:11px; font-weight:800; }
+.detail-journey-quest { margin:10px 0 0; color:#955d45; font-size:11px; font-weight:800; }
+.journey-actions { display:flex; flex-wrap:wrap; gap:7px; margin-top:12px; }
 
 .guide-dialog { width:min(790px,calc(100vw - 20px)); max-width:none; max-height:calc(100dvh - 20px); margin:auto; padding:clamp(18px,3vw,30px); overflow:auto; border:1px solid #cbbda5; border-radius:15px 4px 15px 4px; color:#254d58; background:#fffaf0; box-shadow:0 24px 70px #102d3e78; }
 .guide-dialog::backdrop { background:#112f41bd; backdrop-filter:blur(3px); }
@@ -61,9 +82,31 @@ body[data-book="creator"] .guide-route-bar,body[data-book="cover"] .guide-route-
 .guide-quest { min-width:0; padding:12px; border:1px solid #d5dece; border-radius:10px 3px 10px 3px; background:#fffefa; }
 .guide-quest small { color:#a86c4f; font-size:10px; font-weight:800; }
 .guide-quest p { min-height:34px; margin:3px 0 8px; color:#657d7b; font-size:11px; line-height:1.5; }
+.guide-quest-steps { display:grid; gap:4px; margin:0 0 9px; padding:0; list-style:none; }
+.guide-quest-steps li { color:#6e817c; font-size:11px; line-height:1.4; }
+.guide-quest-steps li.is-done { color:#28766c; font-weight:800; }
 .guide-quest-state { display:block; margin-bottom:8px; color:#326a72; font-size:11px; font-weight:800; }
 .guide-quest button { width:100%; text-align:left; }
+.guide-secret-collection { margin:16px 0; padding:14px; border:1px solid #d5cfb7; border-radius:12px 4px 12px 4px; background:linear-gradient(135deg,#f8f5e9,#edf4ed); }
+.guide-secret-collection > h3 { margin:0 0 9px; color:#285968; }
+.guide-secret-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:9px; }
+.guide-secret-card { min-width:0; overflow:hidden; padding:8px; border:1px solid #d8dfd0; border-radius:10px 3px 10px 3px; background:#fffdf5; }
+.guide-secret-card img { display:block; width:100%; height:128px; margin-bottom:7px; border-radius:7px 3px 7px 3px; background:#eaf4ee; object-fit:contain; }
+.guide-secret-card b,.guide-secret-card p,.guide-secret-card small { display:block; }
+.guide-secret-card b { color:#265969; font-size:13px; }
+.guide-secret-card p { margin:4px 0; color:#657b76; font-size:10px; line-height:1.5; }
+.guide-secret-card small { color:#8a9386; font-size:9px; }
+.secret-reveal { width:min(420px,calc(100vw - 24px)); max-height:calc(100dvh - 24px); padding:22px; overflow:auto; border:1px solid #c9d7c7; border-radius:16px 5px 16px 5px; color:#214b5b; background:linear-gradient(145deg,#fffdf5,#eaf5ee); box-shadow:0 24px 70px #102d3e55; text-align:center; }
+.secret-reveal::backdrop { background:#112f41b8; backdrop-filter:blur(3px); }
+.secret-reveal img { display:block; width:min(100%,260px); height:260px; margin:0 auto 12px; border-radius:12px 4px 12px 4px; background:#e9f4ef; object-fit:contain; }
+.secret-reveal h2 { margin:6px 0; font-size:22px; }
+.secret-reveal p { color:#657b76; font-size:13px; line-height:1.7; }
+.secret-reveal-actions { display:flex; justify-content:center; flex-wrap:wrap; gap:8px; margin-top:15px; }
+.secret-reveal-actions button { min-height:40px; padding:8px 14px; border:1px solid #b9cfc4; border-radius:999px; color:#285664; background:#fffdf5; cursor:pointer; }
+.secret-reveal-actions button:first-child { border-color:#286574; color:#fffaf0; background:#286574; }
 @media(max-width:700px) {
+  .journey-continue { flex-wrap:wrap; }
+  .journey-continue > div { flex-basis:100%; }
   .guide-route-bar { flex-wrap:wrap; }
   .guide-route-copy { flex-basis:100%; }
   .guide-dialog { padding:18px 14px; }
