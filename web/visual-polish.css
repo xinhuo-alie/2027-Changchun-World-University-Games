@@ -1,0 +1,21 @@
+/* 冰雪手册的材质与页面公共视觉 */
+.cover-volume { filter:drop-shadow(18px 24px 18px #09344365); }
+.cover-volume::before { inset:7px -14px -10px 12px; border-radius:5px 12px 12px 5px; background:repeating-linear-gradient(0deg,#e7ddc5 0 2px,#fbf3dc 2px 4px); box-shadow:inset -5px 0 0 #c4b79b, 5px 6px 0 #806e55; }
+.cover-spine { left:-18px; width:30px; background:linear-gradient(90deg,#062e3b,#175d6c 38%,#0b4352 70%,#052e39); box-shadow:inset -4px 0 6px #001e2b99, inset 3px 0 3px #89bec24d; }
+.cover-front { padding:9% 10%; border:2px solid #123b42; border-radius:5px 10px 10px 5px; background:#064654 url('/assets/handbook-cover-art-v2.png') center / 100% 100% no-repeat; box-shadow:inset 8px 0 12px #001f2a80, inset -2px -3px 5px #001e28a0, inset 2px 2px 2px #bce7d34d; }
+.cover-edition { border:0; padding:0; font-size:clamp(9px,.85vw,12px); color:#f5e4ba; }.cover-heading { padding-top:clamp(16px,2vw,28px); }.cover-heading small { color:#c2e3dc; font-size:clamp(9px,.9vw,12px); letter-spacing:.16em; }.cover-heading h1 { margin:9px 0; font-size:clamp(32px,3.2vw,48px); line-height:1.07; letter-spacing:-.055em; color:#fff1cd; text-shadow:0 2px 1px #002c37,1px 3px 3px #002b3580; }.cover-heading h1 em { color:#efc27e; }.cover-heading p { font-size:clamp(10px,1vw,13px); color:#e1f1e8; }.cover-panorama { display:none; }.cover-bottom { padding:0; border:0; font-size:clamp(8px,.8vw,11px); color:#fff0ce; text-shadow:0 1px 3px #06303a; }.cover-stamp { border:0; padding:0; transform:none; }
+:root { --ui-ink:#183f50; --ui-deep:#075468; --ui-muted:#56727b; --ui-paper:#f8fcfa; --ui-line:#c8deda; --ui-gold:#d8b574; }
+body:not([data-book="cover"]):not(:has(.screen-grid)) { background:#e7f1ee; color:var(--ui-ink); }
+.book-chapter-bar { background:#f5faf6; border-color:#b9d0c9; border-radius:14px 14px 0 0; color:var(--ui-muted); box-shadow:0 8px 22px #1c536018; }
+.book-chapter-bar button { min-height:40px; }.chapter-item b { background:#d0ebe5; color:#155b66; border-radius:8px; }.page-flip-toggle { background:#fff; border-color:#c5ded7; color:#2d6c73; }
+.split > .panel { background:#fbfdf8; background-image:none; border-color:#c5d9d1; border-radius:0 0 15px 15px; box-shadow:0 12px 32px #1e52601a; }
+.panel-head h2 { color:#163f4c; letter-spacing:-.035em; }.panel-kicker,.place-eyebrow,.guide-kicker { color:#418074; }.panel-head .step { background:#d6eee5; color:#145a63; }
+.stage { border-color:#b9dbd5; background-color:#e1f1ee; }.map-wrap { border:5px solid #e1efeb; box-shadow:0 8px 25px #164c5622; }.map-filters { background:#e7f3ef; }.map-filters button[aria-pressed=true] { color:#075d67; }
+.guide-dialog,.venue-card,.book-detail-content,.book-recap-card,.mg-panel { border-color:#c8ded5; color:#183f50; background-color:#fbfdf8; box-shadow:0 18px 55px #143f4b30; }
+.guide-dialog h2,.venue-card h3,.book-detail-content h2,.book-recap-card h2 { color:#164d57; letter-spacing:-.03em; }
+.progress-summary > div,.bonus-challenges,.memorial-list { background:#edf7f2; border-color:#cfe3d9; }.guide-route-bar,.journey-continue { border-color:#c7dfd6; }
+.primary,.hero-cta,.passport-button,.guide-primary,.enter-tour { background:#0c6570; color:#fff; }.primary:hover,.hero-cta:hover,.passport-button:hover,.guide-primary:hover,.enter-tour:not(:disabled):hover { background:#084d58; }
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible,a:focus-visible { outline:3px solid #d39951; outline-offset:3px; }
+.book-page-nav { background:#fbfdf8; border-color:#d5e8dd; }.book-recap-card { border-radius:14px; }.memorial-video { background:#eaf5ef; border-color:#bad8c8; }
+@media (max-width:640px) { .cover-front { padding:10%; }.cover-heading h1 { font-size:clamp(27px,8vw,37px); }.cover-heading p { font-size:10px; }.book-chapter-bar { border-radius:10px 10px 0 0; }.split > .panel { border-radius:0 0 10px 10px; } }
+@media (prefers-reduced-motion:reduce) { .cover-volume { transition:none; } }

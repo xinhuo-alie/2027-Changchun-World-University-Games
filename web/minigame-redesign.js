@@ -421,18 +421,90 @@ export function aimEngine(canvas, params, api) {
   return curlingEngine(canvas, params, api);
 }
 
-function shootoutEngine(canvas,params,api){
-  const random=seededRandom(params.seed);let round=0,phase='ready',elapsed=0,phaseTime=0,aim=1,shotLane=0,keeperLane=1,goalsFor=0,goalsAgainst=0,saves=0,finished=false,lastResult='';
-  function next(){if(round>=5){finished=true;const won=goalsFor>goalsAgainst;api.finish(won,{score:goalsFor,unit:'球',detail:`进球 ${goalsFor} · 失球 ${goalsAgainst} · 扑救 ${saves}`,metrics:{goalsFor,goalsAgainst,saves}});return}aim=1;shotLane=Math.floor(random()*3);keeperLane=Math.floor(random()*3);phase=round%2===0?'attack':'preview';phaseTime=0}
-  function onAction(action){if(finished)return;if(phase==='attack'){if(action==='left')aim=Math.max(0,aim-1);if(action==='right')aim=Math.min(2,aim+1);if(action==='primary'){const goal=aim!==keeperLane;if(goal)goalsFor++;lastResult=goal?'射门破网！':'门将判断正确，封住近角';phase='result';phaseTime=0;api[goal?'hit':'miss']?.()}return}if(phase==='save'&&['left','center','right'].includes(action)){const lane=action==='left'?0:action==='center'?1:2;const saved=lane===shotLane;if(saved)saves++;else goalsAgainst++;lastResult=saved?'判断正确，扑救成功！':`射门落在${['左侧','中路','右侧'][shotLane]}`;phase='result';phaseTime=0;api[saved?'hit':'miss']?.()}}
-  function update(dt){if(finished)return;elapsed+=dt;phaseTime+=dt;if(phase==='preview'&&phaseTime>.9){phase='save';phaseTime=0}else if(phase==='result'&&phaseTime>.72){round++;next()}}
-  function draw(ctx,w,h){bgScene(ctx,w,h,{skyTop:'#BFE6FF',skyMid:'#EAF6FF',skyBottom:'#F8FFFF',venueId:'olympic'});const gx=w*.5,gy=h*.42,gw=w*.68,gh=h*.37;ctx.fillStyle='rgba(255,255,255,.84)';ctx.fillRect(gx-gw/2,gy-gh/2,gw,gh);ctx.strokeStyle='#6C9EB9';ctx.lineWidth=4;ctx.strokeRect(gx-gw/2,gy-gh/2,gw,gh);for(let i=1;i<3;i++){ctx.beginPath();ctx.moveTo(gx-gw/2+gw*i/3,gy-gh/2);ctx.lineTo(gx-gw/2+gw*i/3,gy+gh/2);ctx.stroke()}const lane=phase==='attack'?aim:shotLane;const x=gx+(lane-1)*gw*.3; if(phase==='preview'||phase==='save'||phase==='attack'){ctx.beginPath();ctx.arc(x,gy,phase==='save'?18+Math.sin(elapsed*12)*3:13,0,Math.PI*2);ctx.strokeStyle='#E78C6B';ctx.lineWidth=4;ctx.stroke()}if(!api.drawSprite?.(ctx,'hockey-goalie',gx-38,gy-57,76,88))drawSkater(ctx,gx,gy+31,88,'#42a899');playerBall(ctx,gx,h*.92,16,params.accent||CANDY.blue,api,{t:elapsed,moving:phase==='result'});const role=phase==='attack'?'你的进攻回合：瞄准并射门':phase==='preview'?'观察对手射门方向':phase==='save'?'你的防守回合：选择扑救方向':lastResult;text(ctx,role,gx,h*.73,15,CANDY.ink,850);scoreHeader(ctx,w,`第 ${Math.min(round+1,5)} / 5 轮`,`${goalsFor} : ${goalsAgainst}`,params.accent)}
-  next();return {onAction,update,draw,getRole:()=>phase==='save'?'defend':phase==='preview'?'defend':'attack',getState:()=>({score:goalsFor,goalsFor,goalsAgainst,round,phase})};
+function shootoutEngine(canvas, params, api) {
+  const random = seededRandom(params.seed);
+  let round = 0, phase = 'ready', elapsed = 0, phaseTime = 0, aim = 1;
+  let shotLane = 1, keeperLane = 1, keeperVisual = 1, resultRole = 'attack';
+  let goalsFor = 0, goalsAgainst = 0, saves = 0, finished = false, lastResult = '';
+  const laneNames = ['左侧', '中路', '右侧'];
+  function next() {
+    if (round >= 5) {
+      finished = true;
+      api.finish(goalsFor > goalsAgainst, { score:goalsFor, unit:'球', detail:`进球 ${goalsFor} · 失球 ${goalsAgainst} · 扑救 ${saves}`, metrics:{goalsFor, goalsAgainst, saves} });
+      return;
+    }
+    aim = 1; keeperLane = 1; keeperVisual = 1;
+    shotLane = Math.floor(random() * 3);
+    phase = round % 2 === 0 ? 'attack' : 'preview';
+    phaseTime = 0;
+  }
+  function onAction(action) {
+    if (finished) return;
+    if (phase === 'attack') {
+      if (action === 'left') aim = Math.max(0, aim - 1);
+      if (action === 'right') aim = Math.min(2, aim + 1);
+      if (action === 'primary') {
+        shotLane = aim;
+        keeperLane = Math.max(0, Math.min(2, Math.round(keeperVisual)));
+        resultRole = 'attack';
+        const goal = shotLane !== keeperLane;
+        if (goal) goalsFor++;
+        lastResult = goal ? `射向${laneNames[shotLane]}，进球！` : `门将扑向${laneNames[keeperLane]}，挡住射门`;
+        phase = 'result'; phaseTime = 0; api[goal ? 'hit' : 'miss']?.();
+      }
+      return;
+    }
+    if (phase === 'save' && ['left','center','right'].includes(action)) {
+      keeperLane = action === 'left' ? 0 : action === 'center' ? 1 : 2;
+      resultRole = 'defend';
+      const saved = keeperLane === shotLane;
+      if (saved) saves++; else goalsAgainst++;
+      lastResult = saved ? `扑向${laneNames[keeperLane]}，扑救成功！` : `扑向${laneNames[keeperLane]}，球射向${laneNames[shotLane]}`;
+      phase = 'result'; phaseTime = 0; api[saved ? 'hit' : 'miss']?.();
+    }
+  }
+  function update(dt) {
+    if (finished) return;
+    elapsed += dt; phaseTime += dt;
+    if (phase === 'attack') keeperVisual = 1 + Math.sin(phaseTime * 2.2) * .92;
+    else if (phase === 'result') keeperVisual += (keeperLane - keeperVisual) * Math.min(1, dt * 9);
+    if (phase === 'preview' && phaseTime > 1.3) { phase = 'save'; phaseTime = 0; }
+    else if (phase === 'result' && phaseTime > 1.35) { round++; next(); }
+  }
+  function draw(ctx, w, h) {
+    bgScene(ctx,w,h,{skyTop:'#BFE6FF',skyMid:'#EAF6FF',skyBottom:'#F8FFFF',venueId:'olympic'});
+    const gx=w*.5, gy=h*.42, gw=w*.68, gh=h*.37;
+    const laneX = lane => gx + (lane - 1) * gw * .3;
+    ctx.fillStyle='rgba(255,255,255,.84)'; ctx.fillRect(gx-gw/2,gy-gh/2,gw,gh);
+    ctx.strokeStyle='#6C9EB9'; ctx.lineWidth=4; ctx.strokeRect(gx-gw/2,gy-gh/2,gw,gh);
+    for(let i=1;i<3;i++){ctx.beginPath();ctx.moveTo(gx-gw/2+gw*i/3,gy-gh/2);ctx.lineTo(gx-gw/2+gw*i/3,gy+gh/2);ctx.stroke();}
+    if (phase === 'attack' || phase === 'preview' || phase === 'save') {
+      const lane = phase === 'attack' ? aim : shotLane;
+      ctx.beginPath(); ctx.arc(laneX(lane),gy,phase === 'save' ? 18 + Math.sin(elapsed*12)*3 : 16,0,Math.PI*2);
+      ctx.strokeStyle='#E06745'; ctx.lineWidth=4; ctx.stroke();
+      text(ctx, phase === 'attack' ? '瞄准' : `来球：${laneNames[shotLane]}`, laneX(lane),gy-gh/2+25,13,'#8b3729',800);
+    }
+    const keeperX=laneX(keeperVisual);
+    if(!api.drawSprite?.(ctx,'hockey-goalie',keeperX-38,gy-57,76,88)) drawSkater(ctx,keeperX,gy+31,88,'#42a899');
+    playerBall(ctx,gx,h*.92,16,params.accent||CANDY.blue,api,{t:elapsed,moving:phase==='result'});
+    if (phase === 'result') {
+      const progress=Math.min(1,phaseTime/.6), puckX=gx+(laneX(shotLane)-gx)*progress, puckY=h*.8+(gy-h*.8)*progress;
+      ctx.beginPath(); ctx.arc(puckX,puckY,Math.max(5,10-progress*4),0,Math.PI*2); ctx.fillStyle='#173948'; ctx.fill();
+    }
+    const role=phase==='attack'?'观察门将移动，瞄准后射门':phase==='preview'?`观察来球：${laneNames[shotLane]}`:phase==='save'?`来球：${laneNames[shotLane]} · 选择扑救方向`:lastResult;
+    text(ctx,role,gx,h*.73,15,CANDY.ink,850);
+    scoreHeader(ctx,w,`第 ${Math.min(round+1,5)} / 5 轮`,`${goalsFor} : ${goalsAgainst}`,params.accent);
+  }
+  next();
+  return {onAction,update,draw,getRole:()=>phase==='save'||phase==='preview'?'defend':phase==='result'?resultRole:'attack',getState:()=>({score:goalsFor,goalsFor,goalsAgainst,saves,round,phase,aim,shotLane,keeperLane,keeperVisual})};
 }
 
 export function dodgeEngine(canvas, params, api) {
   const random=seededRandom(params.seed);
-  const lanes = params.venueId==='songhuahu'?2:3;
+  const isPark = params.venueId === 'sculpture';
+  const isParallel = params.venueId === 'songhuahu';
+  const isAlpine = params.venueId === 'beidahu';
+  const lanes = isParallel ? 2 : 3;
   let lane = 1;
   let laneVisual = 1;
   let travel = 0;
@@ -447,19 +519,41 @@ export function dodgeEngine(canvas, params, api) {
   let missedGates=0,collisions=0,collectibles=0,riskBonus=0;
   let gateFeedback=0,gateMessage='';
   let finished = false;
-  const gateCount = params.gates ?? (params.venueId==='sculpture'?5:params.venueId==='beidahu'?10:8);
+  const duration = params.duration ?? 17;
+  const effectiveSpeed = (params.speed ?? 1.15) * 76 * 17 / Math.max(17, duration);
+  const spacing = isAlpine ? 110 : isPark ? 125 : 130;
+  // Populate the entire timed course, including a reserve for sprinting.
+  const gateCount = Math.max(params.gates ?? 0, Math.ceil((duration * effectiveSpeed * 1.35 + 360) / spacing));
   const gates = [];
   const rocks = [];
   for (let i = 0; i < gateCount; i += 1) {
     const gap = Math.floor(random() * lanes);
-    gates.push({ x: 190 + i * 135, lane: gap, index:i, passed: false });
-    rocks.push({ x: 265 + i * 135, lane: (gap + 1 + Math.floor(random() * 2)) % lanes, hit: false });
+    gates.push({ x: 125 + i * spacing, lane: gap, index:i, passed: false });
+    if (!isParallel || i % 2 === 1) rocks.push({ x: 190 + i * spacing, lane: (gap + 1 + Math.floor(random() * Math.max(1, lanes - 1))) % lanes, hit: false });
   }
 
   function onAction(action) {
     if (finished) return;
     if (action === 'left') lane = Math.max(0, lane - 1);
     if (action === 'right') lane = Math.min(lanes - 1, lane + 1);
+    if (isPark && action === 'primary') {
+      const target = gates.find(gate => !gate.passed && gate.lane === lane && gate.x - travel >= 0 && gate.x - travel <= 100);
+      // Pickups score immediately so changing lanes after the button press
+      // cannot turn a successful collection into a later missed gate.
+      if (target) {
+        target.collected = true;
+        target.passed = true;
+        collectibles += 1;
+        streak += 1;
+        bestStreak = Math.max(bestStreak, streak);
+        score += 3;
+        gateMessage = '拾取成功 +3 分';
+        api.hit?.();
+      }
+      else { gateMessage = '靠近同一雪道的灵感章再拾取'; api.miss?.(); }
+      gateFeedback = .8;
+      return;
+    }
     if (action === 'primary' && energy >= .34 && boost <= 0) {
       energy -= .34;
       boost = 1.05;
@@ -485,14 +579,16 @@ export function dodgeEngine(canvas, params, api) {
     for (const gate of gates) {
       if (!gate.passed && travel >= gate.x-passLead) {
         gate.passed = true;
-        if (gate.lane === lane) {
+        if (gate.lane === lane && (!isPark || gate.collected)) {
           streak += 1; bestStreak = Math.max(bestStreak, streak);
-          score += 3 + (streak >= 3 ? 2 : 0);
-          gateMessage=`旗门通过 +${3 + (streak >= 3 ? 2 : 0)}`;
+          const points = isPark ? 3 : isAlpine && lane === 0 ? 5 : 3 + (isParallel && streak >= 3 ? 2 : 0);
+          score += points;
+          gateMessage = isPark ? `收集灵感章 +${points}` : isAlpine && lane === 0 ? `冒险线通过 +${points}` : `旗门通过 +${points}`;
+          if (isParallel && streak % 3 === 0) energy = Math.min(1, energy + .25);
           api.hit?.();
-          if(params.venueId==='sculpture'&&gate.index%2===0)collectibles+=1;
-          if(params.venueId==='beidahu'&&lane===0)riskBonus+=1;
-        } else { streak = 0; missedGates+=1;gateMessage='错过旗门 · 继续找准雪道'; }
+          if(isPark)collectibles+=1;
+          if(isAlpine&&lane===0)riskBonus+=1;
+        } else { streak = 0; missedGates+=1;gateMessage=isPark?'错过灵感章 · 留意下一枚':'错过旗门 · 继续找准雪道'; }
         gateFeedback=.9;
       }
     }
@@ -503,22 +599,32 @@ export function dodgeEngine(canvas, params, api) {
         else rocksDodged += 1;
       }
     }
-    if (timeLeft <= 0) {
+    if (timeLeft <= 0) finishRound();
+  }
+
+  function finishRound() {
+    if (!finished) {
       finished = true;
-      api.finish(score >= (params.goal ?? gateCount * 2), { score, unit: '分', detail: params.venueId==='sculpture'?`通过 ${gateCount-missedGates}/${gateCount} 旗门 · 收集 ${collectibles} 枚灵感章 · 躲开 ${rocksDodged} 块雪堆`:params.venueId==='beidahu'?`漏门 ${missedGates} · 碰撞 ${collisions} · 冒险线收益 ${riskBonus}`:`连穿最佳 ${bestStreak} 门 · 漏门 ${missedGates} · 躲开 ${rocksDodged} 块雪堆`,metrics:{missedGates,collisions,collectibles,riskBonus,rocksDodged,bestStreak} });
+      api.finish(score >= (params.goal ?? gateCount * 2), { score, unit: '分', detail: params.venueId==='sculpture'?`通过 收集 ${collectibles} 枚灵感章 · 错过 ${missedGates} 枚 · 躲开 ${rocksDodged} 块雪堆`:params.venueId==='beidahu'?`漏门 ${missedGates} · 碰撞 ${collisions} · 冒险线收益 ${riskBonus}`:`连穿最佳 ${bestStreak} 门 · 漏门 ${missedGates} · 躲开 ${rocksDodged} 块雪堆`,metrics:{missedGates,collisions,collectibles,riskBonus,rocksDodged,bestStreak} });
     }
   }
 
   function draw(ctx, w, h) {
-    bgScene(ctx, w, h, { skyTop: '#B2DFFF', skyMid: '#E6F5FF', skyBottom: '#FFFFFF', venueId: params.venueId });
+    bgScene(ctx, w, h, { skyTop: '#B2DFFF', skyMid: '#E6F5FF', skyBottom: '#FFFFFF', venueId: params.venueId, hideVenueArt:true });
     const center = w * .5;
     const horizon = h * .27;
     const nearWidth = w * .68;
     const farWidth = w * .14;
     const curve = Math.sin(travel * .0023) * w * .045;
-    ctx.fillStyle = '#FBFEFF'; ctx.beginPath();
+    ctx.fillStyle = isPark ? '#e5f4ef' : isParallel ? '#e8f4fb' : '#e6f2f7'; ctx.beginPath();
     ctx.moveTo(center - farWidth, horizon); ctx.lineTo(center + farWidth, horizon);
     ctx.lineTo(center + nearWidth, h); ctx.lineTo(center - nearWidth, h); ctx.closePath(); ctx.fill();
+    for (let i = 0; i < lanes; i += 1) {
+      const left=center-farWidth+(farWidth*2)*i/lanes, right=center-farWidth+(farWidth*2)*(i+1)/lanes;
+      const nearLeft=center-nearWidth+(nearWidth*2)*i/lanes, nearRight=center-nearWidth+(nearWidth*2)*(i+1)/lanes;
+      ctx.fillStyle=isAlpine&&i===0?'rgba(238,165,114,.30)':isParallel&&i===1?'rgba(112,181,215,.25)':i%2?'rgba(255,255,255,.4)':'rgba(164,211,217,.24)';
+      ctx.beginPath();ctx.moveTo(left,horizon);ctx.lineTo(right,horizon);ctx.lineTo(nearRight,h);ctx.lineTo(nearLeft,h);ctx.closePath();ctx.fill();
+    }
     for (let i = 1; i < lanes; i += 1) {
       const t = i / lanes * 2 - 1;
       ctx.strokeStyle = 'rgba(134,185,213,.62)'; ctx.lineWidth = 2;
@@ -533,6 +639,7 @@ export function dodgeEngine(canvas, params, api) {
       const x = center + curve * z + ((item.lane + .5) / lanes * 2 - 1) * (farWidth + (nearWidth - farWidth) * z);
       const size = 5 + 18 * z;
       if (type === 'gate') {
+        if(isPark){ctx.fillStyle='#f6c45f';ctx.strokeStyle='#fff9de';ctx.lineWidth=Math.max(2,size*.16);ctx.beginPath();ctx.arc(x,y-size,size*.65,0,Math.PI*2);ctx.fill();ctx.stroke();text(ctx,'◆',x,y-size,Math.max(10,size*.75),'#865723',800);return;}
         if(api.drawSprite?.(ctx,'slalom-gate',x-size,y-size*2.2,size*2,size*2.4))return;
         ctx.strokeStyle = '#F28C76'; ctx.lineWidth = Math.max(2, size * .22); ctx.lineCap = 'round';
         ctx.beginPath(); ctx.moveTo(x - size, y); ctx.lineTo(x - size, y - size * 2.3); ctx.moveTo(x + size, y); ctx.lineTo(x + size, y - size * 2.3); ctx.moveTo(x - size, y - size * 1.8); ctx.lineTo(x + size, y - size * 1.8); ctx.stroke();
@@ -541,12 +648,13 @@ export function dodgeEngine(canvas, params, api) {
     for (const gate of gates) if (!gate.passed) drawObject(gate, 'gate');
     for (const rock of rocks) if (!rock.hit) drawObject(rock, 'rock');
     playerBall(ctx, laneX(laneVisual), h - 39, 17, params.accent || CANDY.coral, api, { t: elapsed, moving: true, ski: true });
+    text(ctx,isPark?'靠近金色灵感章 · 按拾取' :isParallel?'连穿三门恢复冲刺能量':isAlpine?'左侧冒险线 +5 分 · 留意雪堆':'穿过旗门',center,h*.15,14,'#174c5d',800);
     if (boost > 0) text(ctx, '雪板冲刺！', center, h * .4, 16, '#C26D4C', 900);
     if(gateFeedback>0){ctx.save();const alpha=Math.min(1,gateFeedback*2);ctx.globalAlpha=alpha;ctx.fillStyle='rgba(255,255,255,.94)';ctx.beginPath();ctx.roundRect(center-112,h*.53,224,36,18);ctx.fill();ctx.strokeStyle=gateMessage.includes('+')?'rgba(67,171,141,.55)':'rgba(223,134,105,.45)';ctx.lineWidth=1.5;ctx.stroke();text(ctx,gateMessage,center,h*.53+18,14,gateMessage.includes('+')?'#287c68':'#a55b4c',850);ctx.restore();}
-    bar(ctx, 18, h - 16, w - 36, energy, '#F0A67A', '冲刺能量');
+    if (!isPark) bar(ctx, 18, h - 16, w - 36, energy, '#F0A67A', '冲刺能量');
     hud(ctx, w, `${score} 分 · 连穿 ${streak}`, timeLeft, params.accent);
   }
-  return { onAction, update, draw, getState:()=>({travel,score,gates:gates.map(({x,lane,index,passed})=>({x,lane,index,passed})),missedGates,collectibles}) };
+  return { onAction, update, draw, finishRound, getState:()=>({travel,score,timeLeft,lane,energy,gates:gates.map(({x,lane,index,passed})=>({x,lane,index,passed})),missedGates,collectibles,riskBonus}) };
 }
 
 export function jumpEngine(canvas, params, api) {
@@ -566,6 +674,9 @@ export function jumpEngine(canvas, params, api) {
   let resultHold = 0;
   let lastInput = 0;
   let balancePulse = 0;
+  let feedback = '';
+  let feedbackTime = 0;
+  let lastJumpPoints = 0;
   const jumps = params.jumps ?? 3;
   const rampAt = .76;
 
@@ -581,7 +692,7 @@ export function jumpEngine(canvas, params, api) {
   function onAction(action) {
     if (finished) return;
     if (phase === 'approach' && action === 'primary') {
-      if (approach < .58) { api.miss?.(); return; }
+      if (approach < .58) { feedback = '还没到起跳区，继续助滑'; feedbackTime = .8; api.miss?.(); return; }
       launchQuality = clamp(1 - Math.abs(approach - rampAt) / .22, 0, 1);
       if (launchQuality < .12) { misses += 1; api.miss?.(); nextJump(); return; }
       phase = 'flight'; flight = 0; balance = (random() - .5) * .32; api.hit?.();
@@ -601,9 +712,9 @@ export function jumpEngine(canvas, params, api) {
         landing = clamp(1 - Math.abs(flight - 2.3) / .35, 0, 1);
         const form = clamp(1 - Math.abs(balance), 0, 1);
         const points = Math.round(launchQuality * 3 + form * 2 + landing * 2 + (tucked ? 1 : 0));
-        score += points; phase = 'result'; flight = 0; api.hit?.();
+        score += points; lastJumpPoints = points; phase = 'result'; flight = 0; api.hit?.();
         resultHold = .68;
-      } else if (flight < 2.0) api.miss?.();
+      } else if (flight < 2.0) { feedback = '还没到落地区，先保持平衡'; feedbackTime = .7; api.miss?.(); }
     }
   }
 
@@ -611,6 +722,7 @@ export function jumpEngine(canvas, params, api) {
     if (finished) return;
     elapsed += dt;
     balancePulse = Math.max(0, balancePulse - dt);
+    feedbackTime = Math.max(0, feedbackTime - dt);
     if (phase === 'approach') {
       approach += dt / (params.approachSeconds ?? 2.5);
       if (approach >= .98) { misses += 1; api.miss?.(); nextJump(); }
@@ -625,7 +737,7 @@ export function jumpEngine(canvas, params, api) {
   }
 
   function draw(ctx, w, h) {
-    bgScene(ctx, w, h, { skyTop: '#99D0F6', skyMid: '#DDF1FF', skyBottom: '#F7FCFF', venueId: params.venueId });
+    bgScene(ctx, w, h, { skyTop: '#99D0F6', skyMid: '#DDF1FF', skyBottom: '#F7FCFF', venueId: params.venueId, hideVenueArt:true });
     const ground = h * .8;
     ctx.fillStyle = '#FFFFFF'; ctx.beginPath(); ctx.moveTo(0, ground + 15); ctx.lineTo(w * .25, ground + 12); ctx.lineTo(w * .43, ground - 4); ctx.lineTo(w * .58, ground + 2); ctx.lineTo(w, ground + 42); ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath(); ctx.fill();
     ctx.strokeStyle = '#8BC7E9'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(w * .11, ground + 8); ctx.quadraticCurveTo(w * .34, ground + 7, w * .48, ground - 3); ctx.lineTo(w * .7, ground + 23); ctx.stroke();
@@ -639,10 +751,18 @@ export function jumpEngine(canvas, params, api) {
     ctx.fillStyle = '#FFB56E'; ctx.beginPath(); ctx.arc(rampX, rampY, 11, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = 'rgba(255,255,255,.86)'; ctx.lineWidth = 9; ctx.beginPath(); ctx.moveTo(rampX + 30, rampY + 18); ctx.quadraticCurveTo(w * .64, ground - h * .22, runwayEnd, ground - 8); ctx.stroke();
     ctx.strokeStyle = 'rgba(96,148,181,.48)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(rampX + 30, rampY + 30); ctx.quadraticCurveTo(w * .67, ground - h * .08, runwayEnd, ground + 3); ctx.stroke();
-    const barX = w * .08;
-    ctx.fillStyle = 'rgba(255,255,255,.76)'; ctx.beginPath(); ctx.roundRect(barX, h * .38, w * .84, 11, 6); ctx.fill();
-    ctx.fillStyle = approach > .58 && approach < .96 ? '#FFD166' : params.accent || CANDY.blue;
-    ctx.beginPath(); ctx.roundRect(barX, h * .38, w * .84 * clamp(approach, 0, 1), 11, 6); ctx.fill();
+    // The highlighted window uses the same thresholds as the action logic.
+    if (phase !== 'result') {
+      const barX=w*.12, barW=w*.76, barY=h*.19;
+      const isApproach=phase==='approach';
+      const progress=isApproach?approach:clamp(flight/2.8,0,1);
+      const start=isApproach?.58:2/2.8, end=isApproach?.9536:2.65/2.8;
+      ctx.fillStyle='rgba(15,55,72,.86)'; ctx.beginPath(); ctx.roundRect(barX-12,barY-26,barW+24,66,12); ctx.fill();
+      text(ctx,isApproach?'助滑进度 · 指针进入金色区时起跳':'飞行进度 · 指针进入金色区时落地',w*.5,barY-11,12,'#ffffff',700);
+      ctx.fillStyle='#d6e9ec';ctx.beginPath();ctx.roundRect(barX,barY,barW,12,6);ctx.fill();
+      ctx.fillStyle='#f4bf55';ctx.beginPath();ctx.roundRect(barX+barW*start,barY,barW*(end-start),12,6);ctx.fill();
+      ctx.fillStyle='#ffffff';ctx.strokeStyle='#125466';ctx.lineWidth=2;ctx.beginPath();ctx.arc(barX+barW*progress,barY+6,9,0,Math.PI*2);ctx.fill();ctx.stroke();
+    }
     const px = phase === 'approach' ? w * (.1 + approach * .3) : phase === 'flight' ? ease(rampX, runwayEnd, clamp(flight / 2.8, 0, 1)) : runwayEnd;
     const py = phase === 'approach' ? ground - h * (.13 + approach * .11) : phase === 'flight' ? ground - 18 - Math.sin(Math.PI * clamp(flight / 2.8, 0, 1)) * h * .48 : ground - 18;
     const lean = phase === 'flight' ? balance * .55 : 0;
@@ -657,13 +777,14 @@ export function jumpEngine(canvas, params, api) {
       ctx.fillStyle = '#D7794D'; ctx.beginPath();ctx.arc(centerX,barY-15,4.5,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.roundRect(centerX-2,barY-11,4,8,2);ctx.fill();
       if (balancePulse > 0) text(ctx, lastInput < 0 ? '← 向左修正' : '向右修正 →', centerX, barY + 31, 14, '#277B70', 900);
     }
-    const cue = phase === 'approach' ? (approach < .58 ? '沿长助滑道加速' : approach < .93 ? '起跳区亮起 · 按起跳' : '错过跳台')
-      : phase === 'flight' ? (flight < .65 ? '按一次收板，开始空中转体' : flight < 2.0 ? '轻点 ← → 修正平衡' : '落地窗口将至 · 按落地')
-        : `漂亮！ +${score} 分`;
-    text(ctx, cue, w * .5, h * .36, 14, phase === 'approach' && approach >= .58 && approach < .93 ? '#B87921' : CANDY.ink, 850);
+    const cue = feedbackTime > 0 ? feedback : phase === 'approach' ? (approach < .58 ? '等待指针进入金色区域' : approach <= .9536 ? '现在按起跳！' : '起跳窗口已过')
+      : phase === 'flight' ? (flight < .65 && !tucked ? '按一次收板（可加分）' : flight < 2 ? '轻点左右，让平衡标记回到中央' : flight <= 2.65 ? '现在按落地！' : '落地窗口已过')
+        : `本跳 +${lastJumpPoints} 分`;
+    ctx.fillStyle='rgba(255,255,255,.92)';ctx.beginPath();ctx.roundRect(w*.16,h*.31,w*.68,34,12);ctx.fill();
+    text(ctx,cue,w*.5,h*.31+17,14,'#174c5d',850);
     scoreHeader(ctx, w, `${Math.min(completed + 1, jumps)} / ${jumps} 跳`, `${score} 分`, params.accent);
   }
-  return { onAction, update, draw, getState: () => ({ score,misses,phase,approach,flight,balance,tucked,completed }) };
+  return { onAction, update, draw, getState: () => ({ score,misses,phase,approach,flight,balance,tucked,completed, actionLabel:phase==='approach'?'起跳':phase==='flight'&&flight<.65&&!tucked?'收板':phase==='flight'&&flight>=2&&flight<=2.65?'落地':phase==='flight'?'等待落地区':'准备下一跳' }) };
 }
 
 export function enduranceEngine(canvas, params, api) {
@@ -710,20 +831,22 @@ export function enduranceEngine(canvas, params, api) {
   function draw(ctx, w, h) {
     bgScene(ctx, w, h, { skyTop: '#A9DCFF', skyMid: '#DFF1FF', skyBottom: '#F2FAFF', venueId: params.venueId });
     const ground = h * (.61 + lastTerrain * .06);
-    ctx.fillStyle = '#FFFFFF'; ctx.beginPath(); ctx.moveTo(0, ground); ctx.quadraticCurveTo(w * .48, ground - lastTerrain * 22, w, ground + 6); ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath(); ctx.fill();
+    // Keep all course props and the skier anchored to the same rolling snow surface.
+    const groundAt = (x) => ground + Math.sin((x / w) * Math.PI * 1.25) * lastTerrain * h * .065;
+    ctx.fillStyle = '#FFFFFF'; ctx.beginPath(); ctx.moveTo(0, groundAt(0)); ctx.quadraticCurveTo(w * .48, groundAt(w * .48), w, groundAt(w)); ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath(); ctx.fill();
     for (let i = 0; i < 9; i += 1) {
       const x = (i * 81 - elapsed * 35 % 81 + w) % w;
       const size=31+(i%3)*6;
-      drawPine(ctx,x+17,ground+13,size,i%2?'#548C82':'#80A99C');
+      drawPine(ctx,x+17,groundAt(x)+13,size,i%2?'#548C82':'#80A99C');
     }
-    playerBall(ctx, w * .28, ground - 25 - Math.sin(elapsed * 7) * 3, 17, params.accent || CANDY.mint, api, { t: elapsed, moving: true, ski: true });
+    playerBall(ctx, w * .28, groundAt(w * .28) - 25 - Math.sin(elapsed * 7) * 3, 17, params.accent || CANDY.mint, api, { t: elapsed, moving: true, ski: true });
     const condition = lastTerrain > .45 ? '上坡：稳住体力' : lastTerrain < -.45 ? '下坡：恢复体力' : '平地：把握冲刺';
     text(ctx, condition, w * .72, h * .4, 14, CANDY.ink, 800);
     const effortName = ['轻松滑', '稳定滑', '强力蹬'][effort];
     bar(ctx, 18, h - 48, w - 36, stamina, stamina < .25 ? '#F28C76' : '#77C8A9', `体力 · ${effortName}`);
     hud(ctx, w, `${Math.round(distance)} / ${target} 米`, timeLeft, params.accent);
   }
-  return { onAction, update, draw, getState:()=>({distance,score:Math.round(distance),stamina,effort,timeLeft}) };
+  return { onAction, update, draw, getState:()=>({distance,score:Math.round(distance),stamina,effort,timeLeft,terrain:lastTerrain,terrainType:lastTerrain > .45 ? 'uphill' : lastTerrain < -.45 ? 'downhill' : 'flat'}) };
 }
 
 export function goalieEngine(canvas, params, api) {
@@ -881,9 +1004,11 @@ function attractionEngine(canvas,params,api){
   function next(){index++;selection=1;if(index>=rounds){finished=true;const won=correct>=Math.ceil(rounds*.6);api.finish(won,{score,unit:'分',detail:`答对 ${correct} / ${rounds} 项 · ${placeId==='palace'?'认识历史线索，不把沉重历史娱乐化。':'城市彩蛋挑战完成'}`,metrics:{correct,rounds}});return}phase=placeId==='nanhu'&&index===0?'preview':'choose';phaseTime=0}
   function onAction(action){if(finished)return;if(phase==='preview')return;if(phase==='choose'){if(['left','center','right'].includes(action)){select(action);return}if(action==='primary')submit()}}
   function update(dt){if(finished)return;phaseTime+=dt;if(phase==='preview'&&phaseTime>=sequence.length*.72+1){phase='choose';phaseTime=0}else if(phase==='feedback'&&phaseTime>.58)next()}
-  function draw(ctx,w,h){bgScene(ctx,w,h,{skyTop:'#BFE6FF',skyMid:'#EAF6FF',skyBottom:'#F8FFFF',venueId:placeId});const cx=w*.5;
+function draw(ctx,w,h){bgScene(ctx,w,h,{skyTop:'#BFE6FF',skyMid:'#EAF6FF',skyBottom:'#F8FFFF',venueId:placeId,scene:'city'});const cx=w*.5;
+    // Keep the city visible while giving the question a clean, readable surface.
+    ctx.save();ctx.fillStyle='rgba(255,253,246,.94)';ctx.strokeStyle='rgba(69,113,120,.35)';ctx.lineWidth=1;ctx.beginPath();ctx.roundRect(w*.05,h*.14,w*.9,h*.25,14);ctx.fill();ctx.stroke();ctx.restore();
     const prompt=placeId==='nanhu'?(phase==='preview'?'记住冰晶出现的顺序':`回忆第 ${index+1} 枚冰晶`):cards[Math.min(index,rounds-1)]?.[0]||'彩蛋完成';
-    text(ctx,placeId==='palace'?'历史线索 · 阅读与理解':placeId==='film'?'剪辑台 · 建立场景 / 动作 / 反应':placeId==='mountainmall'?'室内山城 · 规划不回头路线':placeId==='nanhu'?'南湖冰晶 · 顺序记忆':placeId==='culture'?'城市观察 · 找到剪影差异':'导演快反 · 镜头 / 音效 / 特效',cx,h*.2,13,'#68859A',800);
+    text(ctx,placeId==='palace'?'历史线索 · 阅读与理解':placeId==='film'?'剪辑台 · 建立场景 / 动作 / 反应':placeId==='mountainmall'?'室内山城 · 规划不回头路线':placeId==='nanhu'?'南湖冰晶 · 顺序记忆':placeId==='culture'?'城市观察 · 找到剪影差异':'导演快反 · 镜头 / 音效 / 特效',cx,h*.2,14,'#365e6d',800);
     text(ctx,prompt,cx,h*.32,18,CANDY.ink,900);
     if(placeId==='nanhu'&&phase==='preview'){const shown=Math.min(sequence.length,Math.floor(phaseTime/.72)+1);sequence.slice(0,shown).forEach((value,i)=>text(ctx,symbolSet[value],cx+(i-(shown-1)/2)*54,h*.52,30,['#4E9DCE','#64BFA5','#9B83D1'][value],900))}
     else {const options=placeId==='nanhu'?symbolSet:cards[Math.min(index,rounds-1)]?.[1]||['左侧','中间','右侧'];for(let i=0;i<3;i++){const x=cx+(i-1)*Math.min(170,w*.32),y=h*.53;ctx.save();ctx.fillStyle=i===selection?'#DDF4F4':'rgba(255,255,255,.92)';ctx.strokeStyle=i===selection?'#58AAB6':'#D0E5EC';ctx.lineWidth=i===selection?3:1;ctx.beginPath();ctx.roundRect(x-68,y-32,136,64,15);ctx.fill();ctx.stroke();ctx.restore();text(ctx,options[i],x,y,13,CANDY.ink,800)}}
@@ -903,3 +1028,4 @@ export const ENGINES = {
   shootout: shootoutEngine,
   attraction: attractionEngine,
 };
+

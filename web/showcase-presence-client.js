@@ -73,9 +73,21 @@ export function createShowcaseParticipation({ getState, getAvatar }) {
         const data = await response.json();
         session.publicId = data.publicId;
         activeJoin = true;
+        try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(session)); } catch { /* Storage is optional for live presence. */ }
+      } else {
+        // The server may have restarted or expired an idle tab's session.
+        // Its next heartbeat must include the avatar so the session can be rebuilt.
+        activeJoin = false;
+        delete session.publicId;
         sessionStorage.setItem(STORAGE_KEY, JSON.stringify(session));
       }
-    } catch { /* Offline locally; retry on the next heartbeat. */ }
+    } catch {
+      // The request may have reached the server even when its response was lost;
+      // replaying the same session with its avatar is safe and restores presence.
+      activeJoin = false;
+      delete session.publicId;
+      try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(session)); } catch {}
+    }
     finally { busy = false; }
   }
 
@@ -170,7 +182,23 @@ export function createShowcaseParticipation({ getState, getAvatar }) {
   function shutdown() {
     clearTimeout(heartbeat); stopFrameCapture();
     if (session) navigator.sendBeacon('/api/showcase/session/leave', new Blob([JSON.stringify({ sessionId: session.sessionId })], { type: 'application/json' }));
+    activeJoin = false;
+    if (session) {
+      delete session.publicId;
+      try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(session)); } catch {}
+    }
+  }
+  function resumePresence() {
+    if (!optedIn || !getState().tourEntered) return;
+    activeJoin = false;
+    if (session) delete session.publicId;
+    session ||= { sessionId: crypto.randomUUID() };
+    try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(session)); } catch {}
+    startHeartbeat();
   }
   window.addEventListener('pagehide', shutdown);
+  window.addEventListener('pageshow', resumePresence);
+  window.addEventListener('online', resumePresence);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) resumePresence(); });
   return { setParticipation, isParticipationEnabled: () => optedIn, tourReady, tourEnded, update, startGame, finishGame, endGame };
 }

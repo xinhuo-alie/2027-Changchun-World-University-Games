@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import { jumpEngine } from '../web/minigame-redesign.js';
+const game=jumpEngine(null,{jumps:1,seed:12},{hit(){},miss(){},finish(){}});
+assert.equal(game.getState().actionLabel,'起跳');
+game.onAction('primary'); assert.equal(game.getState().phase,'approach','起跳区之前不能起跳');
+game.update(1.9); game.onAction('primary');
+assert.equal(game.getState().actionLabel,'收板');
+game.onAction('primary'); assert.equal(game.getState().tucked,true);
+assert.equal(game.getState().actionLabel,'等待落地区');
+game.update(2.1); assert.equal(game.getState().actionLabel,'落地');
+game.onAction('primary'); assert.equal(game.getState().phase,'result');
+console.log('跳台游戏阶段提示、起跳、收板及落地检查通过');

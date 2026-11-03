@@ -2,6 +2,8 @@ import { GUIDE_MODES, advanceRoute, cloudMinutes, editRoute, explainStop, normal
 import { claimQuest, questStepLabel, stepDone } from './quests.js';
 import { buildPassport } from './passport.js';
 import { getSecretCollection } from '/secret-collection.js';
+import { LEGACY_SECRET_AVATARS, SECRET_AVATARS } from '/secret-avatars.js';
+import { renderSecretGallery } from '/secret-gallery.js';
 
 const make = (tag, className, text) => {
   const node = document.createElement(tag);
@@ -30,7 +32,8 @@ const select = (label, values, current, onChange) => {
   return field;
 };
 
-export function createGuideUI({ places, getProgress, setProgress, onNavigate, onQuiz, onCard }) {
+export function createGuideUI({ places, getProgress, setProgress, onNavigate, onQuiz, onCard,
+  onPassportOpen, onRouteChange, onQuestClaimed, onWorkshop }) {
   const byId = new Map(places.map((place) => [place.id, place]));
   const routeDialog = document.getElementById('routeDialog');
   const passportDialog = document.getElementById('passportDialog');
@@ -43,7 +46,7 @@ export function createGuideUI({ places, getProgress, setProgress, onNavigate, on
     close(routeDialog); close(passportDialog);
     if (byId.has(id)) onNavigate(id);
   }
-  function saveRoute(route) { setProgress({ route }); render(); options.onRouteChange?.(route); }
+  function saveRoute(route) { setProgress({ route }); render(); onRouteChange?.(route); }
 
   function renderModes() {
     const mode = getProgress().guideMode;
@@ -179,17 +182,11 @@ export function createGuideUI({ places, getProgress, setProgress, onNavigate, on
       metrics.append(cell);
     }
     passportDialog.append(metrics);
-    const collection=getSecretCollection();
-    const secretSection=make('section'); secretSection.id='secretCollection'; secretSection.className='guide-secret-collection';
-    secretSection.append(make('h3','','珍藏角色图鉴'));
-    if(collection.items.length){
-      const list=make('div','guide-secret-grid');
-      for(const item of collection.items){const card=make('article','guide-secret-card');
-        if(item.artworkUrl){const image=document.createElement('img');image.src=item.artworkUrl;image.alt=`${item.title}角色作品`;card.append(image);}
-        card.append(make('b','',item.title),make('p','',item.tagline),make('small','',`发现于 ${new Date(item.discoveredAt).toLocaleDateString('zh-CN')}`));list.append(card);}
-      secretSection.append(list);
-    }else secretSection.append(make('p','guide-note','隐藏角色可能在正式生成时出现；目前还没有收藏记录。'));
-    passportDialog.append(secretSection);
+    passportDialog.append(renderSecretGallery({
+      collection:getSecretCollection(),secrets:SECRET_AVATARS,legacySecrets:LEGACY_SECRET_AVATARS,
+      onWorkshop:()=>{close(passportDialog);onWorkshop?.();},
+      onClose:()=>close(passportDialog),
+    }));
     if (passport.nextQuest) passportDialog.append(make('p', 'guide-next-quest',
       passport.nextQuest.status === 'claimable' ? `下一步：领取「${passport.nextQuest.title}」任务章` :
         `推荐下一步：${passport.nextQuest.nextLabel}，推进「${passport.nextQuest.title}」`));
@@ -229,7 +226,7 @@ export function createGuideUI({ places, getProgress, setProgress, onNavigate, on
       card.append(make('span', 'guide-quest-state', quest.claimed ? '已领取护照任务章' : quest.completed ? '可领取护照任务章' : `下一步：${quest.nextLabel}`));
       if (quest.status === 'claimable') card.append(button('领取任务章', () => {
         setProgress({ claimedQuests: claimQuest(getProgress(), quest.id, places).claimedQuests });
-        options.onQuestClaimed?.(quest.id);
+        onQuestClaimed?.(quest.id);
         render();
       }, 'guide-primary'));
       if (quest.status === 'incomplete') card.append(button(quest.nextLabel + ' →', () => actOnQuest(quest), 'guide-quiet'));
@@ -256,7 +253,7 @@ export function createGuideUI({ places, getProgress, setProgress, onNavigate, on
       render();
     });
   }
-  document.getElementById('passportBtn').addEventListener('click', () => { options.onPassportOpen?.(); openPassport(); });
+  document.getElementById('passportBtn').addEventListener('click', () => { onPassportOpen?.(); openPassport(); });
 
   function render() {
     renderModes();

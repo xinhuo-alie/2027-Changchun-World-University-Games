@@ -3,14 +3,14 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { config, WEB_DIR, RESULT_DIR, DATA_DIR } from './env.js';
-import { listStyles } from './styles.js';
+import { listStyles, buildPrompt, describeFigurineSelection } from './styles.js';
 import { listPlaces } from './places.js';
 import { createVisitStore } from './visits.js';
 import { createShowcasePresence } from './showcase-presence.js';
 import { createLeaderboardStore } from './leaderboards.js';
 import { createOnlineRace } from './online-race.js';
-import { providerStatus, listProviders } from './providers/index.js';
-import { createJob, getJob, queueSnapshot } from './store.js';
+import { providerStatus, listProviders, promptLocaleFor } from './providers/index.js';
+import { cancelJob, createJob, getJob, queueSnapshot } from './store.js';
 import { parseDataUrl } from './http.js';
 
 const MIME = {
@@ -208,13 +208,16 @@ const server = http.createServer(async (req, res) => {
     }
     if (req.method === 'POST' && pathname === '/api/online-race/rooms') {
       const body=await readJsonBody(req, 4096);
-      if(body.action==='create')return sendJson(res,201,onlineRace.create(body.name));
+      if(body.action==='create')return sendJson(res,201,onlineRace.create(body.name,body.venueId));
       if(body.action==='join'){
         const joined=onlineRace.join(body.roomCode,body.name,body.playerToken);
         if(joined.error)return sendJson(res,joined.status,{error:joined.error});
-        return sendJson(res,200,{roomCode:joined.room.code,playerToken:joined.player.token,slot:joined.slot,phase:joined.room.phase});
+        return sendJson(res,200,{roomCode:joined.room.code,venueId:joined.room.venueId,playerToken:joined.player.token,slot:joined.slot,phase:joined.room.phase});
       }
       return sendJson(res,400,{error:'房间操作无效'});
+    }
+    if (req.method === 'GET' && pathname === '/api/online-race/rooms') {
+      return sendJson(res,200,{rooms:onlineRace.list()});
     }
     if (req.method === 'GET' && pathname === '/api/leaderboards') {
       const limit = Math.max(1, Math.min(50, Number(url.searchParams.get('limit') || 20)));
@@ -304,6 +307,18 @@ const server = http.createServer(async (req, res) => {
       });
     }
 
+    if (req.method === 'POST' && pathname === '/api/creative-preview') {
+      const body = await readJsonBody(req);
+      if (!body.creative || typeof body.creative !== 'object' || Array.isArray(body.creative)) return sendJson(res, 400, { error: '缺少角色蓝图' });
+      const requestedProvider = body.provider;
+      const activeProvider = requestedProvider && listProviders().some((provider)=>provider.id===requestedProvider&&provider.available) ? requestedProvider : providerStatus().active;
+      if (requestedProvider && activeProvider !== requestedProvider) return sendJson(res, 400, { error:'所选生图模型不可用' });
+      const creative = body.creative;
+      const prompt = buildPrompt({ styleId:'avatar', purpose:'figurine', creative, locale:promptLocaleFor(activeProvider), extra:describeFigurineSelection(creative) });
+      const promptWarnings = creative.lifeform === 'original-creature' ? ['当前已配置 provider 均按参考照片进行图生图，原创非人形模式尚未开放。'] : [];
+      return sendJson(res, 200, { prompt, provider:activeProvider, promptWarnings });
+    }
+
     if (req.method === 'POST' && pathname === '/api/generate') {
       const body = await readJsonBody(req);
       if (!body.image || typeof body.image !== 'string') {
@@ -327,6 +342,12 @@ const server = http.createServer(async (req, res) => {
       const job = getJob(id);
       if (!job) return sendJson(res, 404, { error: '任务不存在或已过期' });
       return sendJson(res, 200, job);
+    }
+
+    if (req.method === 'DELETE' && pathname.startsWith('/api/jobs/')) {
+      const id = pathname.slice('/api/jobs/'.length);
+      const cancelled = cancelJob(id);
+      return sendJson(res, cancelled ? 200 : 409, { cancelled });
     }
 
     if (req.method === 'GET' && pathname.startsWith('/data/results/')) {

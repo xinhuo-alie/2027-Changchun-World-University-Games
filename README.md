@@ -30,7 +30,9 @@ ARK_MODEL=doubao-seedream-5-0-flash-260915,doubao-seedream-5-0-pro-260628
 
 首页有「创建我的冰雪分身」和「直接试玩」两条入口。直接试玩使用浏览器本地绘制的预设角色，翻开手册并进入地图；不会上传照片、调用 `/api/generate` 或使用生图密钥。创建角色则可继续上传或拍摄照片，并使用本机配置的图像生成渠道。
 
-核心路线是：创建或选择角色 → 抵达一个地点 → 阅读地点手记 → 挑战小游戏并收集奖章。场馆或景点只有在角色抵达后才计入本地探索和服务器虚拟到达统计；重复游览不重复增加探索地点数。
+手册漫游会为你准备一条 1 小时、最多 5 站的推荐短线；地图章节可直接点击「开始本次旅程」。地点手记里用「下一页」直接出发到下一站，不必每站返回地图；「地图书签」随时展开全景地图。目录可预览本次路线和全部 16 个地点；预览与刷新只保存阅读位置，不触发到达统计。路线最后一站可翻到旅行纪念页，再继续自由探索。熟悉地图的用户仍可直接点地标游览。
+
+创建或选择角色 → 开始本次旅程 → 连续阅读地点手记 → 挑战小游戏并收集奖章。只有真实到达流程完成后，才计入本地探索和服务器虚拟到达统计；重复游览不重复增加探索地点数，但仍遵守原有到达事件统计规则。阅读位置单独保存在 `cc2027:book-session:v1`，不会覆盖 `cc2027:progress:v2`。
 
 地点手记的照片图集支持左右箭头、触屏左右划动、全屏查看，以及图集下方的滑动定位栏。`data/place-gallery.json` 对应 `web/assets/places/` 中的 WebP 照片；用 `node tools/import-place-gallery.mjs <图集 output 目录>` 可重新导入全部照片，再用 `python tools/optimize-place-gallery.py --apply` 压缩图片并更新引用。压缩脚本需要 Pillow；它只清理仓库内重新导入的 JPEG/PNG 副本，原始图集目录不受影响。图集中保留来源及授权状态，原索引标为 `permission-required` 的照片显示“授权待核”。原始索引的 `reviewed`、`photoCaptionVerified` 和 `publishApproved` 均为 false；公开发布前仍须逐张核对照片内容、署名和许可。
 
@@ -50,11 +52,13 @@ ARK_MODEL=doubao-seedream-5-0-flash-260915,doubao-seedream-5-0-pro-260628
 
 照片只会在用户主动生成角色时发送给所选图像服务；直接试玩完全离线绘制预设角色。图片生成使用豆包 Seedream。生成失败时不会自动切换模型再次扣费。无需密钥时仍可直接试玩，也可用本地模拟提供商检查生成流程。
 
-## 冰雪角色造型工坊
+## 角色造型工坊
 
-角色生成页提供 12 种艺术风格、12 种主题、14 类冰雪运动、12 种场景光色氛围、14 套服装，以及发型、头饰、配饰、表情、动作、配色、材质、特效和构图选项。八个造型预设、随机搭配和运动项目推荐会更新同一份配置；配饰最多 3 项，特效最多 2 项，自定义细节最多 240 字。选项保存在原有 `cc2027:creative` 键中，旧版 `vibe/sport/scene/details` 数据会自动兼容。
+角色生成页提供 27 种画风、34 种主题和 15 类角色 / 运动类型。工坊把主要选择收敛为画风、主题、角色类型和服装；配色、最多两件随身小物和一条自定义创意放在可选微调中，随机搭配只增加少量细节。主题包含奇幻冒险、赛博侦探、虚拟主播、都市怪谈、魔法少女、街机赛车等非冰雪方向。保留照片中本人的面部身份与所选性别。选项保存在 `cc2027:creative` 键中，旧版数据会自动兼容。
 
-当前生成流程依靠纯色抠图幕提取完整人物，所以“场景”控制角色环境光与色彩氛围，生成图背景仍为纯色幕；页面会明确说明这一限制，避免把未渲染的背景场景当作预览效果。角色身份保持、照片编辑、直接试玩和现有生图 API 契约均沿用原流程。
+当前生成流程依靠纯色抠图幕提取完整人物。提示词集中表达画风、主题、角色类型、服装和配色，减少互相冲突的发型、材质、场景、特效与构图指令。角色身份保持、照片编辑、直接试玩和现有生图 API 契约均沿用原流程。
+
+正式生成角色时仍有 5% 基础概率遇见隐藏款；十款角色分为 Rare、Epic、Legendary，传说款在隐藏池中的抽取权重更低。「我的冰雪护照」内可打开雪域隐藏款收藏馆，查看 10 款档案、未知剪影、解锁进度、称号、成就、首次发现时间和灵感号。新发现会显示 NEW，点开档案后清除。旧版收藏继续保存在 `cc2027:secret-collection:v1`，不属于新十款的历史作品会显示在旧版图鉴区域。
 
 ## 场馆小游戏
 
@@ -81,12 +85,14 @@ ARK_MODEL=doubao-seedream-5-0-flash-260915,doubao-seedream-5-0-pro-260628
 ```powershell
 node tools/test-avatar.js
 node tools/test-creative.js
+node tools/test-secret-gallery.js
 node tools/test-games.js
 node tools/test-bonus-games.js
 node tools/test-stage6-games.js
 node tools/test-leaderboards.js
 node tools/test-progress.js
 node tools/test-itinerary.js
+node tools/test-book-navigation.js
 node tools/test-quests.js
 node tools/test-visits.js
 node tools/test-visits-http.js

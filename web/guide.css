@@ -101,9 +101,89 @@ body[data-book="map"] #mapSidebarInfo .journey-continue button { min-height:30px
 .secret-reveal img { display:block; width:min(100%,260px); height:260px; margin:0 auto 12px; border-radius:12px 4px 12px 4px; background:#e9f4ef; object-fit:contain; }
 .secret-reveal h2 { margin:6px 0; font-size:22px; }
 .secret-reveal p { color:#657b76; font-size:13px; line-height:1.7; }
+.secret-reveal .secret-reveal-milestone { margin:8px 0; padding:9px 11px; border:1px solid #c6d9bc; border-radius:9px 3px 9px 3px; color:#2d7068; background:#eef7e8; font-size:11px; font-weight:850; }
 .secret-reveal-actions { display:flex; justify-content:center; flex-wrap:wrap; gap:8px; margin-top:15px; }
 .secret-reveal-actions button { min-height:40px; padding:8px 14px; border:1px solid #b9cfc4; border-radius:999px; color:#285664; background:#fffdf5; cursor:pointer; }
 .secret-reveal-actions button:first-child { border-color:#286574; color:#fffaf0; background:#286574; }
+.secret-reveal-rarity { display:inline-flex; margin:0 auto 5px; padding:5px 9px; border:1px solid #9fc9d0; border-radius:999px; color:#286f82; background:#eaf8f8; font-size:10px; font-weight:900; letter-spacing:.12em; }
+.secret-reveal.rarity-epic { border-color:#9a81cf; background:radial-gradient(ellipse at 50% 0,#f0e9ff,#fffaf0 72%); box-shadow:0 0 0 4px #8d73c022,0 24px 80px #102d3e66; }
+.secret-reveal.rarity-legendary { width:min(520px,calc(100vw - 24px)); border:2px solid #d5ae56; background:radial-gradient(ellipse at 50% 0,#fff0b8,#fff8e5 45%,#f8edcf); box-shadow:0 0 0 5px #efcc6650,0 0 70px #f6ce6e77,0 24px 80px #102d3e88; animation:secret-legendary-arrive .75s cubic-bezier(.16,.85,.32,1.2) both; }
+.secret-reveal.rarity-legendary .secret-reveal-rarity { border-color:#c49b3b; color:#765316; background:linear-gradient(110deg,#fff2b9,#f5d36a,#fff5c7); }
+.secret-reveal.rarity-legendary h2 { color:#765316; text-shadow:0 1px #fff; }
+.secret-reveal.rarity-legendary .secret-reveal-milestone { border-color:#e0c36b; color:#795c1c; background:#fff3ca; }
+.guide-secret-collection { position:relative; isolation:isolate; overflow:hidden; margin:16px 0; padding:clamp(14px,2.3vw,24px); border:1px solid #9eb9b1; border-radius:18px 5px 18px 5px; color:#234e5a; background:radial-gradient(ellipse at 8% 4%,#e9f5ed 0,transparent 36%),linear-gradient(145deg,#fffdf6,#f0f2e8 54%,#e9f2ef); box-shadow:inset 0 0 0 4px #fff9,0 12px 32px #426c5718; }
+.guide-secret-collection::before { position:absolute; z-index:-1; inset:0; pointer-events:none; content:""; opacity:.32; background-image:radial-gradient(circle at 13% 27%,#fff 0 1px,transparent 2px),radial-gradient(circle at 78% 18%,#9acac2 0 1px,transparent 2px),radial-gradient(circle at 88% 76%,#f1cf83 0 1px,transparent 2px); background-size:82px 79px,113px 101px,131px 117px; }
+.secret-gallery-hero { display:flex; align-items:center; justify-content:space-between; gap:18px; padding:4px 3px 18px; border-bottom:1px solid #d3ded1; }
+.secret-gallery-heading { min-width:0; }
+.secret-gallery-kicker { display:block; color:#bb8052; font-size:9px; font-weight:950; letter-spacing:.18em; }
+.secret-gallery-heading h2 { margin:5px 0 5px; color:#1d4e60; font-size:clamp(22px,4vw,33px); line-height:1.2; }
+.secret-gallery-heading p { margin:0; color:#657d78; font-size:12px; line-height:1.6; }
+.secret-gallery-latest { display:inline-block; margin-top:8px; color:#a16a43; font-size:10px; font-weight:800; }
+.secret-gallery-score { display:grid; flex:0 0 auto; justify-items:center; gap:4px; min-width:98px; }
+.secret-gallery-score > b { color:#2f6b6d; font-size:11px; }
+.secret-gallery-score > small { color:#7e8d7f; font-size:9px; }
+.secret-gallery-ring { display:grid; width:82px; aspect-ratio:1; place-items:center; border-radius:50%; background:conic-gradient(#6aa9a1 var(--secret-progress),#dce7d9 var(--secret-progress)); position:relative; animation:secret-progress-in .85s ease both; }
+.secret-gallery-ring::before { position:absolute; inset:6px; border-radius:50%; background:#fbfaf0; content:""; }
+.secret-gallery-ring strong { position:relative; color:#245c68; font-size:18px; }
+.secret-gallery-ring strong::first-line { font-size:22px; }
+.secret-gallery-tips { display:flex; flex-wrap:wrap; gap:4px 20px; margin:11px 0 14px; padding:10px 12px; border:1px solid #dce5d6; border-radius:10px 3px 10px 3px; background:#f8f8edbb; }
+.secret-gallery-tips p { margin:0; color:#70817a; font-size:10px; line-height:1.55; }
+.secret-gallery-layout { display:grid; grid-template-columns:minmax(0,1.18fr) minmax(240px,.82fr); align-items:start; gap:13px; }
+.secret-gallery-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+.secret-gallery-card { position:relative; display:grid; min-height:185px; align-content:start; padding:8px; text-align:left; cursor:pointer; transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease; }
+.secret-gallery-card:hover,.secret-gallery-card:focus-visible { z-index:1; transform:translateY(-3px); border-color:#77a9a4; box-shadow:0 8px 20px #345a5828,0 0 0 2px #a4d6cf55; }
+.secret-gallery-card.is-selected { border-color:#327b82; box-shadow:inset 0 0 0 1px #327b82,0 6px 18px #345a581e; }
+.secret-gallery-card.is-latest::after { position:absolute; inset:4px; border:1px solid #e7be70; border-radius:8px 3px 8px 3px; content:""; pointer-events:none; }
+.secret-gallery-card.rarity-rare { border-color:#bfd8d2; background:linear-gradient(145deg,#f9ffff,#edf6ee); }
+.secret-gallery-card.rarity-epic { border-color:#c9b9e4; background:linear-gradient(145deg,#fffaff,#f0ebfb); }
+.secret-gallery-card.rarity-legendary { border-color:#dfc46f; background:linear-gradient(145deg,#fffbea,#fff0c7 58%,#fffaf1); }
+.secret-gallery-card-art { display:grid; width:100%; aspect-ratio:1.28; overflow:hidden; place-items:center; margin-bottom:7px; border-radius:8px 3px 8px 3px; color:#729a98; background:radial-gradient(circle at 50% 46%,#fff 0,#e6f4ef 64%,#dcebe5); }
+.secret-gallery-card-art img { width:100%; height:100%; object-fit:contain; transition:transform .25s ease; }
+.secret-gallery-card:hover .secret-gallery-card-art img { transform:scale(1.06); }
+.secret-gallery-silhouette { display:grid; width:57%; height:68%; place-items:center; border-radius:48% 48% 40% 40%; color:#fbfff9; background:linear-gradient(150deg,#7fa5a1,#4c7380); filter:drop-shadow(0 6px 8px #254d5830); font-size:30px; font-weight:900; text-shadow:0 2px 6px #234e5a88; }
+.secret-gallery-card:not(.is-selected) .secret-gallery-silhouette { opacity:.72; filter:blur(1px) drop-shadow(0 6px 8px #254d5830); }
+.secret-gallery-card-rarity { color:#6e8c89; font-size:8px; font-weight:900; letter-spacing:.12em; }
+.secret-gallery-card b { margin-top:3px; color:#265769; font-size:12px; }
+.secret-gallery-card small { display:-webkit-box; min-height:29px; overflow:hidden; margin-top:3px; color:#72827a; font-size:9px; line-height:1.5; -webkit-box-orient:vertical; -webkit-line-clamp:2; }
+.secret-gallery-new { position:absolute; z-index:2; top:7px; right:7px; padding:4px 6px; border-radius:999px; color:#fffdf5; background:#bd7047; box-shadow:0 2px 8px #67432e35; font-size:8px; font-weight:950; letter-spacing:.08em; }
+.secret-gallery-card.rarity-epic .secret-gallery-card-rarity { color:#8155a8; }
+.secret-gallery-card.rarity-legendary .secret-gallery-card-rarity { color:#98721d; }
+.secret-gallery-detail { min-height:385px; padding:13px; border:1px solid #cbd9cb; border-radius:13px 4px 13px 4px; background:linear-gradient(155deg,#fffdf7,#f2f6ed); box-shadow:inset 0 0 0 3px #fff9; }
+.secret-gallery-detail.is-legendary { border-color:#dfc46f; background:radial-gradient(ellipse at 50% 0,#fff3c8,#fffaf0 55%,#f7f1df); box-shadow:inset 0 0 0 3px #fffa,0 0 20px #d3af4930; }
+.secret-gallery-art { display:grid; width:100%; aspect-ratio:1.2; place-items:center; overflow:hidden; margin:8px 0 10px; border-radius:10px 3px 10px 3px; color:#618c8e; background:radial-gradient(circle at 50% 42%,#fff 0,#e4f2ec 68%,#d9e8e2); }
+.secret-gallery-art img { width:100%; height:100%; object-fit:contain; }
+.secret-gallery-art > span { display:grid; width:58%; height:70%; place-items:center; border-radius:50% 50% 39% 39%; color:#fffdf5; background:linear-gradient(150deg,#86aaa2,#426b7d); font-size:60px; font-weight:900; text-shadow:0 3px 12px #214b5b90; }
+.secret-gallery-detail .secret-gallery-rarity { display:inline-flex; padding:4px 7px; border:1px solid #a8cfcd; border-radius:999px; color:#327883; background:#e9f7f5; font-size:8px; font-weight:950; letter-spacing:.13em; }
+.secret-gallery-detail .rarity-epic { border-color:#c5afe0; color:#76539b; background:#f3ecfc; }
+.secret-gallery-detail .rarity-legendary { border-color:#dbc15f; color:#896719; background:linear-gradient(100deg,#fff3c1,#f6dc7e,#fff3c1); }
+.secret-gallery-detail .is-unknown { color:#80908b; background:#f1f2e8; }
+.secret-gallery-detail h3 { margin:8px 0; color:#235666; font-size:19px; }
+.secret-gallery-lore,.secret-gallery-tagline { margin:6px 0; color:#637a74; font-size:11px; line-height:1.7; }
+.secret-gallery-tagline { padding:8px 9px; border-left:2px solid #d4a56d; color:#855f46; background:#f7f3e8; }
+.secret-gallery-tags { display:flex; flex-wrap:wrap; gap:5px; margin:9px 0; }
+.secret-gallery-tags span { padding:4px 7px; border:1px solid #d4dfd3; border-radius:999px; color:#55736d; background:#f8faf1; font-size:9px; }
+.secret-gallery-record { display:block; margin-top:5px; color:#798982; font-size:9px; }
+.secret-gallery-achievements { margin-top:17px; }
+.secret-gallery-achievements h3 { margin:0 0 8px; color:#285968; font-size:14px; }
+.secret-achievement-grid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:6px; }
+.secret-achievement-grid article { display:grid; align-content:start; min-height:65px; padding:8px; border:1px solid #d9dfd2; border-radius:8px 3px 8px 3px; color:#9a9d8e; background:#f3f2e9; }
+.secret-achievement-grid article.is-earned { border-color:#9cc6b5; color:#286b67; background:linear-gradient(145deg,#edf7ea,#e4f2e9); box-shadow:inset 0 0 0 1px #fff; }
+.secret-achievement-grid b { font-size:10px; }
+.secret-achievement-grid small { margin-top:3px; font-size:8px; line-height:1.4; }
+.secret-gallery-footer { margin-top:15px; padding-top:12px; border-top:1px solid #d5dfd2; text-align:center; }
+.secret-gallery-footer p { margin:0 0 9px; color:#637a74; font-size:11px; }
+.secret-gallery-footer .guide-actions { justify-content:center; }
+.secret-gallery-footer button { min-height:36px; padding:7px 10px; font-size:10px; }
+.secret-gallery-legacy { margin-top:14px; padding-top:11px; border-top:1px dashed #c9d6ca; }
+.secret-gallery-legacy h3 { margin:0; color:#607871; font-size:12px; }
+.secret-gallery-legacy > p { margin:4px 0 8px; color:#879188; font-size:9px; }
+.secret-legacy-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:7px; }
+.secret-legacy-card { min-width:0; padding:7px; border:1px solid #d9ded2; border-radius:8px 3px 8px 3px; background:#f7f6ee; }
+.secret-legacy-card img { display:block; width:100%; height:80px; margin-bottom:5px; border-radius:5px 2px 5px 2px; background:#e9f0e9; object-fit:contain; }
+.secret-legacy-card b,.secret-legacy-card small { display:block; overflow:hidden; color:#657a72; font-size:9px; text-overflow:ellipsis; white-space:nowrap; }
+.secret-legacy-card small { margin-top:3px; color:#879188; font-size:8px; }
+@keyframes secret-progress-in { from { transform:rotate(-35deg) scale(.88); opacity:.5; } to { transform:rotate(0) scale(1); opacity:1; } }
+@keyframes secret-legendary-arrive { from { opacity:0; transform:translateY(18px) scale(.88); } to { opacity:1; transform:translateY(0) scale(1); } }
 @media(max-width:700px) {
   .journey-continue { flex-wrap:wrap; }
   .journey-continue > div { flex-basis:100%; }
@@ -112,7 +192,18 @@ body[data-book="map"] #mapSidebarInfo .journey-continue button { min-height:30px
   .guide-dialog { padding:18px 14px; }
   .guide-fields,.guide-quest-list { grid-template-columns:minmax(0,1fr); }
   .guide-passport-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .secret-gallery-hero { align-items:flex-start; }
+  .secret-gallery-score { min-width:75px; }
+  .secret-gallery-ring { width:68px; }
+  .secret-gallery-layout { grid-template-columns:minmax(0,1fr); }
+  .secret-gallery-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .secret-gallery-detail { min-height:0; }
+  .secret-gallery-art { max-height:270px; }
+  .secret-achievement-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .secret-gallery-footer .guide-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .secret-gallery-footer .guide-actions button:last-child { grid-column:1/-1; }
   .guide-stop { align-items:stretch; flex-direction:column; }
   .guide-stop-actions { max-width:none; justify-content:flex-start; }
 }
 @media(prefers-reduced-motion:reduce) { .guide-dialog::backdrop { backdrop-filter:none; } }
+@media(prefers-reduced-motion:reduce) { .secret-gallery-card,.secret-gallery-card-art img { transition:none; } .secret-gallery-ring,.secret-reveal.rarity-legendary { animation:none; } }

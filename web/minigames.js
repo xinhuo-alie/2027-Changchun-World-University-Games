@@ -84,12 +84,13 @@ export function createMinigameHost(options = {}) {
   let onlineState = null;
   let onlineSlot = 0;
   let onlineAvatar = null;
+  let onlineRequestPending = false;
   const onlineVisualDistance = [0,0];
   let onlineRaf = 0;
   const onlineForm = document.createElement('div');
   onlineForm.className = 'mg-online-room';
   onlineForm.hidden = true;
-  onlineForm.innerHTML = '<label>昵称<input data-online-name maxlength="12" value="冰雪选手" autocomplete="nickname"></label><label>房间码<input data-online-code maxlength="6" placeholder="对方提供的 6 位码"></label><div><button type="button" data-online-create>创建房间</button><button type="button" data-online-join>加入房间</button></div><p data-online-status role="status">创建房间后把房间码发给同伴。</p>';
+  onlineForm.innerHTML = '<label>昵称<input data-online-name maxlength="12" value="冰雪选手" autocomplete="nickname"></label><label>房间码<input data-online-code maxlength="6" placeholder="对方提供的 6 位码"></label><div><button type="button" data-online-create>创建房间</button><button type="button" data-online-join>加入房间</button></div><p data-online-status role="status">任一场馆均可创建 20 秒节奏 PK；房间会标在地图对应场馆。</p>';
   intro.insertBefore(onlineForm, intro.querySelector('button'));
   const onlineName=onlineForm.querySelector('[data-online-name]');
   const onlineCode=onlineForm.querySelector('[data-online-code]');
@@ -123,25 +124,51 @@ export function createMinigameHost(options = {}) {
   }
 
   async function createOnlineRoom(){
-    try{const response=await fetch('/api/online-race/rooms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'create',name:onlineName.value})});const data=await response.json();if(!response.ok)throw new Error(data.error||'创建房间失败');onlineCode.value=data.roomCode;localStorage.setItem('cc-online-race',JSON.stringify(data));connectOnlineRoom(data);onlineStatus.textContent=`房间码 ${data.roomCode} 已创建，把房间码发给同伴。`;}catch(error){onlineStatus.textContent=error.message;}
+    if(onlineRequestPending)return;onlineRequestPending=true;const button=onlineForm.querySelector('[data-online-create]');button.disabled=true;onlineForm.querySelector('[data-online-join]').disabled=true;
+    try{const response=await fetch('/api/online-race/rooms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'create',name:onlineName.value,venueId:current?.id})});const data=await response.json();if(!response.ok)throw new Error(data.error||'创建房间失败');onlineCode.value=data.roomCode;localStorage.setItem('cc-online-race',JSON.stringify(data));connectOnlineRoom(data);onlineStatus.textContent=`房间码 ${data.roomCode} 已创建，地图上会显示 PK 邀请。`;}catch(error){onlineStatus.textContent=error.message;}finally{onlineRequestPending=false;button.disabled=false;onlineForm.querySelector('[data-online-join]').disabled=false;}
   }
-  async function joinOnlineRoom(){
-    const code=onlineCode.value.trim().toUpperCase();if(!code){onlineStatus.textContent='先输入对方的房间码。';return;}
-    try{let saved={};try{saved=JSON.parse(localStorage.getItem('cc-online-race')||'{}')}catch{}const token=saved.roomCode===code?saved.playerToken:'';const response=await fetch('/api/online-race/rooms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'join',roomCode:code,name:onlineName.value,playerToken:token})});const data=await response.json();if(!response.ok)throw new Error(data.error||'加入房间失败');localStorage.setItem('cc-online-race',JSON.stringify(data));connectOnlineRoom(data);onlineStatus.textContent=`已进入房间 ${data.roomCode}，等待两位选手就绪。`;}catch(error){onlineStatus.textContent=error.message;}
+  async function joinOnlineRoom(roomCodeOverride){
+    const code=(roomCodeOverride||onlineCode.value).trim().toUpperCase();if(!code){onlineStatus.textContent='先输入对方的房间码。';return;}
+    if(onlineRequestPending)return;onlineRequestPending=true;const button=onlineForm.querySelector('[data-online-join]');button.disabled=true;onlineForm.querySelector('[data-online-create]').disabled=true;intro.querySelector('.primary').disabled=true;
+    try{onlineCode.value=code;let saved={};try{saved=JSON.parse(localStorage.getItem('cc-online-race')||'{}')}catch{}const token=saved.roomCode===code?saved.playerToken:'';const response=await fetch('/api/online-race/rooms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'join',roomCode:code,name:onlineName.value,playerToken:token})});const data=await response.json();if(!response.ok)throw new Error(data.error||'加入房间失败');localStorage.setItem('cc-online-race',JSON.stringify(data));connectOnlineRoom(data);onlineStatus.textContent=`已进入房间 ${data.roomCode}，等待两位选手就绪。`;}catch(error){onlineStatus.textContent=error.message;}finally{onlineRequestPending=false;button.disabled=false;onlineForm.querySelector('[data-online-create]').disabled=false;if(onlineSocket?.readyState!==WebSocket.OPEN)intro.querySelector('.primary').disabled=false;}
   }
   function connectOnlineRoom(room){
-    onlineSocket?.close();onlineSlot=room.slot;onlineAvatar=options.getAvatar?options.getAvatar():options.avatar;onlineVisualDistance[0]=0;onlineVisualDistance[1]=0;const protocol=location.protocol==='https:'?'wss:':'ws:';onlineSocket=new WebSocket(`${protocol}//${location.host}/api/online-race/socket?room=${encodeURIComponent(room.roomCode)}&token=${encodeURIComponent(room.playerToken)}`);
-    onlineSocket.onopen=()=>{onlineStatus.textContent=`已连接房间 ${room.roomCode}。两位选手都连接后，任一方点击“开始挑战”。`;};
-    onlineSocket.onmessage=event=>{try{onlineState=JSON.parse(event.data);if(onlineState.type==='state'){if(onlineState.phase==='running'){size=resizeCanvas();intro.hidden=true;els.result.hidden=true;els.controls.hidden=false;last=performance.now();cancelAnimationFrame(onlineRaf);onlineRaf=requestAnimationFrame(drawOnlineRace);}else if(onlineState.phase==='finished'){cancelAnimationFrame(onlineRaf);els.controls.hidden=true;els.result.hidden=false;const mine=onlineState.players[room.slot];const heading=document.createElement('strong');heading.textContent=onlineState.winner==='平局'?'平局！':onlineState.winner===mine?.name?'你赢了！':'对手领先';const score=document.createElement('span');score.className='mg-score';score.textContent=`${mine?.score||0} 分`;const detail=document.createElement('span');detail.className='mg-detail';detail.textContent=`完美节拍 ${mine?.perfect||0} 次 · 获胜者：${onlineState.winner}`;els.resultText.replaceChildren(heading,document.createElement('br'),score,detail);els.reward.textContent=`房间 ${onlineState.roomCode} · 在线对战结果由服务端结算`; }else{onlineStatus.textContent=onlineState.players.length<2?'等待第二位选手加入…':'两位选手已就绪，点击“开始挑战”开始 20 秒比赛。';if(onlineState.players.length===2)intro.querySelector('.primary').textContent='开始 20 秒对战 →';}}
-      }catch{}};
-    onlineSocket.onclose=()=>{if(root.hidden)return;onlineStatus.textContent='连接中断。重新输入房间码并加入，可在 30 秒内恢复连接。';};
-    onlineSocket.onerror=()=>{onlineStatus.textContent='无法连接联机服务，请确认两台设备访问同一个服务器地址。';};
+    if(onlineSocket){onlineSocket.close();onlineSocket=null;}cancelAnimationFrame(onlineRaf);onlineRaf=0;onlineState=null;onlineSlot=room.slot;onlineAvatar=options.getAvatar?options.getAvatar():options.avatar;onlineVisualDistance[0]=0;onlineVisualDistance[1]=0;const protocol=location.protocol==='https:'?'wss:':'ws:';const socket=new WebSocket(`${protocol}//${location.host}/api/online-race/socket?room=${encodeURIComponent(room.roomCode)}&token=${encodeURIComponent(room.playerToken)}`);onlineSocket=socket;
+    socket.onopen=()=>{if(onlineSocket!==socket)return;onlineStatus.textContent=`已连接房间 ${room.roomCode}。两位选手都连接后，任一方点击“开始挑战”。`;};
+    socket.onmessage=event=>{if(onlineSocket!==socket)return;try{
+      const next=JSON.parse(event.data);if(next.type!=='state')return;onlineState=next;
+      if(next.phase==='running'){
+        size=resizeCanvas();intro.hidden=true;els.result.hidden=true;els.controls.hidden=false;updateOnlineControls();
+        els.canvas.focus({preventScroll:true});
+        if(!onlineRaf){last=performance.now();onlineRaf=requestAnimationFrame(drawOnlineRace);}
+      }else if(next.phase==='finished'){
+        cancelAnimationFrame(onlineRaf);onlineRaf=0;intro.hidden=true;els.controls.hidden=true;els.result.hidden=false;
+        const mine=next.players.find(player=>player.slot===onlineSlot);const opponent=next.players.find(player=>player.slot!==onlineSlot);
+        const heading=document.createElement('strong');heading.textContent=next.winnerSlot===null?'平局！':next.winnerSlot===onlineSlot?'你赢了！':'对手获胜';
+        const score=document.createElement('span');score.className='mg-score';score.textContent=`你的成绩 ${mine?.score??0} 分`;
+        const winnerText=next.winnerSlot===null?'平局':next.winnerSlot===onlineSlot?`你（${mine?.name||'冰雪选手'}）`:`对手（${opponent?.name||'冰雪选手'}）`;
+        const detail=document.createElement('span');detail.className='mg-detail';detail.textContent=`完美节拍 ${mine?.perfect??0} 次 · 对手 ${opponent?.score??0} 分 · 获胜者：${winnerText}`;
+        els.resultText.replaceChildren(heading,document.createElement('br'),score,detail);
+        els.reward.textContent=`房间 ${next.roomCode} · 在线对战结果由服务端结算`;
+        els.again.disabled=false;
+        els.again.textContent=mine?.rematchRequested?'等待对手同意 · 点击取消等待':'再来一次（双方同意后开新局）';
+      }else{
+        cancelAnimationFrame(onlineRaf);onlineRaf=0;intro.hidden=false;els.result.hidden=true;els.controls.hidden=true;els.again.disabled=false;els.again.textContent='再来一次';
+        const connected=next.players.filter(player=>player.connected).length;
+        onlineStatus.textContent=next.players.length<2?'等待第二位选手加入…':connected<2?'等待对手重新连接…':'两位选手已就绪，点击“开始挑战”开始 20 秒比赛。';
+        intro.querySelector('.primary').textContent=next.players.length===2?'开始 20 秒对战 →':'等待对手加入…';
+        intro.querySelector('.primary').disabled=next.players.length!==2||connected!==2;
+      }
+    }catch{}};
+    socket.onclose=()=>{if(onlineSocket!==socket||root.hidden)return;onlineStatus.textContent='连接中断。点击“重新连接”可在 30 秒内恢复本局。';if(onlineState?.phase==='running'){cancelAnimationFrame(onlineRaf);onlineRaf=0;els.controls.hidden=true;intro.hidden=false;els.result.hidden=true;const reconnect=intro.querySelector('.primary');reconnect.textContent='重新连接房间 →';reconnect.disabled=false;}};
+    socket.onerror=()=>{if(onlineSocket===socket)onlineStatus.textContent='无法连接联机服务，请确认两台设备访问同一个服务器地址。';};
   }
-  function sendOnlineAction(action){if(onlineSocket?.readyState===WebSocket.OPEN&&onlineState?.phase==='running')onlineSocket.send(JSON.stringify({type:'action',action}));}
+  function updateOnlineControls(){if(els.left)els.left.textContent='左脚 A / ←';if(els.right)els.right.textContent='右脚 D / →';if(els.primary){els.primary.textContent='短冲刺 空格';els.primary.hidden=false;}if(els.center)els.center.hidden=true;if(pauseButton)pauseButton.hidden=true;}
+  function sendOnlineAction(action){if(onlineSocket?.readyState===WebSocket.OPEN&&onlineState?.phase==='running'&&['left','right','boost'].includes(action)){onlineSocket.send(JSON.stringify({type:'action',action}));}}
   function drawOnlineSkater(c,x,bottom,height){const width=height*.72;c.save();c.translate(x,bottom);c.fillStyle='rgba(42,83,112,.2)';c.beginPath();c.ellipse(0,2,width*.48,height*.055,0,0,Math.PI*2);c.fill();c.lineCap='round';c.lineJoin='round';c.strokeStyle='#fff';c.lineWidth=3;c.fillStyle='#ed7868';c.beginPath();c.roundRect(-width*.19,-height*.69,width*.38,height*.43,width*.12);c.fill();c.stroke();c.fillStyle='#f4d6bd';c.beginPath();c.arc(0,-height*.79,height*.13,0,Math.PI*2);c.fill();c.stroke();c.fillStyle='#28516a';c.beginPath();c.arc(0,-height*.83,height*.145,Math.PI,Math.PI*2);c.fill();c.strokeStyle='#324e67';c.lineWidth=4;c.beginPath();c.moveTo(-width*.07,-height*.28);c.lineTo(-width*.18,-height*.08);c.moveTo(width*.07,-height*.28);c.lineTo(width*.18,-height*.08);c.stroke();c.strokeStyle='#5d8295';c.lineWidth=2;c.beginPath();c.moveTo(-width*.32,-height*.035);c.lineTo(width*.32,-height*.035);c.moveTo(-width*.28,0);c.lineTo(width*.28,0);c.stroke();c.restore();}
   function drawOnlineRace(now){
-    if(root.hidden||!onlineState||onlineState.phase!=='running')return;const dt=Math.min((now-last)/1000,.05);last=now;const w=size.w,h=size.h;ctx.clearRect(0,0,w,h);const grad=ctx.createLinearGradient(0,0,0,h);grad.addColorStop(0,'#bde8fa');grad.addColorStop(1,'#f8fdff');ctx.fillStyle=grad;ctx.fillRect(0,0,w,h);
-    ctx.fillStyle='#fff';ctx.font='800 18px system-ui';ctx.textAlign='center';ctx.fillText(`弯道超越战 · ${Math.ceil((onlineState.remainingMs||0)/1000)} 秒`,w/2,31);
+    onlineRaf=0;if(root.hidden||!onlineState||onlineState.phase!=='running')return;const dt=Math.min((now-last)/1000,.05);last=now;const w=size.w,h=size.h;ctx.clearRect(0,0,w,h);const grad=ctx.createLinearGradient(0,0,0,h);grad.addColorStop(0,'#bde8fa');grad.addColorStop(1,'#f8fdff');ctx.fillStyle=grad;ctx.fillRect(0,0,w,h);
+    ctx.fillStyle='#fff';ctx.font='800 18px system-ui';ctx.textAlign='center';ctx.fillText(`${current?.name||'场馆'} · 节奏 PK · ${Math.ceil((onlineState.remainingMs||0)/1000)} 秒`,w/2,31);
     const elapsed=20-(onlineState.remainingMs||0)/1000;const beat=(elapsed%0.76)/0.76;ctx.beginPath();ctx.arc(w/2,h*.34,22+beat*12,0,Math.PI*2);ctx.strokeStyle=beat<.28||beat>.72?'#f4c85b':'#ffffffb0';ctx.lineWidth=4;ctx.stroke();ctx.fillStyle='#355c76';ctx.font='700 11px system-ui';ctx.fillText(beat<.28||beat>.72?'现在踩拍！':'左右交替踩拍',w/2,h*.34);
     for(const player of onlineState.players){const y=h*(player.slot===0 ? .53 : .82),left=28,right=w-28;onlineVisualDistance[player.slot]+=(player.distance-onlineVisualDistance[player.slot])*Math.min(1,dt*12);const x=left+onlineVisualDistance[player.slot]*(right-left);ctx.strokeStyle='#ffffffc9';ctx.lineWidth=14;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(right,y);ctx.stroke();ctx.strokeStyle='#82b9d6';ctx.lineWidth=2;ctx.setLineDash([7,7]);ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(right,y);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#34536a';ctx.font='700 12px system-ui';ctx.textAlign='left';ctx.fillText(player.name+(player.slot===onlineSlot?'（你）':''),left,y-19);if(player.slot===onlineSlot&&onlineAvatar){const height=Math.max(84,Math.min(112,h*.26));drawCharacter(ctx,onlineAvatar,{x:x-height*.39,y:y-height*.86,w:height*.78,h:height},{t:now/1000,moving:true,ski:true,shadow:false});}else if(!drawGameAsset(ctx,'speed-skater-red',x-31,y-85,62,82))drawOnlineSkater(ctx,x,y+1,82);ctx.fillStyle='#2a7792';ctx.beginPath();ctx.arc(x,y,5,0,Math.PI*2);ctx.fill();}
     ctx.textAlign='center';ctx.fillStyle='#33526e';ctx.font='700 12px system-ui';ctx.fillText('← / A 左脚　　右脚 D / →　　空格短冲刺',w/2,h-15);onlineRaf=requestAnimationFrame(drawOnlineRace);
@@ -149,11 +176,17 @@ export function createMinigameHost(options = {}) {
 
   function resizeCanvas() {
     const rect = els.canvas.getBoundingClientRect();
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    els.canvas.width = Math.max(1, rect.width * dpr);
-    els.canvas.height = Math.max(1, rect.height * dpr);
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    return { w: rect.width, h: rect.height };
+    const width = els.canvas.clientWidth;
+    const height = els.canvas.clientHeight;
+    const dpr = Math.min(window.devicePixelRatio || 1, 3);
+    if (!width || !height) return { w: rect.width, h: rect.height };
+    const pixelWidth = Math.round(width * dpr), pixelHeight = Math.round(height * dpr);
+    if (els.canvas.width !== pixelWidth || els.canvas.height !== pixelHeight) {
+      els.canvas.width = pixelWidth;
+      els.canvas.height = pixelHeight;
+    }
+    ctx.setTransform(pixelWidth / width, 0, 0, pixelHeight / height, 0, 0);
+    return { w: width, h: height };
   }
 
   function tick(now) {
@@ -162,6 +195,7 @@ export function createMinigameHost(options = {}) {
     last = now;
     engine.update(dt);
     if(current?.id==='olympic')els.primary.textContent=engine.getRole?.()==='defend'?'扑中 S':'射门';
+    if(current?.game?.engine==='jump') els.primary.textContent=engine.getState?.().actionLabel || '起跳';
     engine.draw(ctx, size.w, size.h);
     if (!engine.done) raf = requestAnimationFrame(tick);
   }
@@ -180,15 +214,15 @@ export function createMinigameHost(options = {}) {
       els.left.textContent = '左脚踩拍';
       els.right.textContent = '右脚踩拍';
     } else if (kind === 'dodge') {
-      els.hint.textContent = '左右切换雪道，点冲刺消耗能量（键盘 ← → / 空格）';
+      els.hint.textContent = params.venueId==='sculpture' ? '左右切换雪道，靠近金色灵感章后按拾取（空格），同时避开雪堆。' : params.venueId==='songhuahu' ? '在双雪道切换穿过旗门；连续三门补充能量，空格冲刺。' : params.venueId==='beidahu' ? '追逐旗门并避开雪堆；左侧冒险线旗门得 5 分，空格冲刺。' : '左右切换雪道，点冲刺消耗能量（键盘 ← → / 空格）';
       els.left.textContent = '← 左刃';
       els.right.textContent = '右刃 →';
-      els.primary.textContent = '短冲刺';
+      els.primary.textContent = params.venueId==='sculpture' ? '拾取灵感章' : '短冲刺';
     } else if (kind === 'jump') {
-      els.hint.textContent = '黄色区按起跳 → 空中按一次收板 → 轻点左右修正平衡 → 落地窗口按落地。每次点按修正一点；按住方向不累计。';
+      els.hint.textContent = '看顶部指针：进入金色区域时起跳；空中可按一次收板加分，轻点左右保持平衡；指针再次进入金色区域时落地。按住方向不会连续修正。';
       els.left.textContent = '重心 ←';
       els.right.textContent = '重心 →';
-      els.primary.textContent = '起跳 / 收板 / 落地';
+      els.primary.textContent = '起跳';
     } else if (kind === 'endurance') {
       els.hint.textContent = '左键降强度恢复体力，右键加力，空格短冲刺';
       els.left.textContent = '轻松滑';
@@ -230,9 +264,10 @@ export function createMinigameHost(options = {}) {
     const cfg = venue.game;
     const registered = gameForVenue(venue);
     mode = registered ? els.mode.value : 'practice';
+    if (pauseButton) pauseButton.hidden = mode === 'online-2p';
     const onlineOption=els.mode.querySelector('option[value="online-2p"]');
-    onlineOption.disabled=venue.id!=='wuhuan';
-    if(venue.id!=='wuhuan'&&mode==='online-2p'){els.mode.value='practice';mode='practice';}
+    onlineOption.disabled=!registered?.modes.includes('online-2p');
+    if(onlineOption.disabled&&mode==='online-2p'){els.mode.value='practice';mode='practice';}
     localTurn = 0; localScores = [];
     paused = false;
     gameSeed = Math.floor(Math.random() * 2147483647);
@@ -241,7 +276,7 @@ export function createMinigameHost(options = {}) {
     intro.classList.toggle('online-mode',mode==='online-2p');
     if(mode==='online-2p'){try{const saved=JSON.parse(localStorage.getItem('cc-online-race')||'{}');if(saved.roomCode&&!onlineCode.value)onlineCode.value=saved.roomCode;}catch{}}
     els.difficultyWrap.hidden = mode !== 'practice';
-    els.recordHint.textContent = mode === 'ranked-solo' ? '排名赛固定标准规则；使用标准场馆赛道' : mode === 'local-2p' ? '同一设备轮流操作，两位选手依次完成挑战' : mode==='online-2p'?'两台设备需访问同一个运行中的服务地址。每局 20 秒。':'练习成绩保存在本机，不进入公开榜';
+    els.recordHint.textContent = mode === 'ranked-solo' ? '排名赛固定标准规则；使用标准场馆赛道' : mode === 'local-2p' ? '同一设备轮流操作，两位选手依次完成挑战' : mode==='online-2p'?'所有小游戏场馆均可联机；两台设备访问同一服务地址，每局 20 秒节奏 PK。':'练习成绩保存在本机，不进入公开榜';
     if (!cfg) return;
     els.title.textContent = registered?.title || cfg.title;
     els.sub.textContent = cfg.subtitle;
@@ -254,7 +289,7 @@ export function createMinigameHost(options = {}) {
     intro.querySelector('strong').textContent = registered?.title || cfg.title;
     const goalKey = cfg.engine === 'aim' && cfg.params?.mode === 'hockey' ? 'hockey'
       : cfg.engine === 'aim' ? 'curling' : cfg.engine;
-    intro.querySelector('p').textContent = goals[goalKey] || cfg.subtitle;
+    intro.querySelector('p').textContent = mode==='online-2p'?'联机规则：左右交替踩拍，踩准节奏可加速；空格短冲刺。房间创建后，其他体验者可从地图上的 PK 标志加入。':cfg.engine==='dodge' ? els.hint.textContent : goals[goalKey] || cfg.subtitle;
     intro.hidden = false;
     const startButton = intro.querySelector('.primary');
     startButton.disabled = false;
@@ -400,7 +435,8 @@ export function createMinigameHost(options = {}) {
       };
     forceTimer=setTimeout(()=>{
       if(!engine||engine.done)return;
-      if(['rhythm','dodge','endurance'].includes(cfg.engine))engine.update(.05);
+      if(cfg.engine==='dodge' && engine.finishRound) engine.finishRound();
+      else if(['rhythm','endurance'].includes(cfg.engine))engine.update(.05);
       if(engine&&!engine.done){
         const state=engine.getState?.()||{};
         const score=Number(state.score??state.distance??state.goals??state.saves??state.goalsFor)||0;
@@ -447,10 +483,13 @@ export function createMinigameHost(options = {}) {
     s: 'center',
     p: 'pause',
     ' ': 'primary',
-    enter: 'primary',
   };
-  window.addEventListener('keydown', (event) => {
+  root.setAttribute('tabindex','-1');
+  els.canvas.setAttribute('tabindex','0');
+  document.addEventListener('keydown', (event) => {
     if (root.hidden) return;
+    const target = event.target;
+    if (target instanceof HTMLElement && target.closest('input,select,textarea,[contenteditable="true"]')) return;
     if (event.key === 'Tab') {
       const focusable = [...root.querySelectorAll('button:not(:disabled), [href], [tabindex]:not([tabindex="-1"])')]
         .filter((element) => !element.hidden && element.getClientRects().length > 0);
@@ -462,19 +501,22 @@ export function createMinigameHost(options = {}) {
       return;
     }
     const act = keyMap[event.key.toLowerCase()];
-    if (act === 'pause') { if(!root.hidden)pauseButton.click(); return; }
+    if (act === 'pause') { if(!root.hidden)pauseButton.click(); event.preventDefault();event.stopImmediatePropagation();return; }
     if (act) {
+      if (act === 'primary' && target instanceof HTMLButtonElement && target.getClientRects().length) return;
       if (event.repeat && current?.game?.engine === 'jump' && ['left', 'right'].includes(act)) return;
       event.preventDefault();
+      event.stopImmediatePropagation();
       if(mode==='online-2p')sendOnlineAction(act==='primary'?'boost':act);else if (engine) engine.onAction(act === 'primary' && (current?.game?.engine === 'goalie' || (current?.id === 'olympic' && engine.getRole?.() === 'defend')) ? 'center' : act);
     }
-    if (event.key === 'Escape') stop();
-  });
+    if (event.key === 'Escape') { event.preventDefault();event.stopImmediatePropagation();stop(); }
+  }, true);
 
   els.close.addEventListener('click', stop);
   els.exit.addEventListener('click', stop);
   els.again.addEventListener('click', () => {
     if (current && mode === 'local-2p' && localTurn === 1) { els.again.textContent='再来一次'; els.result.hidden=true; beginRound(current); }
+    else if (mode === 'online-2p' && onlineState?.phase === 'finished') { if(onlineSocket?.readyState===WebSocket.OPEN){const mine=onlineState.players.find(player=>player.slot===onlineSlot);onlineSocket.send(JSON.stringify({type:mine?.rematchRequested?'cancel-rematch':'rematch'}));}else void joinOnlineRoom(onlineState.roomCode); }
     else if (current) start(current);
   });
 
@@ -487,6 +529,16 @@ export function createMinigameHost(options = {}) {
   window.addEventListener('resize', () => {
     if (!root.hidden) size = resizeCanvas();
   });
+  if (typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(() => { if (!root.hidden) size = resizeCanvas(); }).observe(els.canvas);
+  }
 
-  return { start, stop, isOpen: () => !root.hidden };
+  function openOnlineRoom(venue, roomCode) {
+    els.mode.value = 'online-2p';
+    els.mode.dispatchEvent(new Event('change'));
+    start(venue);
+    void joinOnlineRoom(roomCode);
+  }
+
+  return { start, stop, isOpen: () => !root.hidden, joinOnlineRoom, openOnlineRoom };
 }

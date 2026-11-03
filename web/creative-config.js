@@ -1,7 +1,27 @@
 const option = (id, label, description, prompt) => ({ id, label, description, prompt });
 
 export const CREATIVE_GROUPS = {
+  world: [
+    option('gravity-orbit','失重星球','悬浮环、反重力饰件','失重星球世界：服装与外部饰件呈现悬浮环、反重力结构和漂浮光核。'),
+    option('dream-fracture','梦境缝隙','错位空间、流动光带','梦境缝隙世界：服装剪裁带有错位空间感、梦境碎片和柔和流动光带。'),
+    option('mechanical-garden','机械生命花园','金属花枝、精密装饰','机械生命花园世界：采用原创金属花枝、机械花蕊和精密外部装饰。'),
+    option('crystal-life','水晶生命体','折射纹理、晶体结构','水晶生命世界：服装与外部装饰呈现晶体结构和克制折射纹理。'),
+    option('paper-dimension','纸片异次元','折面披风、纸艺结构','纸片异次元世界：使用层叠折面披风、几何纸艺和清晰折纸结构。'),
+    option('liquid-shape','液态幻形界','流动纹理、柔性轮廓','液态幻形世界：服装呈柔性轮廓与流动金属纹理，不改变真人面部。'),
+    option('ancient-ecosystem','远古幻想生态','自然材质、原创图腾','远古幻想生态世界：使用原创图腾、自然材质和服装上的奇幻鳍角装饰。'),
+    option('nebula-weave','星云织梦国','星云织物、宇宙渐变','星云织梦世界：服装采用星云织物、星光发饰和细腻宇宙渐变。'),
+    option('time-inversion','倒置时间领域','时间环、悬浮刻度','倒置时间世界：加入服装外侧时间环、悬浮刻度和克制逆向粒子纹样。'),
+    option('shadow-theatre','影子魔法剧场','双层剪影、光影符号','影子魔法剧场世界：采用双层披风剪影、原创光影符号和清楚轮廓。'),
+    option('microcosm','微观幻境','几何晶格、微观纹理','微观幻境世界：服装局部采用精细几何晶格和微观纹理。'),
+    option('oddity-park','万象怪物乐园','奇趣服饰、萌系装饰','万象怪物乐园世界：服饰采用奇趣轮廓和萌系超现实装饰，真人面部仍保持自然。'),
+  ],
+  lifeform: [option('human-fantasy','人形幻想','真人幻想化，保留自然人形','真人幻想化的人形角色，保持自然人体结构。'), option('original-creature','原创生命','需图生图服务提供支持','原创非人形生命体。')],
   style: [
+    option('portrait-photo','电影人像写实','真实摄影、自然肌理','电影人像摄影：真实人物皮肤纹理与自然人体比例，真实镜头的光影和摄影质感；不是3D动画、手办或插画。'),
+    option('oil-paint','古典油画','厚涂笔触、画布肌理','古典油画肖像：可见画布肌理、厚实油彩与层叠笔触，真实绘画而不是3D渲染。'),
+    option('woodblock','木版画','刀刻纹理、平面套色','原创木版画：明显刀刻纹理、粗细变化的刻线、有限套色与纸面印刷感，不做立体渲染。'),
+    option('comic-pop','美式漫画','粗墨线、网点与大胆色块','美式漫画角色插画：有力粗墨线、半色调网点、鲜明色块和图形化阴影，二维印刷质感而非三维模型。'),
+    option('pencil-sketch','铅笔素描','石墨排线、手绘纸感','石墨铅笔素描：单色铅笔线条、交叉排线与纸面肌理，完整手绘人物，不做彩色3D渲染。'),
     option('toy3d','3D 潮玩盲盒','圆润立体、收藏摆件质感','高品质三维潮玩盲盒渲染，雕塑感圆润轮廓，细腻体积光和收藏级产品细节。'),
     option('plush','软萌毛绒玩偶','蓬松短绒、柔软可抱','软萌毛绒玩偶风，短绒纤维清晰柔软，缝线克制，身体轮廓像精心制作的布偶。'),
     option('anime','日系动漫','清爽线稿、赛璐璐上色','日系动画插画，干净线稿、赛璐璐分层阴影、清晰眼神高光和成束发丝。'),
@@ -11,12 +31,11 @@ export const CREATIVE_GROUPS = {
     option('brick','乐高积木风','几何积木、拼搭结构','积木玩具风格，以清楚的几何拼搭结构表现人物和服装，避免散落零件。'),
     option('pixel','像素复古风','规整像素、复古游戏色板','复古像素艺术，边缘采用统一像素网格，色板精简且人物轮廓清楚。'),
     option('watercolor','水彩绘本','纸面水彩、柔和晕染','儿童绘本水彩插画，纸张颗粒和透明水彩层次柔和，人物边缘仍清晰。'),
-    option('cyber-ice','赛博冰雪风','冷色霓虹、未来装备','冰雪赛博朋克角色设计，冰青与紫色霓虹细节克制，装备结构清晰。'),
+    option('cyber-ice','赛博朋克','霓虹街区、未来机能装','赛博朋克角色视觉，霓虹青、洋红与深色形成鲜明撞色，机能剪裁与电子细节清楚，不默认加入冰雪元素。'),
     option('candy-gel','糖果胶质感','透亮软胶、糖果高光','半透明糖果胶玩具质感，圆润透光高光，颜色清亮但不过曝。'),
     option('resin','写实收藏级手办','精工树脂、产品摄影','高精度收藏级树脂手办，真实精工表面和细致服装结构，采用产品摄影质感。'),
     option('guochao','新国风动画','水墨线条、现代国潮配色','原创新国风动画插画，利落水墨线条、朱砂与青金配色、现代角色设计。'),
     option('hanhua','敦煌彩绘幻想','矿物色、飞天飘带与壁画纹样','敦煌壁画灵感的原创幻想插画，矿物颜料质感、飘带和莲花纹样，尊重传统服饰结构。'),
-    option('cosplay-editorial','Cosplay定妆海报','舞台妆造、戏服细节、镜头感','原创角色Cosplay定妆照风格插画，戏服层次精致，戏剧性侧光与清晰全身造型。'),
     option('fashion-doll','换装娃娃时装册','夸张配饰、潮流剪裁','收藏换装娃娃时装插画，醒目廓形、丰富面料与精心搭配的潮流单品。'),
     option('sticker-pop','立体贴纸拼贴','亮面贴纸、手帐装饰感','高完成度立体贴纸角色插画，粗白描边、亮面贴纸质感与少量手帐装饰符号。'),
     option('gacha-card','奇幻抽卡立绘','稀有卡面、华丽光效','原创奇幻收藏卡角色立绘，稀有卡面级华丽服装与聚焦人物的精致光效，不含文字边框。'),
@@ -26,9 +45,13 @@ export const CREATIVE_GROUPS = {
     option('holo-fashion','Y2K全息时装','镭射材质、千禧潮流','Y2K幻想时装插画，镭射反光面料、彩色透明配件与大胆未来剪裁。'),
     option('amigurumi','钩织小人偶','毛线针织、手作可爱','手工钩织玩偶质感，清楚可见的毛线针脚、圆润比例和温暖手作细节。'),
     option('miniature-diorama','微缩模型收藏盒','微缩雕塑、精致模型感','微缩收藏模型角色渲染，精致手涂细节、模型级质感与完整清晰的人物轮廓。'),
+    option('manhwa','韩漫彩绘','清透渐层、时尚人物设计','高完成度韩漫彩色插画，流畅人物线条、通透渐层与精致时尚造型。'),
+    option('manga-ink','黑白漫画分镜','网点、速度线、墨线张力','黑白漫画墨线表现，网点阴影与有节奏的速度线突出人物，画面简洁有冲击力。'),
+    option('storybook-3d','动画电影角色','电影级灯光、鲜明表演','高完成度动画电影角色设计，表情生动、造型简洁有记忆点，电影级角色布光。'),
+    option('retro-game','复古街机像素','彩色像素、街机时代感','高精度复古街机像素角色，轮廓利落、配色大胆，像素颗粒尺寸统一。'),
   ],
   theme: [
-    option('snow','冰雪潮玩','清爽冬日与软糯冬装','冰雪潮玩主题，以保暖运动服装和冬日细节营造轻快气氛；服装颜色完全按所选主色调绘制。'),
+    option('snow','冬日潮玩','冬季运动、轻快街头穿搭','冬季运动潮玩主题，保暖服装与醒目的运动廓形；服装颜色按所选配色，不额外堆叠雪花和冰晶。'),
     option('street','街头酷玩','运动街头层搭','街头酷玩主题，运动街头层搭和大胆但协调的色块。'),
     option('sweet','甜梦收藏','糖霜粉彩与精致饰物','甜梦收藏主题，糖霜粉彩、细小精致饰物和温柔氛围。'),
     option('anime','二次元幻想','动画番剧感、角色设定鲜明','原创二次元角色主题，造型设定鲜明、色彩大胆；不模仿现有作品或角色。'),
@@ -38,27 +61,29 @@ export const CREATIVE_GROUPS = {
     option('idol','偶像舞台','闪亮演出服与星形装饰','原创偶像舞台主题，闪亮层叠演出服与星形装饰，明快自信。'),
     option('space','星际旅人','宇宙探险、未来材质','原创星际旅人主题，未来探索服与彩色宇宙徽记，轻盈而有想象力。'),
     option('retro','复古运动','经典运动图案与怀旧撞色','复古运动主题，经典运动版型、复古徽章和有节制的怀旧撞色。'),
-    option('future','未来雪域','银白科技线条','未来雪域主题，银白科技装备和轻量发光细节，不遮挡脸部。'),
-    option('polar','极地探险','实用保暖、野外探索','极地探险主题，功能性保暖装备、探索工具和沉静雪原色彩。'),
-    option('fairytale','冬日童话','温暖故事感、柔和魔法','冬日童话主题，温暖故事感和少量梦幻装饰。'),
-    option('aurora-spirit','极光精灵','流动极光与轻盈幻想','极光精灵主题，青紫渐变光感和轻盈灵动的幻想细节。'),
-    option('academy','冰雪学院','整洁学院运动制服','冰雪学院主题，整洁学院制服、校队细节和清新配色。'),
-    option('guardian','冰雪守护者','可靠勇敢、冰晶徽记','冰雪守护者主题，可靠勇敢的气质和冰晶守护徽记。'),
-    option('pet','冬日萌宠','动物灵感、软萌轮廓','冬日萌宠主题，动物灵感帽兜和亲切玩偶化轮廓。'),
-    option('champion','冰雪冠军','荣耀配色与运动荣誉','冰雪冠军主题，专业运动气质、荣耀色彩和克制的冠军细节。'),
+    option('future','未来都市','机能剪裁、霓虹科技','未来都市主题，机能服装、电子配件与少量霓虹光，避免自动加入冰雪元素。'),
+    option('fairytale','奇幻童话','故事主角、魔法道具','原创奇幻童话主角，服装有鲜明轮廓，并用一件魔法道具讲出角色故事。'),
+    option('heroic-fantasy','奇幻冒险者','职业装备、史诗旅程','原创奇幻冒险角色，职业装备与随身道具清楚可辨，像游戏主线角色立绘。'),
+    option('creature-pal','奇趣生物造型','非现实物种灵感、可爱反差','角色服饰采用原创奇趣生物启发的配色和轮廓，主体仍为单一人形角色。'),
     option('hanfu-illusionist','唐风幻术师','齐胸襦裙、璎珞与流光法术','原创唐风幻术师，穿结构清晰的齐胸襦裙或圆领袍，佩戴璎珞与小型法器，华丽又轻盈。'),
-    option('cosplay-hero','原创Cosplay角色','漫展定妆、原创角色扮演','原创Cosplay角色扮演造型，可选英雄、魔法师或机甲驾驶员气质；不模仿已知作品和角色。'),
     option('dream-career','未来职业体验','把理想职业变成收藏角色','将理想职业设计成可爱的未来收藏角色，职业工具和制服一眼可辨，加入一处奇幻升级细节。'),
     option('animal-guardian','动物守护灵','动物特征、守护者披风','原创动物守护灵角色，融合一种动物的耳尾或羽翼特征与守护者服装，保持人物脸部清晰。'),
-    option('deep-sea-mail','深海邮差','水母灯、贝壳邮包','深海邮差角色，穿透明层叠潜水服，携带贝壳邮包和发光水母伙伴，梦幻而明亮。'),
+    option('deep-sea-mail','深海邮差','水母灯、贝壳邮包','深海邮差角色穿透明层叠潜水服，携带贝壳邮包，以水母灯饰点题，梦幻而明亮。'),
     option('cloud-chef','云朵甜品师','云朵厨师帽、漂浮甜点','云端甜品师角色，蓬松厨师帽、奇幻围裙和一份漂浮甜点，甜美俏皮。'),
-    option('mecha-pilot','迷你机甲驾驶员','驾驶服、机械伙伴','原创迷你机甲驾驶员，穿未来飞行服并与小型机械伙伴搭档，勇敢又可爱。'),
+    option('mecha-pilot','迷你机甲驾驶员','驾驶服、机甲装饰','原创迷你机甲驾驶员穿未来飞行服，使用轻量机甲造型装饰，勇敢又可爱。'),
     option('magical-idol','魔法偶像','演出礼服、魔法麦克风','原创魔法偶像角色，舞台演出服融合魔法师细节，手持原创星光麦克风。'),
     option('time-runner','时空快递员','时钟背包、时空旅行','原创时空快递员，穿轻便探险制服，携带奇妙时钟背包与跨时空包裹。'),
-    option('dino-pal','恐龙伙伴','恐龙连帽服、化石徽章','穿原创恐龙连帽服的冒险角色，搭配小型恐龙伙伴和化石徽章，搞怪亲切。'),
+    option('dino-pal','恐龙冒险者','恐龙连帽服、化石徽章','穿原创恐龙连帽服的冒险角色，搭配化石徽章与恐龙造型装饰，搞怪亲切。'),
     option('moon-rabbit','月宫玉兔','月桂纹样、玉兔伙伴','原创月宫玉兔幻想造型，柔软古风衣裙、月桂纹样和可爱玉兔元素，清雅灵动。'),
     option('tiny-villain','反派实习生','华丽黑斗篷、反差萌','可爱的原创反派实习生，穿戏剧化短斗篷，表情自信又有一点笨拙，气氛轻松不恐怖。'),
-    option('forest-mushroom','蘑菇森林精灵','菌菇斗篷、森林小精怪','原创蘑菇森林精灵，菌菇形斗篷、苔藓色细节与一只奇妙森林小伙伴。'),
+    option('forest-mushroom','蘑菇森林精灵','菌菇斗篷、苔藓色细节','原创蘑菇森林精灵，菌菇形斗篷和苔藓色外部装饰，亲切灵动。'),
+    option('magical-girl','魔法少女','变身礼装、专属法器','原创魔法少女主题，舞台感变身服、独特法器与清楚的专属色彩，避免常见制服模板。'),
+    option('cyber-detective','赛博侦探','长风衣、全息线索','未来侦探主题，利落长风衣、全息线索板与一件有趣的调查工具。'),
+    option('streamer','虚拟主播','直播穿搭、专属应援物','虚拟主播主题，个性化直播穿搭与原创应援小物，造型适合做成社交头像和周边。'),
+    option('vampire-royal','吸血鬼贵族','复古华服、俏皮神秘','原创吸血鬼贵族主题，戏剧化高领与丝绒层次；气质神秘优雅又带可爱反差，不恐怖。'),
+    option('potion-maker','奇幻药剂师','药水腰包、彩色瓶罐','原创奇幻药剂师主题，实用腰包挂着几瓶颜色各异的小药剂，职业感与可爱感并存。'),
+    option('urban-legend','都市怪谈主角','日常穿搭、超自然小道具','像都市怪谈漫画主角的穿搭，日常服装里藏一处超自然异象和一件关键道具，神秘但不恐怖。'),
+    option('racing-star','街机赛车手','竞速外套、夸张护目镜','街机赛车手主题，鲜明竞速夹克、夸张护目镜和一处醒目号码图形，不出现真实品牌。'),
   ],
   sport: [
     option('ski','双板滑雪','双板与雪杖','双板滑雪，双脚分别固定在两块滑雪板上，配一对雪杖。'),
@@ -96,14 +121,14 @@ export const CREATIVE_GROUPS = {
     option('ski-suit','专业滑雪服','流线拼接、防风层次','穿专业滑雪服，流线拼接、防风面料和功能口袋。'),
     option('hockey-kit','冰球运动服','球衣、护肩与护腿','穿冰球球衣和结构合理的轻量护具。'),
     option('skating-dress','花样滑冰演出服','轻纱层叠、闪点刺绣','穿花样滑冰演出服，轻盈层叠剪裁和细小冰晶刺绣。'),
-    option('academy-uniform','冰雪学院制服','学院徽章、运动制服剪裁','穿冰雪学院运动制服，整洁领口和原创学院徽章。'),
+    option('academy-uniform','学院制服','学院徽章、利落制服剪裁','穿现代学院制服，领口和原创徽章清楚，不默认添加冰雪或运动图案。'),
     option('street-hoodie','街头潮流卫衣','宽松帽衫、分层下摆','穿宽松街头运动卫衣，层次下摆和精致抽绳。'),
     option('plush-suit','毛绒连体服','短绒连体剪裁、软糯体积','穿短绒毛绒连体服，缝线和拉链结构简洁清楚。'),
     option('tech-suit','未来科技战衣','模块拼接、柔性发光线','穿未来科技运动战衣，模块化拼接和少量柔性发光线。'),
     option('retro-jacket','复古运动夹克','撞色滚边、复古徽章','穿复古运动夹克，撞色滚边和原创复古徽章。'),
-    option('polar-suit','极地探险服','多层防寒、工具口袋','穿多层极地探险服，实用口袋、护颈和防风外层。'),
-    option('knitwear','冬日针织穿搭','粗针织纹理、温暖层搭','穿冬日针织层搭，清晰粗针织纹理和柔软围脖。'),
-    option('champion-uniform','冰雪冠军礼服','运动礼服、奖章细节','穿剪裁利落的冰雪冠军礼服，少量原创奖章细节。'),
+    option('polar-suit','野外探险服','耐磨外套、多口袋装备','穿轻量野外探险服，耐磨面料、多口袋与实用工具挂点，不限定冬季场景。'),
+    option('knitwear','针织层搭','粗针织纹理、松弛穿搭','穿有明显针织纹理的宽松层搭，可搭配短裙或工装裤，像独立潮牌造型。'),
+    option('champion-uniform','冠军队服','运动礼服、荣誉徽章','穿剪裁利落的冠军队服，原创队徽与少量荣誉细节，不指定冰雪项目。'),
     option('animal-hood','可爱动物连帽服','动物耳朵兜帽、连体保暖','穿动物主题连帽保暖服，耳朵结构可爱但不遮脸。'),
     option('witch-cape','俏皮魔法斗篷','短斗篷、星月滚边','穿短款魔法斗篷，配星月滚边和灵动层叠裙摆；不遮脸、不拖地。'),
     option('pumpkin-overall','南瓜精灵背带装','南瓜口袋、蓬松灯笼裤','穿原创南瓜精灵背带装，圆润灯笼裤和南瓜口袋，保留清晰肢体。'),
@@ -192,12 +217,14 @@ export const CREATIVE_GROUPS = {
     option('champion','冠军庆祝姿势','自信庆祝、不遮脸','做冠军庆祝姿势，动作有力但不遮住面部。'), option('preserve','保留原有姿势','保留参考姿态','保留参考人物原有姿势，不擅自改变角色身份表现。'),
   ],
   palette: [
-    option('glacier','冰川蓝','冰蓝、雪白、深海蓝','主色使用冰川蓝，搭配雪白和少量深海蓝。'), option('mint','薄荷绿','薄荷青、乳白','主色使用薄荷绿和冰青。'),
-    option('aurora-purple','极光紫','紫罗兰与青色','主色使用极光紫，少量冰青平衡。'), option('cream','奶油白','暖白、浅金','主色使用奶油白和浅金细节。'),
-    option('sakura','樱花粉','柔粉、雪白','主色使用柔和樱花粉与雪白。'), option('lemon','柠檬黄','明亮黄、冰蓝','主色使用柠檬黄并以冰蓝压住饱和度。'),
-    option('berry','莓果红','莓果红、奶白','主色使用莓果红和奶白。'), option('sky','天空蓝','晴空蓝、云白','主色使用天空蓝和云白。'),
-    option('black-silver','黑银科技色','石墨黑、银色','采用黑银科技配色，亮面层次克制。'), option('blue-purple','蓝紫渐变','冰蓝过渡到紫色','采用自然冰蓝到紫色渐变。'),
-    option('pink-blue','粉蓝渐变','粉色过渡到天蓝','采用柔和粉蓝渐变。'), option('random','随机配色','生成协调的冬日配色','选择协调的冬日随机配色，避免高饱和颜色冲突。'),
+    option('glacier','红金主角色','朱红、暖金、墨色','以朱红为主、暖金点睛、少量墨色压边，形成醒目主角配色。'), option('mint','酸橙绿','亮青柠、墨绿、奶白','以明亮酸橙绿和奶白为主，少量深绿形成运动街头反差。'),
+    option('aurora-purple','葡萄紫','浓紫、桃粉、冷银','以浓葡萄紫和桃粉撞色，冷银只作少量高光。'), option('cream','奶油复古','奶油黄、焦糖、暖白','使用奶油黄、焦糖棕与暖白，营造复古甜品包装般的温暖配色。'),
+    option('sakura','樱桃粉','樱桃红、桃粉、奶白','用樱桃红与桃粉形成鲜明层次，奶白留出呼吸感。'), option('lemon','柠檬汽水','亮黄、湖蓝、深靛','明亮柠檬黄搭配湖蓝和少量深靛色，活泼有冲击力。'),
+    option('berry','莓果红','莓果红、奶白','主色使用莓果红和奶白。'), option('sky','电光青','荧光青、炭黑、白色','以电光青和炭黑高反差搭配，白色用于清晰分区。'),
+    option('black-silver','黑银机能','石墨黑、银色','采用黑银机能配色，金属亮面集中在少量配件。'), option('blue-purple','紫绿撞色','酸橙绿、深紫、黑色','深紫与酸橙绿形成大胆撞色，黑色统一整体轮廓。'),
+    option('pink-blue','糖果撞色','桃粉、天蓝、亮橙','用桃粉与天蓝作为主色，加入一处亮橙作为意外点缀。'), option('orange-pop','橘汽水','橘橙、奶油黄、咖啡棕','橘橙与奶油黄形成高能暖色组合，咖啡棕压住饱和度。'),
+    option('neon-lime','荧光街机','荧光绿、紫、炭黑','荧光绿与紫色形成街机霓虹撞色，炭黑作为大面积服装底色。'), option('hot-pink','千禧辣妹粉','亮粉、银、黑','亮粉与镜面银搭配少量黑色，呈现大胆的 Y2K 造型。'),
+    option('monochrome','黑白漫画','纯黑、纸白、单点红','黑白大色块呈现漫画视觉，只用一点朱红强调徽章或道具。'), option('random','随机配色','生成协调且有记忆点的配色','按角色主题自动选一组鲜明协调的配色，避免全身颜色平均铺开。'),
   ],
   material: [
     option('matte-vinyl','哑光软胶','柔和哑光、细腻软胶','表面为细腻哑光软胶。'), option('translucent-ice','半透明冰晶','透光冰晶、清晰折射','局部采用半透明冰晶材质，折射清晰克制。'),
@@ -223,9 +250,12 @@ export const CREATIVE_GROUPS = {
 };
 
 export const DEFAULT_CREATIVE = Object.freeze({
-  version: 2, gender:'random', style:'toy3d', theme:'snow', vibe:'snow', sport:'ski', scene:'studio', outfit:'ski-suit',
-  hairstyle:'preserve', headwear:'goggles', accessories:['scarf'], expression:'smile', pose:'standing',
-  palette:'glacier', material:'matte-vinyl', effects:[], composition:'full-body', details:'',
+  version: 3, identityMode:'photo-fantasy', stylePreset:'event-showcase', fantasyLevel:3, faceStyle:'natural-stylized', facePreservation:'high',
+  world:'crystal-life', lifeform:'human-fantasy', silhouette:'dynamic-elegant', bodyStructure:'human-proportions', faceDesign:'natural-friendly', power:'soft-aurora-aura',
+  companion:{enabled:false,locked:false,type:null,archetype:null,blueprint:null},
+  gender:'random', style:'anime', theme:'anime', vibe:'anime', sport:'character', scene:'studio', outfit:'anime-school',
+  hairstyle:'preserve', headwear:'none', accessories:[], expression:'smile', pose:'standing',
+  palette:'berry', material:'matte-vinyl', effects:[], composition:'full-body', details:'',
 });
 
 export const CREATIVE_GENDER_OPTIONS = Object.freeze([
@@ -234,6 +264,8 @@ export const CREATIVE_GENDER_OPTIONS = Object.freeze([
   { id:'random', label:'随机' },
 ]);
 const CREATIVE_GENDER_IDS = new Set(CREATIVE_GENDER_OPTIONS.map((item) => item.id));
+const COMPANION_TYPES = new Set(['机械生命','毛绒异兽','液态玩偶','水晶生物','星云幼体','折纸精灵','影子伙伴','悬浮符号生命','奇幻昆虫/多足萌怪','混合型未知生命']);
+const safeBlueprintText = (value, max = 80) => typeof value === 'string' ? value.replace(/[\u0000-\u001f\u007f<>]/g,' ').trim().slice(0,max) : '';
 
 const LEGACY_SPORT = { skate:'skate', alpine:'ski', snowboard:'snowboard', skiing:'ski' };
 const ids = Object.fromEntries(Object.entries(CREATIVE_GROUPS).map(([key, list]) => [key, new Set(list.map((item) => item.id))]));
@@ -247,11 +279,30 @@ const limited = (values, group, max, noneId) => {
 
 export function normalizeCreative(raw = {}) {
   const source = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
-  const theme = validValue('theme', source.theme || source.vibe);
-  const accessories = limited(source.accessories ?? DEFAULT_CREATIVE.accessories, 'accessory', 3, 'none');
+  const storedTheme = source.theme || source.vibe;
+  const theme = storedTheme === 'cosplay-hero' ? DEFAULT_CREATIVE.theme : validValue('theme', storedTheme);
+  const accessories = limited(source.accessories ?? DEFAULT_CREATIVE.accessories, 'accessory', 2, 'none');
   const effects = limited(source.effects ?? DEFAULT_CREATIVE.effects, 'effect', 2, 'none');
+  const companionSource = source.companion && typeof source.companion === 'object' && !Array.isArray(source.companion) ? source.companion : {};
+  const validWorld = ids.world?.has(source.world) ? source.world : DEFAULT_CREATIVE.world;
+  const validLifeform = ids.lifeform?.has(source.lifeform) ? source.lifeform : DEFAULT_CREATIVE.lifeform;
+  const companionEnabled = companionSource.enabled === true;
+  const companionType = COMPANION_TYPES.has(companionSource.type) ? companionSource.type : null;
+  const rawBlueprint = companionSource.blueprint && typeof companionSource.blueprint==='object' && !Array.isArray(companionSource.blueprint) ? companionSource.blueprint : null;
+  const blueprint = rawBlueprint ? Object.fromEntries(['silhouette','bodyStructure','faceDesign','limbs','material','palette','movement','personality','signatureFeature','size','attachment'].map((key)=>[key,safeBlueprintText(rawBlueprint[key])])) : null;
+  const companion = companionEnabled ? {
+    enabled:true, locked:companionSource.locked===true, type:companionType,
+    archetype:safeBlueprintText(companionSource.archetype,64)||null, blueprint,
+  } : {enabled:false,locked:companionSource.locked===true,type:null,archetype:null,blueprint:null};
+  const metadata = source.metadata&&typeof source.metadata==='object'&&!Array.isArray(source.metadata)?source.metadata:{};
   return {
-    version:2,
+    version:3, identityMode:'photo-fantasy',
+    stylePreset:['event-showcase','fantasy-explorer'].includes(source.stylePreset)?source.stylePreset:'event-showcase',
+    fantasyLevel:Math.max(1,Math.min(5,Math.round(Number(source.fantasyLevel)||DEFAULT_CREATIVE.fantasyLevel))),
+    faceStyle:['natural-stylized','refined-3d','animation'].includes(source.faceStyle)?source.faceStyle:DEFAULT_CREATIVE.faceStyle,
+    facePreservation:'high', world:validWorld, lifeform:validLifeform,
+    silhouette:String(source.silhouette||DEFAULT_CREATIVE.silhouette).slice(0,64), bodyStructure:String(source.bodyStructure||DEFAULT_CREATIVE.bodyStructure).slice(0,64),
+    faceDesign:String(source.faceDesign||DEFAULT_CREATIVE.faceDesign).slice(0,64), power:String(source.power||DEFAULT_CREATIVE.power).slice(0,64), companion,
     gender:CREATIVE_GENDER_IDS.has(source.gender) ? source.gender : DEFAULT_CREATIVE.gender,
     style:validValue('style', source.style), theme, vibe:theme,
     sport:validValue('sport', LEGACY_SPORT[source.sport] || source.sport),
@@ -260,8 +311,8 @@ export function normalizeCreative(raw = {}) {
     expression:validValue('expression', source.expression), pose:validValue('pose', source.pose),
     palette:validValue('palette', source.palette), material:validValue('material', source.material), effects,
     composition:validValue('composition', source.composition),
-    metadata:source.metadata&&typeof source.metadata==='object'&&!Array.isArray(source.metadata)&&Number.isFinite(Number(source.metadata.randomSeed))?{randomSeed:Number(source.metadata.randomSeed)>>>0}:undefined,
-    details:typeof source.details === 'string' ? source.details.replace(/[\u0000-\u001f\u007f<>]/g, ' ').slice(0,240) : '',
+    metadata:{schemaVersion:3,...(Number.isFinite(Number(metadata.randomSeed))?{randomSeed:Number(metadata.randomSeed)>>>0}:{}),manualLocks:Array.isArray(metadata.manualLocks)?[...new Set(metadata.manualLocks.filter((key)=>typeof key==='string'))].slice(0,32):[]},
+    details:typeof source.details === 'string' ? source.details.replace(/[\u0000-\u001f\u007f<>]/g, ' ').slice(0,180) : '',
   };
 }
 
@@ -274,34 +325,31 @@ const RECOMMENDATIONS = {
   leisure:['puffer','earmuffs',[],'standing'], 'custom-sport':['custom-outfit','none',[],'standing'], character:['anime-school','none',[],'standing'],
 };
 
+const THEME_OUTFITS = {
+  snow:'ski-suit', street:'street-hoodie', sweet:'dream-chef', anime:'anime-school', halloween:'pumpkin-overall',
+  punk:'punk-jacket', gothic:'gothic-dress', idol:'idol-stage', space:'astronaut-coverall', retro:'retro-jacket',
+  future:'tech-suit', fairytale:'royal-cape', 'heroic-fantasy':'wuxia-traveler', 'creature-pal':'mascot-kigurumi',
+  'hanfu-illusionist':'hanfu', 'dream-career':'field-researcher',
+  'animal-guardian':'animal-hood', 'deep-sea-mail':'astronaut-coverall', 'cloud-chef':'dream-chef',
+  'mecha-pilot':'tech-suit', 'magical-idol':'idol-stage', 'time-runner':'astronaut-coverall',
+  'dino-pal':'mascot-kigurumi', 'moon-rabbit':'hanfu', 'tiny-villain':'gothic-dress',
+  'forest-mushroom':'witch-cape', 'magical-girl':'royal-cape', 'cyber-detective':'retro-jacket',
+  streamer:'street-hoodie', 'vampire-royal':'gothic-dress', 'potion-maker':'dream-chef',
+  'urban-legend':'retro-jacket', 'racing-star':'retro-jacket',
+};
+
+export function recommendCreativeForTheme(current, theme) {
+  const creative=normalizeCreative({ ...current, theme, vibe:theme });
+  return normalizeCreative({
+    ...creative,
+    outfit:creative.outfit,
+    accessories:creative.accessories,
+  });
+}
+
 export function recommendCreativeForSport(current, sport) {
   const creative = normalizeCreative({ ...current, sport });
-  const [outfit, headwear, accessories, pose] = RECOMMENDATIONS[creative.sport] || RECOMMENDATIONS.ski;
-  return normalizeCreative({ ...creative, outfit, headwear, accessories, pose });
-}
-
-export const CREATIVE_PRESETS = [
-  { id:'aurora-spirit', label:'极光精灵', description:'极光、冰晶与轻盈雪服', values:{style:'anime',theme:'aurora-spirit',sport:'skate',scene:'aurora',outfit:'skating-dress',hairstyle:'long-curls',headwear:'crown',accessories:['ice-pin','ice-cape'],expression:'gentle',pose:'spin',palette:'blue-purple',material:'translucent-ice',effects:['aurora-ring','starlight'],composition:'full-body'} },
-  { id:'champion', label:'冰雪冠军', description:'竞速装备与荣耀舞台', values:{style:'toy3d',theme:'champion',sport:'short-track',scene:'podium',outfit:'champion-uniform',hairstyle:'sport-short',headwear:'goggles',accessories:['medal','snow-badge'],expression:'cheer',pose:'champion',palette:'glacier',material:'resin',effects:['starlight'],composition:'full-body'} },
-  { id:'snow-plush', label:'软萌雪团子', description:'毛绒连体服与暖冬配色', values:{style:'plush',theme:'pet',sport:'leisure',scene:'cafe',outfit:'plush-suit',hairstyle:'mushroom',headwear:'bear-ears',accessories:['plush-toy','scarf'],expression:'blush',pose:'plush-hug',palette:'cream',material:'plush',effects:['snowflakes'],composition:'full-body'} },
-  { id:'future-skier', label:'未来滑雪手', description:'银色科技服与雪山赛道', values:{style:'cyber-ice',theme:'future',sport:'ski',scene:'future-base',outfit:'tech-suit',hairstyle:'sport-short',headwear:'goggles',accessories:['light-band','mini-skis'],expression:'cool',pose:'ski-sprint',palette:'black-silver',material:'metal',effects:['neon','trail'],composition:'action'} },
-  { id:'street-toy', label:'街头潮玩', description:'宽松卫衣与运动耳机', values:{style:'game-chibi',theme:'street',sport:'snowboard',scene:'changchun',outfit:'street-hoodie',hairstyle:'twin-tails',headwear:'beanie',accessories:['headphones','backpack'],expression:'wink',pose:'jump',palette:'berry',material:'matte-vinyl',effects:['trail'],composition:'action'} },
-  { id:'ice-princess', label:'冰晶公主', description:'冰晶礼服与城堡光影', values:{style:'resin',theme:'fairytale',sport:'skate',scene:'castle',outfit:'skating-dress',hairstyle:'long-curls',headwear:'crown',accessories:['ice-pin','ice-cape'],expression:'gentle',pose:'spin',palette:'sky',material:'crystal',effects:['starlight','mist'],composition:'product'} },
-  { id:'polar-explorer', label:'极地探险家', description:'实用户外服与林海雪原', values:{style:'toy3d',theme:'polar',sport:'snow-adventure',scene:'forest',outfit:'polar-suit',hairstyle:'short-fluffy',headwear:'hood',accessories:['backpack','gloves'],expression:'focus',pose:'wave',palette:'mint',material:'knit',effects:['snowflakes'],composition:'with-gear'} },
-  { id:'fluffy-animal', label:'毛绒小动物', description:'动物耳帽与柔软毛绒', values:{style:'clay',theme:'pet',sport:'leisure',scene:'candy-house',outfit:'animal-hood',hairstyle:'mushroom',headwear:'cat-ears',accessories:['plush-toy','gloves'],expression:'smile',pose:'snowball',palette:'sakura',material:'plush',effects:['snowflakes','starlight'],composition:'full-body'} },
-].map((preset) => ({ ...preset, values:normalizeCreative(preset.values) }));
-
-export function applyCreativePreset(id, { gender = DEFAULT_CREATIVE.gender } = {}) {
-  return normalizeCreative({ ...(CREATIVE_PRESETS.find((preset) => preset.id === id)?.values || DEFAULT_CREATIVE), gender });
-}
-
-export function randomCreative(random = Math.random) {
-  const pick = (group) => CREATIVE_GROUPS[group][Math.floor(random() * CREATIVE_GROUPS[group].length)].id;
-  const sport = pick('sport');
-  const recommended = recommendCreativeForSport(DEFAULT_CREATIVE, sport);
-  const optional = (group, max) => CREATIVE_GROUPS[group].filter((item) => item.id !== 'none')
-    .filter(() => random() < .28).slice(0,max).map((item) => item.id);
-  return normalizeCreative({ ...recommended, style:pick('style'), theme:pick('theme'), scene:pick('scene'), hairstyle:pick('hairstyle'), expression:pick('expression'), palette:pick('palette'), material:pick('material'), composition:pick('composition'), accessories:optional('accessory',3), effects:optional('effect',2), details:'' });
+  return creative;
 }
 
 export function clearCreativeDetails(current) {

@@ -30,6 +30,9 @@ export function createMascotGuide({ mount, getProgress = () => ({}), getPlaces =
   let detail = {};
   let activeCue = null;
   let actionCue = null;
+  let mapGuideStep = 0;
+  let coachStep = null;
+  let popoverOpen = false;
   const box = document.createElement('aside');
   box.className = 'mascot-guide';
   box.setAttribute('aria-label', '吉冰吉雪导览');
@@ -61,12 +64,17 @@ export function createMascotGuide({ mount, getProgress = () => ({}), getPlaces =
   controls.append(title, switcher, close, mode, toggleMode);
   content.append(controls, message, lines, answer, actions);
   box.append(portrait, mark, content);
-  mount.append(box);
-  const reopen = document.createElement('button'); reopen.className = 'mascot-guide-reopen'; reopen.type = 'button'; reopen.textContent = '吉冰 / 吉雪导览';
+  document.body.append(box);
+  const reopen = document.createElement('button'); reopen.className = 'mascot-guide-reopen'; reopen.type = 'button';
+  reopen.setAttribute('aria-label', '唤醒吉冰吉雪导航');
+  const reopenPortrait = document.createElement('img'); reopenPortrait.alt = ''; reopenPortrait.setAttribute('aria-hidden','true');
+  const reopenLabel = document.createElement('span'); reopenLabel.textContent = '问问吉冰';
+  reopen.append(reopenPortrait,reopenLabel);
+  document.body.append(reopen);
   function persist() {
     try { localStorage.setItem(KEY, JSON.stringify(preference)); localStorage.setItem(SEEN_KEY, JSON.stringify(seenStore)); } catch { /* private browsing */ }
   }
-  function clearCue() { activeCue = null; actionCue = null; lines.replaceChildren(); answer.hidden = true; actions.replaceChildren(); }
+  function clearCue() { activeCue = null; actionCue = null; lines.replaceChildren(); answer.hidden = true; actions.replaceChildren(); if (box._coachPointer) { box._coachPointer.remove(); box._coachPointer = null; } }
   function character(speaker = SPEAKER[preference.identity]) { return MASCOT_ASSETS[speaker] ? speaker : 'jibing'; }
   function setPortrait(speaker, mood = 'idle') {
     const who = character(speaker); const asset = MASCOT_ASSETS[who];
@@ -76,6 +84,7 @@ export function createMascotGuide({ mount, getProgress = () => ({}), getPlaces =
     if (!src) return;
     portrait.onload = () => { portrait.hidden = false; mark.hidden = true; };
     portrait.src = src;
+    reopenPortrait.src = MASCOT_ASSETS[character(SPEAKER[preference.identity])]?.image?.happy || MASCOT_ASSETS[character(SPEAKER[preference.identity])]?.image?.idle || '';
   }
   function act(action) { if (!action) return; if (action.type === 'reveal_answer') { answer.open = true; return; } onAction(action); }
   function displayCue(cue) {
@@ -102,9 +111,18 @@ export function createMascotGuide({ mount, getProgress = () => ({}), getPlaces =
     if (cue.revealText) { answerBody.textContent = cue.revealText; answer.hidden = false; }
     for (const item of [cue.primaryAction, cue.secondaryAction]) if (item) {
       const button = document.createElement('button'); button.type = 'button'; button.textContent = item.label;
-      button.addEventListener('click', () => act(item)); actions.append(button);
+      button.addEventListener('click', () => {
+        if (item.type === 'enter_tour') { popoverOpen = false; render(); }
+        act(item);
+      }); actions.append(button);
+    }
+    if (chapter === 'map') {
+      const more = document.createElement('button'); more.type = 'button'; more.className = 'mascot-guide-next'; more.textContent = '下一步 →';
+      more.addEventListener('click', () => { activeCue = null; render(); });
+      actions.append(more);
     }
     box.classList.toggle('is-game-reaction', chapter === 'game');
+    positionPopover(cue.targetSelector || cueAnchorForEvent(cue.event));
     if (placeCard && cue.kind === 'fact' && cue.placeId) {
       const place = getPlaces().find((item) => item.id === cue.placeId);
       if (place) {
@@ -116,20 +134,128 @@ export function createMascotGuide({ mount, getProgress = () => ({}), getPlaces =
       }
     }
   }
+  function cueAnchorForEvent(name) {
+    if (name === GUIDE_EVENTS.COVER_FIRST || name === GUIDE_EVENTS.COVER_RETURN) return '#openBook';
+    if (name === GUIDE_EVENTS.PLACE_ARRIVED || name === GUIDE_EVENTS.PLACE_FACT || name === GUIDE_EVENTS.PLACE_NOTE_OPEN) return '#detailJourney';
+    return '';
+  }
+  function positionPopover(selector = '', attempt = 0) {
+    box.dataset.anchor = selector;
+    box.classList.remove('has-anchor','anchor-above','anchor-below');
+    if (box._coachTarget) box._coachTarget.classList.remove('mascot-coach-target');
+    box._coachTarget = null;
+    if (!selector || box.hidden || chapter === 'game') return;
+    const target = document.querySelector(selector);
+    if (!target) return;
+    if (target.getClientRects().length === 0 || !target.getBoundingClientRect().width || !target.getBoundingClientRect().height) {
+      if (attempt < 10) window.setTimeout(() => positionPopover(selector, attempt + 1), 90);
+      return;
+    }
+    box._coachTarget = target;
+    target.classList.add('mascot-coach-target');
+    box.classList.add('has-anchor');
+    requestAnimationFrame(() => {
+      if (box.hidden || !box.classList.contains('has-anchor')) return;
+      const anchor = target.getBoundingClientRect();
+      const card = box.getBoundingClientRect();
+      if ((!anchor.width || !anchor.height) && attempt < 10) { window.setTimeout(() => positionPopover(selector, attempt + 1), 90); return; }
+      const margin = 14;
+      const gap = 18;
+      const below = anchor.bottom + card.height + gap <= innerHeight - margin;
+      const above = anchor.top - card.height - gap >= margin;
+      const placeBelow = below || !above;
+      const top = placeBelow
+        ? Math.min(innerHeight - card.height - margin, anchor.bottom + gap)
+        : Math.max(margin, anchor.top - card.height - gap);
+      let preferredLeft = anchor.left + anchor.width / 2 - card.width / 2;
+      if (anchor.width >= card.width * 1.2) {
+        if (anchor.left >= innerWidth * .42) preferredLeft = anchor.left - card.width - gap;
+        else preferredLeft = anchor.right + gap;
+      }
+      const left = Math.max(margin, Math.min(innerWidth - card.width - margin, preferredLeft));
+      box.style.left = `${left}px`;
+      box.style.top = `${top}px`;
+      box.style.right = 'auto';
+      box.style.bottom = 'auto';
+      box.style.setProperty('--coach-arrow-x', `${Math.max(20, Math.min(card.width - 20, anchor.left + anchor.width / 2 - left))}px`);
+      if (box._coachPointer) {
+        const dx = anchor.left + anchor.width / 2 - (left + card.width / 2);
+        const dy = anchor.top + anchor.height / 2 - (top + card.height / 2);
+        const arrow = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? '→' : '←') : (dy > 0 ? '↓' : '↑');
+        box._coachPointer.textContent = `${arrow} 看这里`;
+      }
+      box.classList.toggle('anchor-below', placeBelow);
+      box.classList.toggle('anchor-above', !placeBelow);
+    });
+  }
+  function coachCopy(key) {
+    return {
+      'creator-choose': { target:'#rolePhotoControls', title:'第 1 步 · 选一个角色', body:'可以直接挑一位冰雪伙伴，也可以上传照片创建自己的角色。选好后，我会接着告诉你下一步。', button:'我先去选角色' },
+      'creator-depart': { target:'#enterTour', title:'第 2 步 · 带角色出发', body:'你的冰雪分身已经准备好了。点击「带我去游览」，角色就会跃入赛事地图。', button:'带我去游览 →', action:'enter_tour' },
+      'map-select': { target:'#map', title:'第 3 步 · 选一处目的地', body:'点击地图上的场馆或景点标记，角色会沿路线抵达。到站后我会带你看手记，再介绍这里的挑战。', button:'我知道了，去选地点' },
+    }[key];
+  }
+  function drawCoachStep() {
+    const step = coachCopy(coachStep);
+    if (!step) return;
+    clearCue();
+    box.classList.remove('is-game-reaction');
+    title.textContent = step.title;
+    message.textContent = step.body;
+    const pointer = document.createElement('span'); pointer.className='mascot-guide-pointer'; pointer.textContent='↗ 看这里'; pointer.setAttribute('aria-hidden','true');
+    content.insertBefore(pointer,lines); box._coachPointer=pointer;
+    const action = document.createElement('button'); action.type='button'; action.className='mascot-guide-step-action'; action.textContent=step.button;
+    action.addEventListener('click', () => {
+      if (step.action === 'enter_tour') { popoverOpen=false; render(); onAction({type:'enter_tour'}); return; }
+      if (coachStep === 'creator-choose') {
+        const first = document.querySelector('#rolePhotoControls button:not(:disabled)');
+        first?.focus({ preventScroll:true });
+      }
+      popoverOpen=false; render();
+    });
+    actions.append(action);
+    const target = step.target;
+    box.dataset.coachStep = coachStep;
+    const targetNode = document.querySelector(target);
+    targetNode?.scrollIntoView({ behavior:'smooth', block:'center', inline:'nearest' });
+    positionPopover(target);
+  }
+  function drawMapGuide() {
+    const places = getPlaces();
+    const currentPlace = places.find((place) => place.id === (detail.placeId || getProgress().pendingVenueId));
+    const steps = [
+      { title: '① 先选一个地点', body: '点地图上的场馆或景点标记，角色会走过去；抵达后会打开地点手记。', action: { type: 'open_route' }, label: '规划游览路线 →' },
+      { title: '② 到站后做什么', body: '读地点手记、按提示记录一个观察发现；有小游戏的场馆还能赢取专属奖章。', action: currentPlace?.game ? { type: 'start_current_game', placeId: currentPlace.id } : { type: 'open_passport' }, label: currentPlace?.game ? '挑战当前场馆 →' : '查看探索记录 →' },
+      { title: '③ 完成后继续逛', body: '回到地图再点下一个标记。印章、挑战奖章和任务进度会自动记入冰雪护照。', action: { type: 'open_passport' }, label: '打开冰雪护照 →' },
+      { title: '④ 不知道去哪一站', body: '路线规划会按轻松漫游、运动挑战或城市探索，排出一条可逐站游玩的顺序。', action: { type: 'open_route' }, label: '选择路线偏好 →' },
+    ];
+    const step = steps[mapGuideStep % steps.length];
+    const card = document.createElement('div'); card.className = 'mascot-guide-step';
+    const heading = document.createElement('strong'); heading.textContent = step.title;
+    const copy = document.createElement('p'); copy.textContent = step.body;
+    const next = document.createElement('button'); next.type = 'button'; next.className = 'mascot-guide-next'; next.textContent = '下一步 →';
+    next.setAttribute('aria-label', `导览第 ${mapGuideStep % steps.length + 1} 步，点击查看下一条`);
+    next.addEventListener('click', () => { mapGuideStep = (mapGuideStep + 1) % steps.length; render(); });
+    card.append(heading, copy, next);
+    const go = document.createElement('button'); go.type = 'button'; go.className = 'mascot-guide-step-action'; go.textContent = step.label;
+    go.addEventListener('click', () => act(step.action));
+    lines.replaceChildren(card); actions.replaceChildren(go);
+  }
   function cueFor(name, extra = {}, { force = false } = {}) {
     if ((preference.closed || preference.auto === false) && !force) return null;
     const progress = getProgress();
     const cue = picker.pick({ event: name, mascot: SPEAKER[preference.identity], progress, ...extra }, { force });
-    if (cue) { displayCue(cue); persist(); }
+    if (cue) { coachStep = null; popoverOpen = true; activeCue = cue; render(); persist(); }
     return cue;
   }
   function render() {
-    box.hidden = preference.closed; reopen.hidden = !preference.closed;
+    box.hidden = preference.closed || !popoverOpen;
+    reopen.hidden = chapter === 'game' || (!preference.closed && popoverOpen);
     toggleMode.textContent = preference.auto === false ? '开启自动提示' : '关闭自动提示';
     switcher.textContent = preference.identity === 'jiBing' ? '切换到吉雪' : '切换到吉冰';
-    const target = document.getElementById(chapter === 'cover' ? 'mascotGuideCover' : chapter === 'creator' ? 'mascotGuideCreator' : chapter === 'detail' ? 'mascotDetailCard' : 'mascotGuideMap') || mount;
-    target.append(box, reopen);
-    if (activeCue && !preference.closed) displayCue(activeCue);
+    box.dataset.coachStep = coachStep || '';
+    if (activeCue && !preference.closed && popoverOpen) displayCue(activeCue);
+    else if (coachStep && !preference.closed && popoverOpen) drawCoachStep();
     else {
       clearCue(); setPortrait(SPEAKER[preference.identity], 'idle');
       title.textContent = event === 'identity_switch'
@@ -137,6 +263,8 @@ export function createMascotGuide({ mount, getProgress = () => ({}), getPlaces =
         : preference.identity === 'jiBing' ? '吉冰 · 冰上挑战' : '吉雪 · 雪上与城市探索';
       const value = COPY[event]?.[preference.identity] || COPY.welcome[preference.identity];
       message.textContent = typeof value === 'function' ? value(detail) : value;
+      if (chapter === 'map') drawMapGuide();
+      positionPopover(chapter === 'cover' ? '#openBook' : chapter === 'creator' ? '#enterTour' : '');
     }
   }
   switcher.addEventListener('click', () => {
@@ -149,8 +277,17 @@ export function createMascotGuide({ mount, getProgress = () => ({}), getPlaces =
     persist();
     render();
   });
-  close.addEventListener('click', () => { preference.closed = true; persist(); render(); });
-  reopen.addEventListener('click', () => { preference.closed = false; persist(); render(); });
+  close.addEventListener('click', () => { preference.closed = true; popoverOpen = false; persist(); render(); });
+  reopen.addEventListener('click', () => {
+    preference.closed = false; popoverOpen = true;
+    if (!activeCue && !coachStep) {
+      if (chapter === 'creator') coachStep = document.getElementById('enterTour')?.disabled ? 'creator-choose' : 'creator-depart';
+      else if (chapter === 'map') coachStep = 'map-select';
+    }
+    persist(); render();
+  });
+  window.addEventListener('resize', () => positionPopover(box.dataset.anchor));
+  window.addEventListener('scroll', () => positionPopover(box.dataset.anchor), true);
   function showArrival(place, first) {
     const cue = cueFor(first ? GUIDE_EVENTS.PLACE_ARRIVED : GUIDE_EVENTS.PLACE_REVISIT, { placeId: place.id, placeName: place.name });
     if (cue) {
@@ -196,13 +333,28 @@ export function createMascotGuide({ mount, getProgress = () => ({}), getPlaces =
   return {
     setChapter(value) {
       const previous = chapter; chapter = value;
-      if (value === 'creator') notify(previous === 'cover' ? GUIDE_EVENTS.WORKSHOP_FIRST : GUIDE_EVENTS.WORKSHOP_OPEN);
-      if (value === 'map') { notify(seenStore.mapSeen ? GUIDE_EVENTS.MAP_OPEN : GUIDE_EVENTS.MAP_FIRST); seenStore.mapSeen = true; persist(); }
+      if (value === 'creator') {
+        coachStep = document.getElementById('enterTour')?.disabled ? 'creator-choose' : 'creator-depart';
+        activeCue = null;
+        if (!preference.closed && preference.auto !== false) popoverOpen = true;
+      }
+      if (value === 'map') {
+        coachStep = 'map-select'; activeCue = null;
+        if (!preference.closed && preference.auto !== false) popoverOpen = true;
+        seenStore.mapSeen = true; persist();
+      }
       if (value === 'cover' && previous !== 'cover') notify(GUIDE_EVENTS.COVER_RETURN);
       render();
     },
     initialCover,
-    notify,
+    notify(name, extra = {}, options) {
+      if (name === 'avatar' || name === GUIDE_EVENTS.AVATAR_READY) {
+        event = GUIDE_EVENTS.AVATAR_READY; detail = extra; coachStep = 'creator-depart'; activeCue = null;
+        if (!preference.closed && preference.auto !== false) popoverOpen = true;
+        render(); return true;
+      }
+      return notify(name, extra, options);
+    },
     showArrival,
     placeNote,
     gameStart(place) { chapter = 'game'; return notify(GUIDE_EVENTS.GAME_START, { placeId: place.id }); },

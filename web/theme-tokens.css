@@ -75,7 +75,12 @@ body:has(.screen-grid) { background: #102e4c; color: #f5faff; }
 .mascot-guide-dialogue { display: flex; flex-basis: 100%; gap: .5rem; padding: .45rem .6rem; border-radius: 12px; background: #eef9fc; }
 .mascot-guide-answer { margin-top: .45rem; color: var(--ice-ink); }
 .mascot-guide-answer summary { cursor: pointer; font-weight: 700; }
+.mascot-guide-step { display: grid; grid-template-columns: 1fr auto; align-items: start; gap: .25rem .6rem; width: 100%; margin-top: .45rem; padding: .55rem .65rem; border: 1px solid #c6ddd8; border-radius: 10px 3px 10px 3px; background: #f1f8f1; }
+.mascot-guide-step strong { color: var(--ice-ink); font-size: .85rem; }
+.mascot-guide-step p { grid-column: 1 / -1; margin: 0; color: #506c6a; font-size: .78rem; line-height: 1.55; }
+.mascot-guide-step .mascot-guide-next { grid-column: 2; grid-row: 1; min-height: 30px; padding: .2rem .55rem; font-size: .7rem; }
 .mascot-guide-actions button, .mascot-guide-lines button, .mascot-guide-controls button { min-height: 36px; border: 1px solid var(--ice-line); border-radius: 999px; padding: .3rem .75rem; background: #fff; color: var(--ice-ink); cursor: pointer; }
+.mascot-guide-actions .mascot-guide-step-action { border-color: #286574; color: #fffaf0; background: #286574; }
 .mascot-guide-mode { color: #526d81; font-size: .75rem; }
 .mascot-place-card { margin: .8rem 0; padding: .9rem 1rem; border: 1px solid var(--ice-line); border-radius: var(--ice-radius); background: #f3fbff; color: var(--ice-ink); }
 .mascot-place-card[hidden] { display: none; }
@@ -85,3 +90,54 @@ body:has(.screen-grid) { background: #102e4c; color: #f5faff; }
 .mascot-guide.is-game-reaction[hidden] { display: none; }
 @media (max-width: 700px) { .mascot-guide-portrait { width: 3rem; height: 3rem; } .mascot-guide.is-game-reaction { right: max(.5rem, env(safe-area-inset-right)); bottom: max(.5rem, env(safe-area-inset-bottom)); width: calc(100vw - 1rem); } }
 @media (prefers-reduced-motion: reduce) { .mascot-guide *, .mascot-place-card * { animation: none !important; transition: none !important; } }
+
+/* 吉祥物改为按当前操作浮出的轻量 coach mark，不再占用左右栏空间。 */
+.mascot-guide[hidden] { display:none !important; }
+.mascot-guide:not(.is-game-reaction) {
+  position:fixed; z-index:90; left:auto; top:auto; right:22px; bottom:84px;
+  display:flex; align-items:flex-start; gap:12px; width:min(390px,calc(100vw - 28px));
+  max-height:min(70dvh,520px); overflow:visible; padding:14px;
+  border:1px solid #b8d6cf; border-radius:18px 18px 5px 18px;
+  color:#204e59; background:linear-gradient(145deg,#fffdf5 0%,#f2fbf7 100%);
+  box-shadow:0 18px 48px #163b4a35, inset 0 1px 0 #ffffff;
+  opacity:1; transform:translateY(0); animation:mascot-pop-in .24s cubic-bezier(.2,.8,.2,1) both;
+}
+.mascot-guide.has-anchor::after { position:absolute; left:var(--coach-arrow-x,50%); width:15px; height:15px; content:""; background:#fffdf5; transform:translateX(-50%) rotate(45deg); }
+.mascot-guide.anchor-below::after { top:-8px; border-top:1px solid #b8d6cf; border-left:1px solid #b8d6cf; }
+.mascot-guide.anchor-above::after { bottom:-8px; border-right:1px solid #b8d6cf; border-bottom:1px solid #b8d6cf; }
+.mascot-guide-portrait { width:58px; height:66px; border-radius:14px; background:linear-gradient(150deg,#e1f4ef,#f7edda); }
+.mascot-guide-mark { width:48px; height:48px; border-radius:15px 15px 5px 15px; }
+.mascot-guide-content { display:grid; gap:5px; max-height:min(66dvh,500px); overflow:auto; }
+.mascot-guide-controls { gap:5px; }
+.mascot-guide-controls strong { color:#174e59; font-size:13px; }
+.mascot-guide-controls button,.mascot-guide-actions button,.mascot-guide-lines button { min-height:34px; padding:6px 10px; border-radius:10px 10px 3px 10px; font-size:11px; font-weight:750; }
+.mascot-guide-controls button:hover,.mascot-guide-actions button:hover,.mascot-guide-lines button:hover { background:#e7f5ef; }
+.mascot-guide-controls button[aria-label="关闭导览"] { min-width:34px; width:34px; padding:0; font-size:0; }
+.mascot-guide-controls button[aria-label="关闭导览"]::before { content:"×"; font-size:18px; }
+.mascot-guide-mode { display:none; }
+.mascot-guide-step-action { border-color:#286574 !important; color:#fffdf5 !important; background:#176977 !important; }
+.mascot-guide-step-action:hover { background:#105560 !important; }
+.mascot-guide-pointer { justify-self:start; margin:2px 0; padding:4px 8px; border-radius:7px 7px 2px 7px; color:#8a581c; background:#f9edcf; font-size:11px; font-weight:900; letter-spacing:.02em; }
+.mascot-guide-reopen {
+  position:fixed; z-index:90; right:max(20px,env(safe-area-inset-right)); bottom:max(20px,env(safe-area-inset-bottom));
+  display:flex; align-items:center; gap:8px; min-height:54px; padding:6px 16px 6px 7px;
+  border:1px solid #a9cec4; border-radius:999px; color:#174f5c; background:#fffdf5;
+  box-shadow:0 9px 25px #163b4a30; font-size:13px; font-weight:850; cursor:pointer;
+  transition:transform .2s ease,box-shadow .2s ease,background .2s ease;
+}
+.mascot-guide-reopen:hover { transform:translateY(-3px); background:#f0faf5; box-shadow:0 13px 30px #163b4a38; }
+.mascot-guide-reopen:focus-visible,.mascot-guide button:focus-visible { outline:3px solid #d99c51; outline-offset:3px; }
+.mascot-guide-reopen img { width:40px; height:40px; object-fit:contain; border-radius:50%; background:#e5f3ed; }
+.mascot-guide-reopen[hidden] { display:none !important; }
+.mascot-coach-target { position:relative; z-index:1; outline:2px solid #dda250; outline-offset:5px; border-radius:8px; animation:mascot-target-pulse 1.8s ease-in-out infinite; }
+.mascot-cover-slot,.mascot-creator-slot,.mascot-map-slot { display:none !important; }
+@keyframes mascot-pop-in { from { opacity:0; transform:translateY(9px) scale(.98); } to { opacity:1; transform:translateY(0) scale(1); } }
+@keyframes mascot-target-pulse { 50% { outline-color:#dda25066; outline-offset:8px; } }
+@media (max-width:700px) {
+  .mascot-guide:not(.is-game-reaction) { right:12px; bottom:82px; width:calc(100vw - 24px); max-height:58dvh; padding:11px; gap:9px; border-radius:15px 15px 4px 15px; }
+  .mascot-guide-portrait { width:46px; height:54px; }
+  .mascot-guide-controls { gap:4px; }
+  .mascot-guide-controls strong { font-size:12px; }
+  .mascot-guide-reopen { right:12px; bottom:max(12px,env(safe-area-inset-bottom)); min-height:48px; }
+}
+@media (prefers-reduced-motion:reduce) { .mascot-guide:not([hidden]),.mascot-coach-target { animation:none; } }

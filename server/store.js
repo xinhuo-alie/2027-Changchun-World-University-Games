@@ -24,7 +24,7 @@ const MAX_KEPT_JOBS = 500;
 function pruneJobs() {
   if (jobs.size <= MAX_KEPT_JOBS) return;
   const finished = [...jobs.values()]
-    .filter((j) => j.status === 'succeeded' || j.status === 'failed')
+    .filter((j) => j.status === 'succeeded' || j.status === 'failed' || j.status === 'cancelled')
     .sort((a, b) => (a.finishedAt || 0) - (b.finishedAt || 0));
   for (const job of finished) {
     if (jobs.size <= MAX_KEPT_JOBS) break;
@@ -68,6 +68,21 @@ export function getJob(id) {
   };
 }
 
+export function cancelJob(id) {
+  const job = jobs.get(id);
+  if (!job || job.status === 'succeeded' || job.status === 'failed' || job.status === 'cancelled') return false;
+  job.cancelRequested = true;
+  job.status = 'cancelled';
+  job.finishedAt = Date.now();
+  const queuedAt = queue.indexOf(id);
+  if (queuedAt >= 0) queue.splice(queuedAt, 1);
+  delete job._image;
+  delete job._outfit;
+  delete job._creative;
+  pump();
+  return true;
+}
+
 function pump() {
   while (running < config.maxConcurrentJobs && queue.length > 0) {
     const id = queue.shift();
@@ -99,18 +114,27 @@ async function runJob(id) {
       styleId: job.styleId,
     });
 
+    if (job.cancelRequested) return;
+
     const fileName = `${job.id}.${output.ext}`;
     const filePath = path.join(RESULT_DIR, fileName);
     const buffer =
       output.kind === 'base64' ? Buffer.from(output.data, 'base64') : Buffer.from(output.data, 'utf8');
     await fs.writeFile(filePath, buffer);
 
+    if (job.cancelRequested) {
+      await fs.unlink(filePath).catch(() => {});
+      return;
+    }
+
     job.resultUrl = `/data/results/${fileName}`;
     job.resultBytes = buffer.length;
-    job.status = 'succeeded';
+    if (!job.cancelRequested) job.status = 'succeeded';
   } catch (error) {
-    job.status = 'failed';
-    job.error = error instanceof Error ? error.message : String(error);
+    if (!job.cancelRequested) {
+      job.status = 'failed';
+      job.error = error instanceof Error ? error.message : String(error);
+    }
   } finally {
     job.finishedAt = Date.now();
     // ★ 原图在这里立即释放

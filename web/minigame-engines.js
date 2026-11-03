@@ -12,9 +12,11 @@ const outdoorVenues = new Set(['jingyue', 'lianhua', 'sculpture', 'songhuahu', '
 const gameBackdrops = {
   outdoor: typeof Image === 'undefined' ? {} : new Image(),
   indoor: typeof Image === 'undefined' ? {} : new Image(),
+  city: typeof Image === 'undefined' ? {} : new Image(),
 };
 gameBackdrops.outdoor.src = '/assets/map-winter-world.png';
 gameBackdrops.indoor.src = '/assets/arena-winter-interior.png';
+gameBackdrops.city.src = '/assets/winter-city-panorama.svg';
 
 function drawCover(ctx, image, w, h) {
   const ratio = w / h;
@@ -48,12 +50,13 @@ export function drawPine(ctx,x,base,size,color='#4f9287') {
 
 /** 渐变天空 + 圆润远景山，所有引擎都用它打底 */
 export function bgScene(ctx, w, h, opts = {}) {
-  const outdoor = outdoorVenues.has(opts.venueId);
-  const backdrop = outdoor ? gameBackdrops.outdoor : gameBackdrops.indoor;
+  const city = opts.scene === 'city';
+  const outdoor = city || outdoorVenues.has(opts.venueId);
+  const backdrop = city ? gameBackdrops.city : outdoor ? gameBackdrops.outdoor : gameBackdrops.indoor;
   const textured = backdrop.complete && backdrop.naturalWidth;
   if (textured) {
     drawCover(ctx, backdrop, w, h);
-    ctx.fillStyle = outdoor ? 'rgba(242,250,255,.16)' : 'rgba(224,244,255,.21)';
+    ctx.fillStyle = city ? 'rgba(242,250,255,.08)' : outdoor ? 'rgba(242,250,255,.16)' : 'rgba(224,244,255,.21)';
     ctx.fillRect(0, 0, w, h);
   } else {
   const g = ctx.createLinearGradient(0, 0, 0, h);
@@ -79,7 +82,32 @@ export function bgScene(ctx, w, h, opts = {}) {
   }
 
   const forestVenues = ['jingyue', 'lianhua', 'songhuahu', 'beidahu'];
-  if (textured) {
+  if (city) {
+    if (!textured) {
+    // Standalone city fallback: snowy avenue, warm low-rise windows and
+    // layered rooftops, rather than the ice arena's signature roof arch.
+    const horizon = h * .57;
+    ctx.fillStyle = 'rgba(126,177,197,.28)';
+    ctx.fillRect(0, horizon, w, h - horizon);
+    const buildings = [
+      [.02,.31,.14,.27], [.16,.38,.12,.20], [.29,.27,.16,.31],
+      [.48,.35,.13,.23], [.62,.24,.17,.34], [.81,.33,.16,.25],
+    ];
+    buildings.forEach(([x,y,bw,bh], index) => {
+      const bx = x * w, by = y * h, ww = bw * w, hh = bh * h;
+      ctx.fillStyle = index % 2 ? '#aac9d4' : '#91b8c7';
+      ctx.fillRect(bx, by, ww, hh);
+      ctx.fillStyle = 'rgba(255,255,255,.78)';
+      ctx.fillRect(bx - 2, by, ww + 4, Math.max(3, h * .012));
+      ctx.fillStyle = 'rgba(255,231,177,.82)';
+      for (let row = 0; row < 3; row += 1) for (let col = 0; col < 3; col += 1) {
+        ctx.fillRect(bx + ww * (.17 + col * .29), by + hh * (.2 + row * .22), Math.max(2, ww * .07), Math.max(3, h * .018));
+      }
+    });
+    ctx.fillStyle = 'rgba(255,255,255,.78)';
+    ctx.beginPath(); ctx.moveTo(0,h*.78); ctx.quadraticCurveTo(w*.5,h*.68,w,h*.78); ctx.lineTo(w,h); ctx.lineTo(0,h); ctx.closePath(); ctx.fill();
+    }
+  } else if (textured && !opts.hideVenueArt) {
     // 场馆贴图保持在玩耍区边缘，不遮挡人物和目标。
     const artW = Math.min(112, w * .23);
     const artH = artW * .69;
@@ -93,7 +121,7 @@ export function bgScene(ctx, w, h, opts = {}) {
     ctx.save(); ctx.beginPath(); ctx.roundRect(artX, artY, artW, artH, 6); ctx.clip();
     drawVenueIllustration(ctx, opts.venueId, artX, artY, artW, artH);
     ctx.restore();
-  } else if (forestVenues.includes(opts.venueId)) {
+  } else if (!textured && forestVenues.includes(opts.venueId)) {
     const horizon = h * 0.55;
     for (let i = 0; i < 11; i += 1) {
       const x = (i / 10) * w;

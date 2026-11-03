@@ -1,0 +1,170 @@
+/* Quiet editorial pass: retain the handbook and all existing controls, reduce repeated framing. */
+:root {
+  --ice-ink: #24483f;
+  --ice-paper: #fbf7ed;
+  --ice-line: #ded3bd;
+  --ice-aqua: #d8e6dc;
+  --ice-coral: #b96d4f;
+  --ice-radius: 10px;
+  --ice-shadow: 0 8px 24px #4b443514;
+}
+
+body { background: #eee7d9; color: #334c43; }
+button, input, select { font: inherit; }
+
+/* Cover: let the illustrated book and one clear next step lead. */
+.cover-desk {
+  background-color: #eee5d5;
+  background-image: radial-gradient(circle at 76% 30%, #fffaf0a6, transparent 40%);
+}
+.desk-note { color: #89795f; letter-spacing: .14em; }
+.cover-volume { filter: drop-shadow(14px 20px 14px #5c544638); }
+.cover-intro { max-width: 390px; }
+.cover-intro > p { max-width: 18ch; color: #42594c; font-size: clamp(21px, 2.3vw, 30px); line-height: 1.45; }
+.cover-intro > button#openBook {
+  min-height: 60px;
+  margin: 18px 0 14px;
+  border-radius: 7px;
+  background: #2b5a4d;
+  box-shadow: 0 3px 0 #1d4339, 0 10px 20px #234d3d20;
+  font-size: 17px;
+}
+.cover-intro > button#openBook:hover { background: #356b5a; box-shadow: 0 5px 0 #1d4339, 0 13px 22px #234d3d26; }
+.cover-intro .cover-demo {
+  min-height: 42px;
+  margin: 0 0 10px;
+  border-color: #cec2ab;
+  border-radius: 6px;
+  color: #51685c;
+  background: transparent;
+}
+.guide-goals { display: flex; flex-wrap: wrap; gap: 7px; margin: 11px 0; padding: 0; border: 0; }
+.guide-goals legend { width: 100%; padding: 0; color: #84765f; font-size: 11px; }
+.guide-goals label { min-height: 34px; border-color: #d5cbb8; border-radius: 5px; background: #f7f2e7; color: #53685c; }
+.guide-goals label:has(input:checked) { border-color: #6e9683; background: #e6eee4; color: #315f50; }
+.mascot-cover-slot { max-width: 360px; margin: 9px 0; }
+.cover-intro .mascot-guide {
+  gap: 9px;
+  padding: 10px 0;
+  border: 0;
+  border-top: 1px solid #d7cbb5;
+  border-bottom: 1px solid #d7cbb5;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.cover-intro .mascot-guide-portrait { width: 45px; height: 45px; border-radius: 50%; background: #e5e9da; }
+.cover-intro .mascot-guide-mark { background: #e4e9dc; color: #355d50; }
+.cover-intro .mascot-guide-controls button,
+.cover-intro .mascot-guide button {
+  width: auto;
+  min-height: 29px;
+  margin: 0;
+  padding: 5px 9px;
+  border: 1px solid #d6cbb8;
+  border-radius: 4px;
+  background: #f7f2e7;
+  box-shadow: none;
+  color: #53685c;
+  font-size: 11px;
+}
+.cover-intro .mascot-guide button:hover { transform: none; box-shadow: none; background: #eeeadf; }
+.cover-steps { display: none; }
+.cover-intro > small { color: #817661; font-size: 11px; }
+.cover-display-link { color: #476c5d; }
+
+/* Chapter header and panels use one calm paper surface with less chrome. */
+.book-chapter-bar {
+  min-height: 62px;
+  gap: clamp(8px, 1.5vw, 20px);
+  margin-top: 12px;
+  border-color: #d8cdb9;
+  border-bottom: 1px solid #d8cdb9;
+  border-radius: 7px;
+  box-shadow: 0 3px 12px #4b44350c;
+  background: #f8f3e9;
+}
+.chapter-item { color: #788279; }
+.chapter-item b { width: 25px; height: 25px; border-radius: 50%; background: #82978a; }
+body[data-book="creator"] .chapter-item[data-chapter="creator"] b,
+body[data-book="map"] .chapter-item[data-chapter="map"] b,
+body[data-book="detail"] .chapter-item[data-chapter="detail"] b { background: #b96d4f; }
+.page-flip-toggle { border-color: #ded3bd; border-radius: 5px; background: #fbf8f0; color: #65786d; }
+.page-flip-toggle:has(i[aria-hidden="true"]) { padding-inline: 8px; }
+.chapter-aside + .chapter-aside { display: none; }
+.split { gap: 16px; }
+.split > .panel {
+  border-color: #ded5c4;
+  border-radius: 7px;
+  background-color: #fbf8f0;
+  background-image: none;
+  box-shadow: 0 5px 18px #4b443510;
+}
+.split > #workshopPanel, .split > #mapPanel { border-inline: 1px solid #ded5c4; }
+.panel-head h2 { color: #294b40; }
+.panel-kicker { color: #a36b51; letter-spacing: .13em; }
+.panel-note { color: #8b8877; }
+
+/* Creator: retain the public-display choice and its disclosure, but reduce its weight. */
+.showcase-optin { gap: 9px; margin: 8px 0 12px; padding: 9px 11px; border-color: #e2d8c7; border-radius: 5px; background: #f6f1e6; }
+.showcase-optin b { color: #476052; font-size: 12px; }
+.showcase-optin small { color: #7e8176; font-size: 10px; line-height: 1.5; }
+.stage { border-color: #ded6c6; border-radius: 6px; background-color: #f0ede2; box-shadow: none; }
+.stage-hint { color: #78867b; }
+.name-field { border-radius: 5px; }
+.primary, .enter-tour { border-radius: 5px; background: #2b5a4d; box-shadow: 0 2px 0 #1d4339; }
+.primary:hover, .enter-tour:hover { background: #356b5a; }
+.creator-controls-column .tab-body { border-color: #e0d6c5; border-radius: 5px; background: #f8f4ea; }
+.book-map-preview { border: 0; border-radius: 6px; box-shadow: none; }
+
+/* Map: demote repeated cards, keep filters, progress and challenges available. */
+.map-filters { border-radius: 5px; background: #f0ecdf; }
+.map-filters button { border-radius: 4px; color: #5f7267; }
+.map-filters button[aria-pressed="true"] { color: #fffaf0; background: #426d5a; box-shadow: none; }
+.progress-summary { gap: 8px; margin-bottom: 10px; }
+.progress-summary > div { padding: 9px 11px; border-color: #e3dac9; border-radius: 5px; background: #f6f2e8; }
+.progress-summary span { color: #69796e; }
+.progress-summary strong { color: #315d4d; }
+.bonus-challenges { gap: 8px; margin-bottom: 10px; padding: 11px; border-color: #e1dac9; border-radius: 6px; background: #f2f1e6; }
+.bonus-challenges h3 { color: #355849; font-size: 15px; }
+.bonus-challenges button { min-height: 66px; padding: 10px; border-color: #dcd9ca; border-radius: 5px; background: #fbf8ef; }
+.bonus-challenges button:hover { border-color: #9db6a3; background: #fffdf6; }
+.live-summary { border-color: #e2d8c7; color: #557063; }
+.stats-caption { color: #8a8c7e; }
+.chips .chip { border-radius: 4px; }
+.venue-card { border-color: #ded5c4; border-radius: 6px; box-shadow: 0 8px 22px #34483d24; }
+
+/* Direct chapter jumps get a short, soft arrival; the existing page flip remains untouched. */
+@keyframes chapter-arrive {
+  from { opacity: .35; transform: translateY(9px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.chapter-arrival[data-book="creator"] #workshopPanel .stage,
+.chapter-arrival[data-book="creator"] #workshopPanel .creator-controls-column,
+.chapter-arrival[data-book="map"] #mapPanel .map-wrap,
+.chapter-arrival[data-book="map"] #mapSidebarInfo > *,
+.chapter-arrival[data-book="detail"] .book-detail-spread {
+  animation: chapter-arrive 460ms cubic-bezier(.2,.7,.2,1) both;
+}
+.chapter-arrival[data-book="creator"] #workshopPanel .creator-controls-column { animation-delay: 55ms; }
+.chapter-arrival[data-book="map"] #mapSidebarInfo > :nth-child(2) { animation-delay: 45ms; }
+.chapter-arrival[data-book="map"] #mapSidebarInfo > :nth-child(3) { animation-delay: 85ms; }
+
+@media (max-width: 900px) {
+  .cover-desk { gap: 22px; }
+  .cover-volume { width: min(72vw, 460px); }
+  .cover-intro { max-width: 460px; }
+  .cover-intro > p { margin: 0 auto 8px; }
+  .cover-intro > button#openBook { margin: 12px auto; }
+  .mascot-cover-slot { margin-inline: auto; }
+  .cover-intro .mascot-guide-controls { justify-content: center; }
+  .book-chapter-bar { width: calc(100% - 22px); min-height: 54px; gap: 7px; padding-inline: 9px; }
+  .chapter-item { font-size: 10px; }
+  .chapter-item b { width: 22px; height: 22px; margin-right: 3px; font-size: 12px; }
+  .page-flip-toggle { min-height: 34px; padding: 5px 7px; font-size: 10px; }
+  .split, body:is([data-book="map"],[data-book="detail"]) .split { gap: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chapter-arrival #workshopPanel *, .chapter-arrival #mapPanel *, .chapter-arrival #mapSidebarInfo *, .chapter-arrival .book-detail-spread { animation: none !important; }
+}

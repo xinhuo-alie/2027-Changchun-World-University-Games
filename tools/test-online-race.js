@@ -4,8 +4,8 @@ import net from 'node:net';
 import { randomBytes } from 'node:crypto';
 import { createOnlineRace } from '../server/online-race.js';
 
-const race=createOnlineRace();
-const server=http.createServer(async(req,res)=>{if(req.method!=='POST'){res.writeHead(404).end();return;}let body='';for await(const chunk of req)body+=chunk;const input=JSON.parse(body||'{}');if(input.action==='create'){res.writeHead(201,{'Content-Type':'application/json'}).end(JSON.stringify(race.create(input.name)));return;}const joined=race.join(input.roomCode,input.name,input.playerToken);res.writeHead(joined.error?joined.status:200,{'Content-Type':'application/json'}).end(JSON.stringify(joined.error?{error:joined.error}:{roomCode:joined.room.code,playerToken:joined.player.token,slot:joined.slot}));});
+const race=createOnlineRace({rematchTimeoutMs:700});
+const server=http.createServer(async(req,res)=>{if(req.method!=='POST'){res.writeHead(404).end();return;}let body='';for await(const chunk of req)body+=chunk;const input=JSON.parse(body||'{}');if(input.action==='create'){res.writeHead(201,{'Content-Type':'application/json'}).end(JSON.stringify(race.create(input.name,input.venueId)));return;}const joined=race.join(input.roomCode,input.name,input.playerToken);res.writeHead(joined.error?joined.status:200,{'Content-Type':'application/json'}).end(JSON.stringify(joined.error?{error:joined.error}:{roomCode:joined.room.code,venueId:joined.room.venueId,playerToken:joined.player.token,slot:joined.slot}));});
 server.on('upgrade',(req,socket,head)=>race.upgrade(req,socket,head));
 const clients=new Set();
 
@@ -20,6 +20,7 @@ try{
  assert.equal(joinedResponse.status,200);const joined=await joinedResponse.json();assert.equal(joined.slot,1);
  const first=await client(port,created);const other=await client(port,joined);
  await Promise.all([first.waitFor(message=>message.type==='state'&&message.players.length===2),other.waitFor(message=>message.type==='state'&&message.players.length===2)]);
+ const inviteRoom=race.create('地图邀约者','jingyue');const inviter=await client(port,inviteRoom);await inviter.waitFor(message=>message.phase==='waiting');assert.equal(inviter.messages.at(-1).venueId,'jingyue');assert.equal(race.list().some(room=>room.roomCode===inviteRoom.roomCode&&room.venueId==='jingyue'),true,'rooms from any supported venue should be available as map invitations');const inviteJoin=race.join(inviteRoom.roomCode,'地图挑战者','');assert.equal(inviteJoin.slot,1);assert.equal(race.list().some(room=>room.roomCode===inviteRoom.roomCode),false,'filled rooms should disappear from map invitations');inviter.socket.destroy();
  first.send({type:'start'});
  const [a,b]=await Promise.all([first.waitFor(message=>message.phase==='running'),other.waitFor(message=>message.phase==='running')]);
  assert.equal(a.durationSeconds,20);assert.equal(b.players.length,2);
@@ -27,6 +28,10 @@ try{
  await new Promise(resolve=>setTimeout(resolve,350));first.socket.destroy();
  const reconnected=await client(port,created);await reconnected.waitFor(message=>message.phase==='running');
  const startedAt=Date.now();const result=await other.waitFor(message=>message.phase==='finished',22000);
- assert.ok(Date.now()-startedAt>=19000,'round should last about 20 seconds');assert.equal(result.durationSeconds,20);assert.equal(result.players.length,2);
- reconnected.socket.destroy();other.socket.destroy();console.log('Online room, two-player WebSocket sync, reconnect, and 20-second server settlement passed.');
+ assert.ok(Date.now()-startedAt>=19000,'round should last about 20 seconds');assert.equal(result.durationSeconds,20);assert.equal(result.players.length,2);assert.equal(result.winnerSlot,result.players[0].score===result.players[1].score?null:result.players[0].score>result.players[1].score?0:1,'winner should be identified by slot, independently of duplicate display names');
+ reconnected.send({type:'rematch'});await new Promise(resolve=>setTimeout(resolve,120));assert.equal(reconnected.messages.at(-1).phase,'finished');assert.equal(reconnected.messages.at(-1).rematchVotes,1);
+ reconnected.send({type:'cancel-rematch'});await new Promise(resolve=>setTimeout(resolve,120));assert.equal(reconnected.messages.at(-1).phase,'finished');assert.equal(reconnected.messages.at(-1).rematchVotes,0,'a player can cancel their pending rematch vote');
+ reconnected.send({type:'rematch'});await new Promise(resolve=>setTimeout(resolve,850));assert.equal(reconnected.messages.at(-1).phase,'finished');assert.equal(reconnected.messages.at(-1).rematchVotes,0,'an unanswered rematch request expires and unlocks the button');
+ reconnected.send({type:'rematch'});await new Promise(resolve=>setTimeout(resolve,100));other.send({type:'rematch'});await new Promise(resolve=>setTimeout(resolve,120));assert.equal(reconnected.messages.at(-1).phase,'waiting','both rematch votes should return the room to a fresh waiting state');assert.equal(other.messages.at(-1).phase,'waiting');
+ reconnected.socket.destroy();other.socket.destroy();console.log('Online room, per-venue map invitations, WebSocket sync, reconnect, server settlement, cancellable rematch, timeout, and rematch reset passed.');
 }finally{race.close();await Promise.all([...clients].map(socket=>new Promise(resolve=>{if(socket.closed)return resolve();socket.once('close',resolve);socket.destroy();})));server.close();}

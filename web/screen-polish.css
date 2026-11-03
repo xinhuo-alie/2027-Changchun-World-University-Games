@@ -1,0 +1,11 @@
+/* 展示页与实时数据页共用的冰雪配色 */
+body:has(.screen-grid) { background:#103544; color:#edf8f2; }
+body:has(.screen-grid) .screen-header { border-color:#9bc9c655; }
+body:has(.screen-grid) .glass,body:has(.screen-grid) .metric-grid { background:#174658; border-color:#81b8b366; border-radius:14px; box-shadow:0 12px 30px #082c3b45; }
+body:has(.screen-grid) .screen-brand b { background:#c3e8df; color:#104453; border-radius:10px; }
+body:has(.screen-grid) .metric-grid strong,body:has(.screen-grid) .spotlight-stat b { color:#b6e7dc; }
+body:has(.screen-grid) .screen-tools button,body:has(.screen-grid) .section-heading button { border-color:#83bdb7; background:#275d68; color:#f3fffb; border-radius:8px; }
+body:has(.showcase-header) { background:#123e4b; color:#f3f6e9; }
+body:has(.showcase-header) .brand-seal { background:#d8eee3; color:#104f5b; box-shadow:3px 4px 0 #082b35; }
+body:has(.showcase-header) .screen-button,body:has(.showcase-header) .map-controls button { border-color:#8bbdb5; background:#1a5864; color:#f4fff9; }
+body:has(.showcase-header) :focus-visible,body:has(.screen-grid) :focus-visible { outline:3px solid #f4bd70; outline-offset:3px; }

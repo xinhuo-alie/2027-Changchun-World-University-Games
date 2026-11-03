@@ -1,4 +1,5 @@
 import { buildCreativePrompt, resolveCreativeGender } from '../web/creative-prompt.js';
+import { normalizeCreative } from '../web/creative-config.js';
 
 /**
  * ★ 这个文件是整个项目的核心资产。
@@ -70,9 +71,17 @@ export function describeFigurineSelection(creative, outfit) {
 }
 
 export const FIGURINE_COMPOSITION = {
-  zh: '画面展示完整全身，约三头身的大头小身体比例，但按照参考照片保留成年或儿童的真实年龄感。人物身体固定朝画面右侧约 30–45 度，胸口、双脚脚尖及滑雪板等运动器材的前进方向也指向画面右侧；脸微微转向镜头，保持清晰可辨的右向四分之三视角。不要朝左、背对镜头或完全正面站立。从头发到鞋子、运动器材均完整不裁切。只画一个人物，运动姿态与选择的项目相符。人物四周保留适量呼吸空间。整张画布除人物及随身运动器材外，每个像素都必须是同一种均匀、无纹理、无渐变的纯洋红色（#FF00FF）：人物脚下、雪板下方、两块雪板之间、手臂与躯干之间、双腿之间和器材空隙都一样。人物与雪板悬浮在纯色平面前，不存在地平线、地面或地板；绝不绘制雪地、冰面、接地阴影、反光、光晕、飘雪、展示台、透视线或背景装饰。人物、服饰、配饰和运动器材禁止使用洋红色或近似粉紫色，改用白、蓝、青或其他有明显对比的颜色。边缘清晰无洋红溢色；场景选项只影响人物的光线和配色，不得生成场景或其他物体。不要赛事官方吉祥物、官方徽标、文字、数字或水印。',
-  en: 'Show exactly one full-body character, roughly three heads tall while preserving the reference person’s adult or child age cues. Fix the body in a three-quarter pose facing toward the right side of the image, about 30–45 degrees from front. The chest, toes and forward direction of skis or other sport gear also point toward image-right. Turn the face slightly back toward the viewer so identity remains clear. Do not face left, turn away, or stand fully front-on. Do not crop hair, shoes or sport equipment. Pose and gear must match the selected sport. Leave breathing room. Every pixel outside the character and attached sport equipment must be the same uniform flat chroma magenta (#FF00FF), without texture or gradient: under the shoes and skis, between both skis, between arms and torso, between legs, and in all equipment gaps. The character and skis float in front of this flat color field; there is no horizon, floor or ground plane. Never render snow, ice, a floor, cast shadow, reflection, halo, snowflakes, pedestal, perspective lines or background decoration. Keep the character, clothes, accessories and equipment free of magenta or similar pink-purple; use contrasting white, blue or cyan instead. Keep crisp edges without magenta spill. Scene choices affect only the character’s lighting and palette; do not render a scene or other objects. No official mascots, event logos, text, numbers or watermarks.',
+  zh: '画面展示一名完整全身角色，人物从头发到鞋底全部入镜并居中，头身比例、轮廓、质感和绘制技法严格服从所选艺术风格，不使用固定的三头身、3D手办或冰雪吉祥物模板。脸部清晰可辨；人物姿态和运动器材只按用户选择的角色类型与动作生成，未选择的项目不添加。人物四周保留适量空间。背景为均匀无纹理、无渐变的纯洋红色（#FF00FF），手脚、肢体间隙和道具空隙均保持纯色；不绘制地面、接地阴影、反光、光晕、飘雪、展示台、透视线或场景。角色不得使用与抠图幕相近的洋红色，边缘清晰无溢色。场景氛围只影响人物布光，不生成场景物体。不要文字、水印或品牌标志。',
+  en: 'Show exactly one complete full-body character, centred with hair and shoes fully in frame. Let the selected art style determine proportions, silhouette, surface, and rendering technique; do not fall back to a fixed three-head chibi, 3D figurine, or winter mascot template. Keep the face recognisable. Add poses and sports equipment only when selected by the user. Leave breathing room. Use a uniform flat chroma-magenta background (#FF00FF), without texture or gradient, including all gaps between limbs and props. Do not render a floor, contact shadow, reflection, halo, snow, pedestal, perspective lines, or scene. Keep the character away from magenta hues and edges crisp without colour spill. Scene mood affects lighting only. No text, watermark, or brand marks.',
 };
+
+function figurineComposition(locale, creative) {
+  const hasCompanion = creative?.companion?.enabled === true && Boolean(creative.companion.type && creative.companion.blueprint);
+  if (!hasCompanion) return FIGURINE_COMPOSITION[locale];
+  return locale === 'zh'
+    ? FIGURINE_COMPOSITION.zh.replace('画面展示一名完整全身角色','画面展示一名完整全身主角和用户主动选择的一名伙伴').replace('画面中只出现这一个完整人物','主角与伙伴都完整入镜且边界清楚')
+    : FIGURINE_COMPOSITION.en.replace('Show exactly one complete full-body character','Show one complete full-body main character and the user-selected companion').replace('Show exactly one complete person.','Show the main character and companion completely, with clear separate silhouettes.');
+}
 
 /** 全局构图锚点：与风格无关，保证所有出图能直接贴进后续的游览场景 */
 export const COMPOSITION = {
@@ -241,7 +250,8 @@ export function listStyles() {
 export function buildPrompt({ styleId, locale = 'zh', extra = '', purpose, creative } = {}) {
   const style = getStyle(styleId);
   if (purpose === 'figurine') {
-    const gender = creative ? resolveCreativeGender(creative) : null;
+    const safeCreative = creative ? normalizeCreative(creative) : null;
+    const gender = safeCreative ? resolveCreativeGender(safeCreative) : null;
     const genderCheck = gender === 'male'
       ? (locale === 'zh' ? '最终性别检查：角色整体必须呈现为男性；若参考照片或其他描述与此冲突，以男性选项为准，同时尽量保留可辨认的脸部身份特征。不得生成女性角色。' : 'Final gender check: the character must read as male. If the reference photo or any other description conflicts, follow the male selection while preserving recognisable facial identity where possible. Do not generate a female character.')
       : gender === 'female'
@@ -252,13 +262,13 @@ export function buildPrompt({ styleId, locale = 'zh', extra = '', purpose, creat
         ? '以照片中的人为唯一身份参考，准确保留脸型、五官布局、眼距、鼻嘴形状、年龄感和眼镜等可辨认的面部特征；不能变成另一张通用娃娃脸。照片中的服装、颜色、动作和场景不作为造型模板，除非用户明确选择保留；人物面部身份必须保持。'
         : 'Use the person in the reference photo only as the identity reference. Preserve recognisable face shape, features, glasses and age. Do not copy the photo’s clothing, colours, pose or scene unless explicitly requested.',
       locale === 'zh'
-        ? '严格采用造型工坊所选的艺术风格、服装、主色调、材质、运动项目和动作，不套用固定的蓝色滑雪服或三维手办模板。主色调覆盖主题与场景中提到的颜色；服装选择覆盖照片原衣着；运动项目与动作选择决定器材和身体姿态。面部与身体使用同一种所选画风，不要把真人照片贴在角色脸上。'
-        : 'Follow the workshop’s selected art style, outfit, palette, material, sport and pose. Do not default to a blue ski outfit or a 3D toy. The selected palette overrides theme or scene colours; the selected outfit overrides clothing in the photo; sport and pose determine equipment and body position. Render face and body in the same selected style.',
+        ? '用户选择的画风是最高优先级的视觉表现：全身与脸部都采用该画风的媒介、线条、色彩、质感和比例。奇幻世界、主题、服装及面部倾向只决定角色内容，不得把画风统一成真人3D或手办。保留本人可辨认的身份，不把照片直接贴在脸上。'
+        : 'The selected art style is the highest-priority visual direction for the entire character, including face, medium, linework, colour, texture, lighting and proportions. World, theme, outfit and face preference provide subject matter without overriding that style. Preserve recognisable identity without pasting the photo onto the face.',
       extra,
-      FIGURINE_COMPOSITION[locale],
+      figurineComposition(locale, safeCreative),
       locale === 'zh' ? '最终检查：角色的脸必须仍然像上传照片中的本人，五官完整清晰；脸部、服装和身体必须统一采用用户所选画风，不把真人照片直接贴到角色上。' : 'Final check: the face must remain recognisably the person in the uploaded photo, with clear features; render the face, outfit and body consistently in the selected art style rather than pasting a photograph onto the character.',
       genderCheck,
-      locale === 'zh' ? `避免出现：${NEGATIVE.zh}` : `Avoid: ${NEGATIVE.en}`,
+      locale === 'zh' ? `避免出现：${NEGATIVE.zh.replace('写实照片，真人质感，', '')}` : `Avoid: ${NEGATIVE.en.replace('photorealistic, real photograph, ', '')}`,
     ].filter(Boolean).join('\n');
   }
   // 风格可以覆盖构图（见上面 avatar 风格的说明），默认用全局那一段

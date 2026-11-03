@@ -283,7 +283,7 @@ function buildRouteFrom(from, venue) {
 
 /**
  * @param {HTMLCanvasElement} canvas
- * @param {{venues: Array, onPick?: (venueId: string) => void}} opts
+ * @param {{venues: Array, onPick?: (venueId: string) => void, onOnlineInvite?: (invite: object) => void}} opts
  */
 export function createMapView(canvas, opts = {}) {
   const effects = createMapEffects(canvas);
@@ -303,6 +303,7 @@ export function createMapView(canvas, opts = {}) {
   let heroVisible = opts.heroVisible !== false;
   let filter = 'all';
   let counts = new Map();
+  let onlineInvitesByVenue = new Map();
   let landedAt = -10;
   let visited = new Set();
   let medals = new Set();
@@ -569,6 +570,7 @@ export function createMapView(canvas, opts = {}) {
         ctx.beginPath();ctx.roundRect(artX + artW - cw + 4, artY - 9, cw, 16, 8);ctx.fill();
         ctx.fillStyle = '#fff';ctx.fillText(text,artX + artW - cw / 2 + 4,artY - 1);
       }
+      const invites=onlineInvitesByVenue.get(v.id)||[];
       ctx.font = '600 11px system-ui, "Microsoft YaHei", sans-serif';
       const label = v.name.replace(/^长春|^吉林/, '');
       const textW = ctx.measureText(label).width;
@@ -579,6 +581,15 @@ export function createMapView(canvas, opts = {}) {
       ctx.fillStyle = isActive ? '#C0432B' : '#33526E';
       if (scale <= minScale * 1.3 || isActive || done) ctx.fillText(label, p.x, artY + artH + 12);
       ctx.restore();
+      if(invites.length&&!calibration){
+        const badge=inviteBadgePoint(v),label=invites.length>1?`PK ${invites.length}`:'PK';
+        ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='800 11px system-ui, sans-serif';
+        const badgeW=Math.max(38,ctx.measureText(label).width+18);
+        ctx.shadowColor='rgba(50,35,20,.28)';ctx.shadowBlur=5;ctx.shadowOffsetY=2;
+        ctx.fillStyle='#c84e32';ctx.beginPath();ctx.roundRect(badge.x-badgeW/2,badge.y-12,badgeW,24,12);ctx.fill();
+        ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetY=0;
+        ctx.strokeStyle='#fff8e8';ctx.lineWidth=2;ctx.stroke();ctx.fillStyle='#fff';ctx.fillText(label,badge.x,badge.y+.5);ctx.restore();
+      }
     }
   }
 
@@ -717,6 +728,21 @@ export function createMapView(canvas, opts = {}) {
     return best;
   }
 
+  function inviteAt(sx,sy){
+    for(const v of venues){
+      const invites=onlineInvitesByVenue.get(v.id)||[];
+      if(!invites.length||(filter!=='all'&&v.kind!==filter))continue;
+      const center=inviteBadgePoint(v);
+      if(Math.abs(center.x-sx)<=32&&Math.abs(center.y-sy)<=18)return invites[0];
+    }
+    return null;
+  }
+
+  function inviteBadgePoint(v){
+    const p=markerPoint(v),venueScale=iconScale(v);
+    return {x:p.x+25*venueScale,y:p.y-(100*.73*.87+9)*venueScale-12};
+  }
+
   canvas.addEventListener('pointerdown', (event) => {
     canvas.setPointerCapture(event.pointerId);
     pointers.set(event.pointerId, { x: event.offsetX, y: event.offsetY });
@@ -743,7 +769,7 @@ export function createMapView(canvas, opts = {}) {
     const prev = pointers.get(event.pointerId);
     if (!prev) return;
     pointers.set(event.pointerId, { x: event.offsetX, y: event.offsetY });
-    if(!panning && pointers.size===1 && !calibrationDrag){const hit=pickAt(event.offsetX,event.offsetY);const next=hit?.id||null;if(next!==hoverId){hoverId=next;canvas.style.cursor=next?'pointer':'grab';}}
+    if(!panning && pointers.size===1 && !calibrationDrag){const invite=inviteAt(event.offsetX,event.offsetY),hit=pickAt(event.offsetX,event.offsetY);const next=invite?'online-invite':hit?.id||null;if(next!==hoverId){hoverId=next;canvas.style.cursor=next?'pointer':'grab';}}
     if (calibrationDrag) {
       const world=unproject(event.offsetX,event.offsetY);
       const point=worldPointToImage(world);
@@ -779,6 +805,8 @@ export function createMapView(canvas, opts = {}) {
     if (!start) return;
     const moved = Math.hypot(event.offsetX - start.x, event.offsetY - start.y);
     if (!calibration && moved < 9 && performance.now() - start.t < 600) {
+      const invite=inviteAt(event.offsetX,event.offsetY);
+      if(invite){opts.onOnlineInvite?.(invite);downAt=null;return;}
       const hit = pickAt(event.offsetX, event.offsetY);
       if (hit) onPick(hit.id);
     }
@@ -902,6 +930,13 @@ export function createMapView(canvas, opts = {}) {
     setProgress(explored, challengeMedals) {
       visited = explored;
       medals = challengeMedals;
+    },
+    setOnlineInvites(items=[]) {
+      onlineInvitesByVenue=new Map();
+      for(const invite of Array.isArray(items)?items:[]){
+        const venueId=typeof invite?.venueId==='string'?invite.venueId:'wuhuan';
+        const rows=onlineInvitesByVenue.get(venueId)||[];rows.push(invite);onlineInvitesByVenue.set(venueId,rows);
+      }
     },
     setActive(id) {
       activeId = id;

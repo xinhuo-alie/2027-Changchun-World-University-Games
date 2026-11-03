@@ -1,0 +1,65 @@
+.book-page-nav { position:sticky; z-index:4; bottom:0; display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:space-between; margin:0 -8px 18px; padding:10px 8px; border-bottom:1px solid #e5dccb; background:linear-gradient(#fffbf2e8,#fffbf2 28%); }
+.book-page-nav button { min-height:44px; padding:9px 13px; border:1px solid #d7e4e5; border-radius:999px; background:#fffefa; color:#315c69; font:inherit; font-size:12px; font-weight:750; cursor:pointer; }
+.book-page-nav button:disabled { opacity:.45; cursor:not-allowed; }
+.book-page-nav button[hidden] { display:none; }
+.book-page-nav .primary { border-color:#1c6575; background:#1c6575; color:#fff; }
+.contents-row { width:100%; text-align:left; cursor:pointer; }
+.book-contents-dialog { width:min(760px,calc(100vw - 28px)); max-height:min(82dvh,780px); overflow:auto; }
+.book-contents-dialog section { margin:20px 0; }
+.book-contents-dialog h3 { margin:0 0 8px; color:#294e60; font-size:15px; }
+.book-route-contents { display:grid; gap:5px; }
+.book-route-contents .contents-row { display:grid; grid-template-columns:38px 1fr; gap:3px 10px; align-items:center; padding:10px; border:1px solid #e6e0d3; border-radius:9px; background:#fffdf7; color:#34566a; }
+.book-route-contents .contents-row span { grid-row:span 2; color:#a27b38; font-size:13px; font-weight:800; }
+.book-route-contents .contents-row b { font-size:13px; }
+.book-route-contents .contents-row small { color:#758794; font-size:10px; }
+.book-recap { position:fixed; z-index:34; inset:0; display:grid; place-items:center; overflow:auto; padding:22px; background:#123543e8; }
+.book-recap[hidden] { display:none; }
+.book-recap-card { width:min(920px,100%); max-height:calc(100dvh - 44px); overflow:auto; padding:clamp(24px,5vw,54px); border:1px solid #ddcfad; border-radius:4px; background:#fffaf0; box-shadow:0 24px 80px #071c2870; }
+.book-recap-card h2 { margin:5px 0 12px; color:#233f55; font-family:Georgia,serif; font-size:clamp(28px,5vw,48px); }
+.book-recap-card > p:not(.workshop-kicker) { color:#617786; line-height:1.7; }
+.book-recap-places { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:8px; margin:22px 0; }
+.book-recap-places span { padding:10px 12px; border:1px solid #e5dccb; background:#fffdf8; color:#31566b; }
+.book-recap-card button { min-height:44px; margin:5px 8px 0 0; padding:10px 15px; }
+.recap-blessing { margin-bottom:24px; }
+.memorial-section { margin-top:20px; }
+.memorial-section h3,.memorial-video h3 { margin:0 0 10px; color:#31566b; font-size:15px; }
+.memorial-columns { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:10px; }
+.memorial-list { min-height:54px; padding:8px 12px; border:1px solid #e5dccb; background:#fffdf8; color:#31566b; }
+.memorial-list p,.memorial-empty { margin:5px 0; color:#617786; font-size:13px; line-height:1.6; }
+.memorial-list img { display:block; width:100%; max-height:160px; margin-bottom:8px; object-fit:contain; background:#edf3ef; }
+.memorial-video { position:relative; margin-top:24px; padding:18px; border:1px dashed #b8c9c0; background:linear-gradient(135deg,#edf4ef,#fff8e8); }
+.memorial-video p:not(.panel-kicker) { max-width:58ch; color:#617786; line-height:1.7; }
+.memorial-video > span { display:inline-block; padding:5px 9px; border-radius:999px; background:#e3ece6; color:#58746c; font-size:12px; }
+.recap-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:20px; }
+.visit-end-dialog { width:min(480px,calc(100% - 28px)); padding:clamp(22px,5vw,34px); border:1px solid #ddcfad; border-radius:8px; color:#31566b; background:#fffaf0; box-shadow:0 24px 80px #071c2870; }
+.visit-end-dialog::backdrop { background:#123543c9; backdrop-filter:blur(5px); }
+.visit-end-dialog h2 { margin:6px 0 12px; color:#233f55; font:700 clamp(24px,5vw,34px)/1.25 Georgia,serif; }
+.visit-end-dialog p:not(.workshop-kicker) { color:#617786; line-height:1.75; }
+.visit-handoff { position:fixed; z-index:80; inset:0; display:grid; place-items:center; padding:20px; background:radial-gradient(circle at 50% 36%,#eff6ed 0,#dcebe4 38%,#153b4a 100%); }
+.visit-handoff[hidden] { display:none; }
+.visit-handoff > div { width:min(680px,100%); padding:clamp(28px,6vw,64px); border:1px solid #ddcfad; background:#fffaf0; box-shadow:0 24px 80px #071c2870; text-align:center; }
+.visit-handoff h2 { margin:12px auto; color:#233f55; font:700 clamp(30px,6vw,54px)/1.2 Georgia,serif; }
+.visit-handoff p:not(.workshop-kicker) { max-width:45ch; margin:0 auto 24px; color:#617786; line-height:1.8; }
+
+.visit-handoff button:focus-visible,.recap-actions button:focus-visible,.visit-end-dialog button:focus-visible { outline:3px solid #ef8d72; outline-offset:3px; }
+/* The recap itself is a fixed overlay (z-index 34); keep its generated card preview above it. */
+.passport-card-preview-sheet { z-index:70; }
+.book-travel-transition { position:fixed; z-index:60; inset:0; display:grid; align-content:center; justify-items:center; gap:12px; background:radial-gradient(ellipse at center,#f9f4e7 0,#dcecf0 72%); color:#31566b; }
+.book-travel-transition[hidden] { display:none; }
+.book-travel-transition span { font-size:12px; letter-spacing:.16em; text-transform:uppercase; }
+.book-travel-transition strong { font-family:Georgia,serif; font-size:clamp(30px,7vw,58px); }
+.book-travel-transition i { width:90px; height:2px; background:#c69d4e; animation:book-travel-line .8s ease-in-out infinite alternate; }
+@keyframes book-travel-line { to { width:min(65vw,360px); opacity:.45; } }
+body[data-book="recap"] #bookSpread, body[data-book="recap"] #bookChapterBar { visibility:hidden; }
+@media (max-width:700px) {
+  .book-page-nav { margin:0 -8px 14px; gap:5px; }
+  .book-page-nav button { flex:1 1 auto; min-width:94px; min-height:46px; padding:8px 9px; }
+  .book-contents-dialog { padding:18px; }
+  .book-recap { padding:10px; }
+  .book-recap-card { max-height:calc(100dvh - 20px); padding:24px 18px; }
+  .recap-actions { display:grid; grid-template-columns:1fr; }
+  .recap-actions button { width:100%; margin:0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .book-travel-transition i { animation:none; }
+}
